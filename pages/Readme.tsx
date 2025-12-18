@@ -53,7 +53,7 @@ export default function Readme() {
                             <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-black italic">Step 1</div>
                             <h3 className="text-xl font-bold">Xác định tỷ giá Credit (The Spread)</h3>
                             <p className="text-sm text-slate-500 leading-relaxed">
-                                Tại mục <strong>Admin > Pricing Config</strong>, thiết lập <code>topupConversionRatio</code>. 
+                                Tại mục <strong>Admin &gt; Pricing Config</strong>, thiết lập <code>topupConversionRatio</code>. 
                                 <br/><br/>
                                 <span className="text-brand-600 font-bold">Ví dụ:</span> Nếu đặt là 0.8, nghĩa là $1 USD đổi được 0.8 Credit. Học viên phải trả ~$1.25 USD cho mỗi 1 Credit. Đây là nơi tạo ra lợi nhuận gộp ngay khi dòng tiền đi vào (Inflow).
                             </p>
@@ -198,7 +198,7 @@ export default function Readme() {
                                     </li>
                                     <li className="flex gap-3">
                                         <span className="w-6 h-6 bg-slate-800 rounded flex items-center justify-center font-bold text-xs text-white">2</span>
-                                        <span>Truy cập <strong>vercel.com</strong> và chọn "Add New" -> "Project".</span>
+                                        <span>Truy cập <strong>vercel.com</strong> và chọn &quot;Add New&quot; &rarr; &quot;Project&quot;.</span>
                                     </li>
                                     <li className="flex gap-3">
                                         <span className="w-6 h-6 bg-slate-800 rounded flex items-center justify-center font-bold text-xs text-white">3</span>
