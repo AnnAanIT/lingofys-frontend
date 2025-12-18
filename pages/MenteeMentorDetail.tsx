@@ -114,7 +114,7 @@ export default function MenteeMentorDetail() {
   };
 
   const handleBookingConfirm = async (useSubscription: boolean) => {
-    if (!selectedDate || !user || !priceDetails) return;
+    if (!selectedDate || !user || !priceDetails || !mentor) return;
     setIsProcessing(true);
     try {
         const newBooking = await api.createOneTimeBooking(
