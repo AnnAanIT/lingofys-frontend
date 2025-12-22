@@ -51,7 +51,7 @@ export default function ProviderDashboard({ tab = 'overview' }: Props) {
     e.preventDefault();
     if(!user || !payoutAmount) return;
     try {
-        await api.requestPayout(user.id, Number(payoutAmount), payoutMethod);
+        await api.requestPayout(user, user.id, Number(payoutAmount), payoutMethod);
         await refreshUser();
         await loadData();
         setPayoutAmount('');

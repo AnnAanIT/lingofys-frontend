@@ -34,9 +34,13 @@ export interface User {
   joinedAt: string;
   phone?: string;
   country?: string;
-  timezone?: string; 
-  password?: string; 
-  mentorGroupId?: string; 
+  timezone?: string;
+  password?: string;
+  mentorGroupId?: string;
+  providerId?: string; // ID của provider giới thiệu
+  language?: Language; // Only for mentees (en, zh, ko, ja, vi)
+  rejectionReason?: string; // Admin's reason for rejection
+  appliedAt?: string; // When MENTOR/PROVIDER first applied
 }
 
 export interface ProviderLevel {
@@ -151,19 +155,19 @@ export interface SubscriptionPlan {
 export interface Subscription {
   id: string;
   planId: string;
-  planName: string;
+  planName?: string;
   menteeId: string;
-  menteeName?: string; 
+  menteeName?: string;
   mentorId: string;
-  mentorName: string;
+  mentorName?: string;
   startDate: string;
   endDate: string;
-  totalSessions: number;
+  totalSessions?: number;
   remainingSessions: number;
   cancelQuota: number;
   rescheduleQuota: number;
-  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
-  bookings: string[]; 
+  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'COMPLETED';
+  bookings: string[];
 }
 
 export interface Homework {
@@ -211,39 +215,40 @@ export interface Conversation {
 
 export interface Payout {
   id: string;
-  mentorId: string; 
+  mentorId: string;
   amount: number; // Settlement Amount (USD)
   creditsDeducted: number; // Credits removed from circulation (0 for Providers)
   status: 'PENDING' | 'APPROVED_PENDING_PAYMENT' | 'PAID' | 'REJECTED' | 'PAYMENT_FAILED';
   requestedAt: string;
+  approvedAt?: string;
   paidAt?: string;
   rejectedAt?: string;
   method?: string;
-  note?: string; 
-  adminNote?: string; 
-  evidenceFile?: string; 
-  paymentTransactionId?: string; 
+  note?: string;
+  adminNote?: string;
+  evidenceFile?: string;
+  paymentTransactionId?: string;
 }
 
 export interface Transaction {
   id: string;
-  userId: string; 
+  userId: string;
   amount: number; // Money (USD) or Credit Amount depending on type context
-  type: 'EARNING' | 'PAYOUT' | 'REFUND' | 'TOPUP' | 'SUBSCRIPTION' | 'mentor_payout' | 'provider_payout' | 'refund_credit' | 'credit_topup' | 'ADMIN_ADJUSTMENT' | 'booking_use' | 'PROVIDER_COMMISSION';
+  type: 'EARNING' | 'PAYOUT' | 'REFUND' | 'TOPUP' | 'SUBSCRIPTION' | 'SUBSCRIPTION_PURCHASE' | 'SUBSCRIPTION_RENEWAL' | 'SUBSCRIPTION_UPGRADE' | 'SUBSCRIPTION_DOWNGRADE' | 'SUBSCRIPTION_REFUND' | 'PLATFORM_FEE' | 'mentor_payout' | 'provider_payout' | 'refund_credit' | 'credit_topup' | 'ADMIN_ADJUSTMENT' | 'booking_use' | 'PROVIDER_COMMISSION';
   description: string;
   date: string;
-  relatedEntityId?: string; 
-  status: 'COMPLETED' | 'FAILED' | 'PENDING' | 'success' | 'failed' | 'pending';
-  payoutId?: string; 
+  relatedEntityId?: string;
+  status: 'COMPLETED' | 'FAILED' | 'PENDING' | 'success' | 'failed' | 'pending' | 'APPROVED' | 'REJECTED';
+  payoutId?: string;
   evidenceFile?: string;
   method?: string;
-  reason?: string; 
+  reason?: string;
 }
 
 export interface CreditHistoryEntry {
   id: string;
   userId: string;
-  type: 'admin_adjustment' | 'booking_use' | 'refund' | 'topup' | 'subscription_purchase' | 'earning' | 'payout';
+  type: 'admin_adjustment' | 'booking_use' | 'refund' | 'topup' | 'subscription_purchase' | 'earning' | 'payout' | 'subscription_renewal' | 'subscription_upgrade' | 'subscription_downgrade' | 'subscription_refund';
   amount: number;
   balanceAfter: number;
   note?: string;
@@ -287,7 +292,7 @@ export interface Notification {
   type: 'success' | 'error' | 'info' | 'warning';
   title: string;
   message: string;
-  actionType: 'booking' | 'payment' | 'payout' | 'system' | 'subscription' | 'commissions' | 'homework' | 'wallet';
+  actionType?: 'booking' | 'payment' | 'payout' | 'system' | 'subscription' | 'commissions' | 'homework' | 'wallet' | 'profile';
   actionId?: string;
   read: boolean;
   createdAt: string;

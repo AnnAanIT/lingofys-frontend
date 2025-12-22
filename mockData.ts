@@ -281,7 +281,6 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
 ];
 
 export const INITIAL_SUBSCRIPTIONS: Subscription[] = [];
-export const INITIAL_MENTOR_EARNINGS: MentorEarning[] = [];
 export const INITIAL_CREDIT_HISTORY: CreditHistoryEntry[] = [];
 export const INITIAL_HOMEWORK: Homework[] = [];
 export const INITIAL_CONVERSATIONS: Conversation[] = [];

@@ -95,9 +95,15 @@ export const validationService = {
         const start = new Date(startTime);
         const end = new Date(start.getTime() + duration * 60 * 1000);
 
-        // Validate time is in the future
-        if (start < new Date()) {
-            throw new Error('Booking time must be in the future');
+        // ✅ FIX BUG #15: Validate time is in the future
+        // Note: startTime should be in ISO format (UTC) from frontend after timezone conversion
+        // We compare UTC times here to ensure consistency across timezones
+        const now = new Date();
+        const bufferMinutes = 5; // Allow 5-minute buffer for clock skew
+        const minBookingTime = new Date(now.getTime() + bufferMinutes * 60 * 1000);
+
+        if (start < minBookingTime) {
+            throw new Error('Booking time must be at least 5 minutes in the future');
         }
 
         // Validate duration

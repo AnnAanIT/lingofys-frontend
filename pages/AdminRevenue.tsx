@@ -6,8 +6,10 @@ import { RevenueChart } from '../components/Admin/RevenueChart';
 import { RevenueSummary } from '../components/Admin/RevenueSummary';
 import { WeeklyRevenueResponse, MonthlyRevenueResponse } from '../types';
 import { BarChart2, Calendar as CalendarIcon, TrendingUp, Scale, AlertTriangle, CheckCircle, Wallet, Users, Clock } from 'lucide-react';
+import { useApp } from '../App';
 
 export default function AdminRevenue() {
+  const { user } = useApp();
   const [view, setView] = useState<'WEEKLY' | 'MONTHLY'>('WEEKLY');
   const [weeklyData, setWeeklyData] = useState<WeeklyRevenueResponse | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyRevenueResponse | null>(null);
@@ -20,7 +22,6 @@ export default function AdminRevenue() {
       totalLiability: number, 
       breakdown: { 
           creditLiability: number, 
-          providerLiability: number, 
           pendingPayouts: number,
           subscriptionLiability: number
       }, 
@@ -35,7 +36,7 @@ export default function AdminRevenue() {
   }, [view, month, year]);
 
   const loadData = async () => {
-      const h = await api.getSystemFinancialHealth();
+      const h = await api.getSystemFinancialHealth(user);
       setHealth(h);
 
       if (view === 'WEEKLY') {
@@ -113,16 +114,12 @@ export default function AdminRevenue() {
                         <div className="text-3xl font-extrabold text-slate-900 mb-2">${health.totalLiability.toLocaleString()}</div>
                         <div className="space-y-1">
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-500">User Credits (1:1)</span>
+                                <span className="text-slate-500">User Credits</span>
                                 <span className="font-bold">${health.breakdown.creditLiability.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">Subscription Obligation</span>
                                 <span className="font-bold">${health.breakdown.subscriptionLiability.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-slate-500">Provider Commissions</span>
-                                <span className="font-bold">${health.breakdown.providerLiability.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">Pending Payouts</span>

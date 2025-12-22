@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { AdminLayout, StatusBadge } from '../components/AdminComponents';
-import { Payout } from '../types';
+import { Payout, User } from '../types';
 import { Search, Filter, Calendar, RefreshCw, Eye, CheckCircle, XCircle, DollarSign, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PayoutApproveModal } from '../components/Admin/PayoutApproveModal';
@@ -12,6 +12,7 @@ import { PayoutPayModal } from '../components/Admin/PayoutPayModal'; // Reuse or
 export default function AdminPayouts() {
   const navigate = useNavigate();
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Filters
   const [search, setSearch] = useState('');
@@ -34,11 +35,16 @@ export default function AdminPayouts() {
 
   useEffect(() => {
     fetchPayouts();
+    // Get current user from App context if available
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
   }, []);
 
   const handleApprove = async (data: { method: string; adminNote: string }) => {
       if (!selectedPayout) return;
-      await api.approvePayout(selectedPayout.id, data.method, data.adminNote);
+      await api.approvePayout(currentUser, selectedPayout.id, data.adminNote);
       fetchPayouts();
       setIsApproveModalOpen(false);
       setSelectedPayout(null);
@@ -46,7 +52,7 @@ export default function AdminPayouts() {
 
   const handleReject = async (data: { reason: string; adminNote: string }) => {
       if (!selectedPayout) return;
-      await api.rejectPayout(selectedPayout.id, data.reason, data.adminNote);
+      await api.rejectPayout(currentUser, selectedPayout.id, data.reason);
       fetchPayouts();
       setIsRejectModalOpen(false);
       setSelectedPayout(null);

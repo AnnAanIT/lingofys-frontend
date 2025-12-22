@@ -21,7 +21,7 @@ export const authGuard = {
     /**
      * Ensures user is authenticated
      */
-    requireAuth(user: User | null): asserts user is User {
+    requireAuth(user: User | null): void {
         if (!user) {
             throw new PermissionError('Authentication required. Please log in.');
         }
@@ -30,9 +30,9 @@ export const authGuard = {
     /**
      * Ensures user is an ADMIN
      */
-    requireAdmin(user: User | null): asserts user is User {
+    requireAdmin(user: User | null): void {
         this.requireAuth(user);
-        if (user.role !== UserRole.ADMIN) {
+        if (!user || user.role !== UserRole.ADMIN) {
             throw new PermissionError('Admin access required. This operation is restricted to administrators.');
         }
     },
@@ -40,9 +40,9 @@ export const authGuard = {
     /**
      * Ensures user is a MENTOR
      */
-    requireMentor(user: User | null): asserts user is User {
+    requireMentor(user: User | null): void {
         this.requireAuth(user);
-        if (user.role !== UserRole.MENTOR) {
+        if (!user || user.role !== UserRole.MENTOR) {
             throw new PermissionError('Mentor access required.');
         }
     },
@@ -50,9 +50,9 @@ export const authGuard = {
     /**
      * Ensures user is a PROVIDER
      */
-    requireProvider(user: User | null): asserts user is User {
+    requireProvider(user: User | null): void {
         this.requireAuth(user);
-        if (user.role !== UserRole.PROVIDER) {
+        if (!user || user.role !== UserRole.PROVIDER) {
             throw new PermissionError('Provider access required.');
         }
     },
@@ -60,9 +60,9 @@ export const authGuard = {
     /**
      * Ensures user is either the resource owner OR an admin
      */
-    requireOwnership(user: User | null, resourceOwnerId: string): asserts user is User {
+    requireOwnership(user: User | null, resourceOwnerId: string): void {
         this.requireAuth(user);
-        if (user.id !== resourceOwnerId && user.role !== UserRole.ADMIN) {
+        if (!user || (user.id !== resourceOwnerId && user.role !== UserRole.ADMIN)) {
             throw new PermissionError('Access denied. You do not have permission to access this resource.');
         }
     },
@@ -70,9 +70,9 @@ export const authGuard = {
     /**
      * Ensures user is MENTEE (for booking creation, etc.)
      */
-    requireMentee(user: User | null): asserts user is User {
+    requireMentee(user: User | null): void {
         this.requireAuth(user);
-        if (user.role !== UserRole.MENTEE) {
+        if (!user || user.role !== UserRole.MENTEE) {
             throw new PermissionError('Mentee access required.');
         }
     },
@@ -80,9 +80,9 @@ export const authGuard = {
     /**
      * Ensures user has one of the allowed roles
      */
-    requireAnyRole(user: User | null, allowedRoles: UserRole[]): asserts user is User {
+    requireAnyRole(user: User | null, allowedRoles: UserRole[]): void {
         this.requireAuth(user);
-        if (!allowedRoles.includes(user.role)) {
+        if (!user || !allowedRoles.includes(user.role)) {
             throw new PermissionError(`Access denied. Required role: ${allowedRoles.join(' or ')}`);
         }
     },
@@ -115,9 +115,9 @@ export const authGuard = {
     /**
      * Validates that mentor can manage their own availability
      */
-    requireMentorOwnership(user: User | null, mentorId: string): asserts user is User {
+    requireMentorOwnership(user: User | null, mentorId: string): void {
         this.requireAuth(user);
-        if (user.role !== UserRole.MENTOR && user.role !== UserRole.ADMIN) {
+        if (!user || (user.role !== UserRole.MENTOR && user.role !== UserRole.ADMIN)) {
             throw new PermissionError('Only mentors can manage availability.');
         }
         if (user.role === UserRole.MENTOR && user.id !== mentorId) {
@@ -128,8 +128,11 @@ export const authGuard = {
     /**
      * Validates booking access (mentee, mentor, or admin)
      */
-    requireBookingAccess(user: User | null, booking: { menteeId: string; mentorId: string }): asserts user is User {
+    requireBookingAccess(user: User | null, booking: { menteeId: string; mentorId: string }): void {
         this.requireAuth(user);
+        if (!user) {
+            throw new PermissionError('Authentication required.');
+        }
         const hasAccess =
             user.id === booking.menteeId ||
             user.id === booking.mentorId ||
@@ -143,9 +146,9 @@ export const authGuard = {
     /**
      * Validates provider can only manage their own commissions
      */
-    requireProviderOwnership(user: User | null, providerId: string): asserts user is User {
+    requireProviderOwnership(user: User | null, providerId: string): void {
         this.requireAuth(user);
-        if (user.role !== UserRole.PROVIDER && user.role !== UserRole.ADMIN) {
+        if (!user || (user.role !== UserRole.PROVIDER && user.role !== UserRole.ADMIN)) {
             throw new PermissionError('Only providers can view commission data.');
         }
         if (user.role === UserRole.PROVIDER && user.id !== providerId) {

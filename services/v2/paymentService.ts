@@ -22,7 +22,7 @@ import {
 } from '../../mockData';
 import { authGuard } from './authGuard';
 import { lockManager } from '../../utils/lockManager';
-import { providerCommissionEngine } from '../../lib/providerCommissionEngine';
+import { providerCommissionServiceV2 } from './providerCommissionServiceV2';
 
 // --- HELPERS FOR LOCAL STORAGE SIMULATION ---
 const getStore = <T>(key: string, initial: T): T => {
@@ -114,10 +114,8 @@ export const paymentService = {
 
                 // Check if user has a provider (referral)
                 if (user.providerId) {
-                    providerCommissionEngine.recordCommissionOnTopup(
-                        user.providerId,
+                    providerCommissionServiceV2.processTopupCommission(
                         userId,
-                        userName,
                         usdAmount, // ✅ Pass USD, not credits
                         txId
                     );

@@ -39,7 +39,7 @@ export default function MentorPayout() {
         
         setIsRequesting(true);
         try {
-            await api.requestPayout(user.id, Number(requestAmount), requestMethod);
+            await api.requestPayout(user, user.id, Number(requestAmount), requestMethod);
             await refreshUser();
             await loadData();
             setRequestAmount('');

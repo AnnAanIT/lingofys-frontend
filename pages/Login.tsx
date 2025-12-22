@@ -26,8 +26,8 @@ const QUICK_ACCOUNTS = [
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login: setAppStateUser, isLoading: appLoading, language } = useApp();
-  const t = translations[language];
+  const { login: setAppStateUser, isLoading: appLoading } = useApp();
+  const t = translations['en']; // Always use English for Login page
   const [mode, setMode] = useState<Mode>('LOGIN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +51,21 @@ export default function Login() {
     setError(null);
     try {
       const user = await api.login(formData.email, formData.password);
-      await setAppStateUser(user); 
+      await setAppStateUser(user);
+
+      // ✅ FIX: Navigate to appropriate dashboard after successful login
+      if (user.role === UserRole.MENTEE) {
+        navigate('/mentee');
+      } else if (user.role === UserRole.MENTOR) {
+        navigate('/mentor');
+      } else if (user.role === UserRole.PROVIDER) {
+        navigate('/provider');
+      } else if (user.role === UserRole.ADMIN) {
+        navigate('/admin/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message === "Email không tồn tại." ? t.auth.emailNotExists : t.auth.loginFailed);
+      // ✅ Display all error messages from api.login (including status checks)
+      setError(err.message || t.auth.loginFailed);
     } finally {
       setLoading(false);
     }
@@ -65,11 +77,21 @@ export default function Login() {
     setError(null);
     try {
       await api.register(formData);
-      setSuccess(t.auth.registerSuccess);
-      setTimeout(() => {
-        setMode('LOGIN');
-        setSuccess(null);
-      }, 1500);
+
+      // ✅ Different success messages based on role
+      if (formData.role === UserRole.MENTOR || formData.role === UserRole.PROVIDER) {
+        setSuccess(`Registration successful! Your ${formData.role} account is pending admin approval. You will receive an email notification once approved.`);
+        setTimeout(() => {
+          setMode('LOGIN');
+          setSuccess(null);
+        }, 4000); // Longer timeout for longer message
+      } else {
+        setSuccess(t.auth.registerSuccess);
+        setTimeout(() => {
+          setMode('LOGIN');
+          setSuccess(null);
+        }, 1500);
+      }
     } catch (err: any) {
       setError(err.message || "Registration failed.");
     } finally {
@@ -83,6 +105,17 @@ export default function Login() {
     try {
       const user = await api.loginById(userId);
       await setAppStateUser(user);
+
+      // ✅ FIX: Navigate to appropriate dashboard after quick login
+      if (user.role === UserRole.MENTEE) {
+        navigate('/mentee');
+      } else if (user.role === UserRole.MENTOR) {
+        navigate('/mentor');
+      } else if (user.role === UserRole.PROVIDER) {
+        navigate('/provider');
+      } else if (user.role === UserRole.ADMIN) {
+        navigate('/admin/dashboard');
+      }
     } catch (err) {
       setError("Mock account not found.");
     } finally {
@@ -187,7 +220,7 @@ export default function Login() {
 
                 <div className="relative py-4">
                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                    <div className="relative flex justify-center text-[10px] uppercase font-bold"><span className="bg-white px-2 text-slate-300">New Teammate?</span></div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-bold"><span className="bg-white px-2 text-slate-300">{t.auth.newTeammate}</span></div>
                 </div>
 
                 <button 
@@ -283,19 +316,19 @@ export default function Login() {
           <div className="absolute top-0 right-0 p-8 opacity-10"><ShieldAlert size={120} /></div>
           <div className="relative z-10 mb-8">
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">{t.auth.quickAccess}</h3>
-            <h2 className="text-2xl font-black">Quick Access</h2>
+            <h2 className="text-2xl font-black">{t.auth.quickAccessTitle}</h2>
           </div>
 
           <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2 space-y-6">
             <div>
-              <div className="text-[10px] font-black uppercase text-slate-600 mb-3 tracking-widest border-b border-slate-800 pb-1">Administrators</div>
+              <div className="text-[10px] font-black uppercase text-slate-600 mb-3 tracking-widest border-b border-slate-800 pb-1">{t.auth.administrators}</div>
               <div className="grid grid-cols-1 gap-2">
                 {QUICK_ACCOUNTS.filter(a => a.role === UserRole.ADMIN).map(acc => (
                   <button key={acc.id} onClick={() => quickLoginById(acc.id)} className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-all text-left border border-slate-800/50">
                     <img src={acc.avatar} className="w-8 h-8 rounded-lg" alt="" />
                     <div className="min-w-0">
                       <div className="text-xs font-black truncate">{acc.name}</div>
-                      <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">Admin</div>
+                      <div className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">{t.auth.adminLabel}</div>
                     </div>
                   </button>
                 ))}
@@ -303,7 +336,7 @@ export default function Login() {
             </div>
             {/* Mentor, Provider, Mentee simplified... */}
             <div>
-              <div className="text-[10px] font-black uppercase text-slate-600 mb-3 tracking-widest border-b border-slate-800 pb-1">Other Roles</div>
+              <div className="text-[10px] font-black uppercase text-slate-600 mb-3 tracking-widest border-b border-slate-800 pb-1">{t.auth.otherRoles}</div>
               <div className="grid grid-cols-1 gap-2">
                 {QUICK_ACCOUNTS.filter(a => a.role !== UserRole.ADMIN).slice(0, 3).map(acc => (
                   <button key={acc.id} onClick={() => quickLoginById(acc.id)} className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/20 hover:bg-slate-800 transition-all text-left border border-slate-800/30">

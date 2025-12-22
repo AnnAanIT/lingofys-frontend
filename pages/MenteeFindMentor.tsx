@@ -85,12 +85,12 @@ export default function MenteeFindMentor() {
               
               <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
                   <div className="relative min-w-[160px]">
-                      <select 
+                      <select
                           value={selectedGroup}
                           onChange={(e) => setSelectedGroup(e.target.value)}
                           className="w-full appearance-none pl-4 pr-10 py-3.5 bg-white border border-slate-200 rounded-xl shadow-sm outline-none focus:ring-2 focus:ring-brand-500 text-slate-700 font-medium cursor-pointer"
                       >
-                          <option value="ALL">All Levels</option>
+                          <option value="ALL">{t.allLevels}</option>
                           {groups.map(g => (
                               <option key={g.id} value={g.id}>{g.name}</option>
                           ))}
@@ -101,15 +101,15 @@ export default function MenteeFindMentor() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-4xl mx-auto">
-              <button 
+              <button
                   onClick={() => setSelectedSpecialty('ALL')}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                      selectedSpecialty === 'ALL' 
-                      ? 'bg-slate-800 text-white border-slate-800' 
+                      selectedSpecialty === 'ALL'
+                      ? 'bg-slate-800 text-white border-slate-800'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                   }`}
               >
-                  All Topics
+                  {t.allTopics}
               </button>
               {allSpecialties.slice(0, 6).map(s => (
                   <button 
@@ -135,8 +135,8 @@ export default function MenteeFindMentor() {
       ) : (
         <>
             <div className="flex justify-between items-center text-sm text-slate-500 px-2">
-                <span className="font-medium">{filteredMentors.length} mentors available</span>
-                <span className="flex items-center gap-1"><Sparkles size={14} className="text-yellow-500"/> Recommended</span>
+                <span className="font-medium">{t.mentorsAvailable.replace('{count}', filteredMentors.length.toString())}</span>
+                <span className="flex items-center gap-1"><Sparkles size={14} className="text-yellow-500"/> {t.recommended}</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -154,8 +154,8 @@ export default function MenteeFindMentor() {
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
                         <Search size={32} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-2">No mentors found</h3>
-                    <p className="text-slate-500 max-w-xs mx-auto mb-6">We couldn't find any mentors matching your current filters.</p>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">{t.noMentorsFound}</h3>
+                    <p className="text-slate-500 max-w-xs mx-auto mb-6">{t.noMentorsDesc}</p>
                 </div>
             )}
         </>

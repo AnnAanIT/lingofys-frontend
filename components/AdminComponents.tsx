@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, Users, BookOpen, CreditCard, DollarSign, 
-  FileText, Activity, LogOut, Check, X, AlertCircle, Clock, PieChart, 
+import {
+  LayoutDashboard, Users, BookOpen, CreditCard, DollarSign,
+  FileText, Activity, LogOut, Check, X, AlertCircle, Clock, PieChart,
   User as UserIcon, Tag, MessageSquare, ShieldCheck, Scale, Shield, Award,
-  ChevronDown, ChevronRight, Layers, Settings, Briefcase
+  ChevronDown, ChevronRight, Layers, Settings, Briefcase, Menu, Bell, Trash2
 } from 'lucide-react';
 import { useApp } from '../App';
+import { api } from '../services/api';
 export { EditUserForm } from './Admin/EditUserForm';
 export { AddUserModal } from './Admin/AddUserModal';
 export { ResetPasswordModal } from './Admin/ResetPasswordModal';
@@ -22,11 +23,21 @@ type MenuItem = {
   children?: { label: string; path: string; icon?: any }[];
 };
 
+// Sidebar context for managing open/close state
+export const AdminSidebarContext = React.createContext<{
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}>({ sidebarOpen: true, setSidebarOpen: () => {} });
+
+export const useAdminSidebar = () => React.useContext(AdminSidebarContext);
+
 export const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useApp();
+  const { sidebarOpen } = useAdminSidebar();
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [pendingCount, setPendingCount] = useState<number>(0);
 
   const menuStructure: MenuItem[] = [
     {
@@ -41,6 +52,7 @@ export const AdminSidebar: React.FC = () => {
       icon: Briefcase,
       children: [
         { label: 'User Management', path: '/admin/users', icon: Users },
+        { label: 'Pending Approvals', path: '/admin/pending-approvals', icon: Clock },
         { label: 'Bookings', path: '/admin/bookings', icon: BookOpen },
         { label: 'Messages', path: '/admin/messages', icon: MessageSquare },
         { label: 'Homework', path: '/admin/homework', icon: FileText },
@@ -80,13 +92,30 @@ export const AdminSidebar: React.FC = () => {
 
   // Auto-expand group based on active route
   useEffect(() => {
-    const activeGroup = menuStructure.find(group => 
+    const activeGroup = menuStructure.find(group =>
       group.children?.some(child => location.pathname.startsWith(child.path))
     );
     if (activeGroup && !expandedGroups.includes(activeGroup.id)) {
       setExpandedGroups(prev => [...prev, activeGroup.id]);
     }
   }, [location.pathname]);
+
+  // Fetch pending approvals count
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const pending = await api.getPendingUsers();
+        setPendingCount(pending.length);
+      } catch (err) {
+        console.error('Failed to fetch pending approvals:', err);
+      }
+    };
+    fetchPendingCount();
+
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchPendingCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleGroup = (id: string) => {
     setExpandedGroups(prev => 
@@ -100,13 +129,13 @@ export const AdminSidebar: React.FC = () => {
   };
 
   return (
-    <div className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col fixed left-0 top-0 z-50 shadow-xl border-r border-slate-800">
-      <div className="p-6 border-b border-slate-800 flex items-center space-x-3 bg-slate-950">
-        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-brand-900/20">M</div>
-        <span className="font-bold text-white text-lg tracking-tight">Admin Portal</span>
+    <div className={`${sidebarOpen ? 'w-64' : 'w-0 md:w-20'} bg-slate-900 text-slate-300 min-h-screen flex flex-col fixed left-0 top-0 z-50 shadow-xl border-r border-slate-800 transition-all duration-300 overflow-hidden md:overflow-visible`}>
+      <div className="p-6 border-b border-slate-800 flex items-center space-x-3 bg-slate-950 whitespace-nowrap">
+        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-brand-900/20 flex-shrink-0">M</div>
+        <span className={`font-bold text-white text-lg tracking-tight transition-all ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Admin Portal</span>
       </div>
       
-      <div className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+      <div className={`flex-1 ${sidebarOpen ? 'p-2' : 'p-1'} space-y-0.5 overflow-y-auto custom-scrollbar`}>
         {menuStructure.map((item) => {
           // Render Single Link
           if (!item.children) {
@@ -115,14 +144,15 @@ export const AdminSidebar: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => navigate(item.path!)}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition-all duration-200 ${
-                  active 
-                    ? 'bg-brand-600 text-white shadow-md' 
+                title={!sidebarOpen ? item.label : ''}
+                className={`w-full flex items-center ${sidebarOpen ? 'space-x-2.5 px-2.5' : 'justify-center'} py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  active
+                    ? 'bg-brand-600 text-white shadow-md'
                     : 'hover:bg-slate-800 hover:text-white'
                 }`}
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
+                <item.icon size={18} className="flex-shrink-0" />
+                {sidebarOpen && <span>{item.label}</span>}
               </button>
             );
           }
@@ -132,37 +162,44 @@ export const AdminSidebar: React.FC = () => {
           const hasActiveChild = item.children.some(child => isActive(child.path));
 
           return (
-            <div key={item.id} className="space-y-1 pt-2">
+            <div key={item.id} className={`space-y-0.5 ${sidebarOpen ? 'pt-1' : 'pt-0'}`}>
               <button
                 onClick={() => toggleGroup(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-colors ${
+                title={!sidebarOpen ? item.label : ''}
+                className={`w-full flex items-center ${sidebarOpen ? 'justify-between px-2.5' : 'justify-center'} py-2 rounded-lg text-sm font-medium transition-colors ${
                   hasActiveChild ? 'text-brand-400 bg-slate-800/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
+                <div className={`flex items-center ${sidebarOpen ? 'space-x-2.5' : ''}`}>
+                  <item.icon size={18} className="flex-shrink-0" />
+                  {sidebarOpen && <span>{item.label}</span>}
                 </div>
-                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                {sidebarOpen && (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
               </button>
 
-              {isExpanded && (
-                <div className="pl-4 space-y-1 animate-slide-up">
-                  <div className="border-l border-slate-700 pl-2 space-y-1">
+              {isExpanded && sidebarOpen && (
+                <div className="pl-3 space-y-0.5 animate-slide-up">
+                  <div className="border-l border-slate-700 pl-1.5 space-y-0.5">
                     {item.children.map(child => {
                       const childActive = isActive(child.path);
+                      const isPendingApprovals = child.path === '/admin/pending-approvals';
                       return (
                         <button
                           key={child.path}
                           onClick={() => navigate(child.path)}
-                          className={`w-full flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all ${
-                            childActive 
-                              ? 'bg-brand-900/30 text-brand-400 font-bold border-r-2 border-brand-500' 
+                          className={`w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-md text-xs transition-all relative ${
+                            childActive
+                              ? 'bg-brand-900/30 text-brand-400 font-bold border-r-2 border-brand-500'
                               : 'text-slate-400 hover:text-white hover:bg-slate-800'
                           }`}
                         >
-                          {child.icon && <child.icon size={16} className={childActive ? 'text-brand-500' : 'opacity-70'} />}
-                          <span>{child.label}</span>
+                          {child.icon && <child.icon size={14} className={childActive ? 'text-brand-500' : 'opacity-70'} />}
+                          <span className="flex-1 text-left">{child.label}</span>
+                          {isPendingApprovals && pendingCount > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                              {pendingCount}
+                            </span>
+                          )}
                         </button>
                       )
                     })}
@@ -174,13 +211,14 @@ export const AdminSidebar: React.FC = () => {
         })}
       </div>
 
-      <div className="p-4 border-t border-slate-800 bg-slate-950">
-        <button 
+      <div className="p-2 border-t border-slate-800 bg-slate-950">
+        <button
           onClick={logout}
-          className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-slate-800 rounded-xl text-slate-400 hover:text-white hover:bg-red-600 hover:shadow-lg transition-all duration-300"
+          title={!sidebarOpen ? 'Sign Out' : ''}
+          className={`w-full flex ${sidebarOpen ? 'justify-center' : 'justify-center'} items-center space-x-2 px-3 py-2.5 bg-slate-800 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-red-600 hover:shadow-lg transition-all duration-300`}
         >
-          <LogOut size={18} />
-          <span>Sign Out</span>
+          <LogOut size={16} className="flex-shrink-0" />
+          {sidebarOpen && <span>Sign Out</span>}
         </button>
       </div>
     </div>
@@ -189,13 +227,143 @@ export const AdminSidebar: React.FC = () => {
 
 // --- LAYOUT ---
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    title: string;
+    message: string;
+    timestamp: Date;
+  }>>([]);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+
+  // Add a notification
+  const addNotification = (
+    type: 'info' | 'warning' | 'error' | 'success',
+    title: string,
+    message: string
+  ) => {
+    const id = Date.now().toString();
+    setNotifications(prev => [...prev, { id, type, title, message, timestamp: new Date() }]);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const notificationColors: Record<string, string> = {
+    info: 'bg-blue-50 border-blue-200 text-blue-900',
+    warning: 'bg-yellow-50 border-yellow-200 text-yellow-900',
+    error: 'bg-red-50 border-red-200 text-red-900',
+    success: 'bg-green-50 border-green-200 text-green-900',
+  };
+
+  const notificationIconColors: Record<string, string> = {
+    info: 'bg-blue-100 text-blue-600',
+    warning: 'bg-yellow-100 text-yellow-600',
+    error: 'bg-red-100 text-red-600',
+    success: 'bg-green-100 text-green-600',
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <AdminSidebar />
-      <div className="flex-1 ml-64 p-8 overflow-auto">
-        {children}
+    <AdminSidebarContext.Provider value={{ sidebarOpen, setSidebarOpen }}>
+      <div className="min-h-screen bg-slate-50 flex">
+        <AdminSidebar />
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'ml-64 md:ml-64' : 'ml-0 md:ml-20'}`}>
+          {/* Top Bar */}
+          <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              title={sidebarOpen ? 'Hide menu' : 'Show menu'}
+            >
+              <Menu size={24} className="text-slate-700" />
+            </button>
+
+            <div className="flex items-center space-x-4">
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotificationCenter(!showNotificationCenter)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors relative"
+                >
+                  <Bell size={20} className="text-slate-700" />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      {notifications.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {showNotificationCenter && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50">
+                    <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                      <h3 className="font-bold text-slate-900">Notifications</h3>
+                      <button
+                        onClick={() => setShowNotificationCenter(false)}
+                        className="p-1 hover:bg-slate-100 rounded"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-slate-500">
+                          <p className="text-sm">No notifications</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 p-3">
+                          {notifications.map(notif => (
+                            <div
+                              key={notif.id}
+                              className={`p-3 rounded-lg border ${notificationColors[notif.type]} flex items-start justify-between gap-3`}
+                            >
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notificationIconColors[notif.type]}`}>
+                                  {notif.type === 'success' && <Check size={16} />}
+                                  {notif.type === 'error' && <AlertCircle size={16} />}
+                                  {notif.type === 'warning' && <AlertCircle size={16} />}
+                                  {notif.type === 'info' && <AlertCircle size={16} />}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-bold text-sm">{notif.title}</p>
+                                  <p className="text-xs mt-1 opacity-75">{notif.message}</p>
+                                  <p className="text-xs mt-2 opacity-50">
+                                    {notif.timestamp.toLocaleTimeString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removeNotification(notif.id)}
+                                className="p-1 hover:bg-black/10 rounded transition-colors flex-shrink-0"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 p-8 overflow-auto">
+            {children}
+          </div>
+        </div>
       </div>
-    </div>
+    </AdminSidebarContext.Provider>
   );
 };
 

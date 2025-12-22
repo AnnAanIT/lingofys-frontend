@@ -10,6 +10,7 @@ import { User, Shield, LogOut } from 'lucide-react';
 export default function MenteeProfile() {
     const { user, refreshUser, language, logout } = useApp();
     const t = translations[language].mentee;
+    const nav = translations[language].nav;
     const [activeTab, setActiveTab] = useState<'GENERAL' | 'SECURITY'>('GENERAL');
 
     if (!user) return null;
@@ -21,28 +22,28 @@ export default function MenteeProfile() {
 
     const renderSidebar = () => (
         <div className="space-y-1">
-            <button 
+            <button
                 onClick={() => setActiveTab('GENERAL')}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-medium ${activeTab === 'GENERAL' ? 'bg-brand-50 text-brand-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
             >
                 <User size={18} />
-                <span>General Information</span>
+                <span>{t.profile.generalInformation}</span>
             </button>
-            <button 
+            <button
                 onClick={() => setActiveTab('SECURITY')}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-medium ${activeTab === 'SECURITY' ? 'bg-brand-50 text-brand-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
             >
                 <Shield size={18} />
-                <span>Security</span>
+                <span>{t.profile.security}</span>
             </button>
-            
+
             <div className="pt-4 mt-4 border-t border-slate-100">
-                <button 
+                <button
                     onClick={logout}
                     className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all font-medium"
                 >
                     <LogOut size={18} />
-                    <span>Sign Out</span>
+                    <span>{nav.signOut}</span>
                 </button>
             </div>
         </div>
@@ -51,25 +52,25 @@ export default function MenteeProfile() {
     const renderSecurity = () => (
         <div className="animate-fade-in space-y-6">
             <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Change Password</h3>
+                <h3 className="text-lg font-bold text-slate-900 mb-4">{t.profile.changePassword}</h3>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.profile.currentPassword}</label>
                         <input type="password" placeholder="••••••••" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.profile.newPassword}</label>
                         <input type="password" placeholder="••••••••" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.profile.confirmNewPassword}</label>
                         <input type="password" placeholder="••••••••" className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" />
                     </div>
                 </div>
             </div>
             <div className="flex justify-end">
                 <button className="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-slate-800">
-                    Update Password
+                    {t.profile.updatePassword}
                 </button>
             </div>
         </div>
@@ -77,7 +78,7 @@ export default function MenteeProfile() {
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-            <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
+            <h1 className="text-3xl font-bold text-slate-900">{t.profile.settings}</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 {/* Sidebar */}

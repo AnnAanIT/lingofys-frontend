@@ -55,7 +55,7 @@ export default function MenteeSubscriptions() {
             {/* Header */}
             <div className="text-center max-w-3xl mx-auto space-y-4">
                 <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-100 text-brand-700 text-xs font-bold uppercase tracking-wider">
-                    Premium Learning
+                    {t.premiumLearning}
                 </div>
                 <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">{t.upgradeTitle}</h1>
                 <p className="text-slate-500 text-lg leading-relaxed">{t.upgradeDesc}</p>
@@ -97,22 +97,22 @@ export default function MenteeSubscriptions() {
 
             {/* Why Subscribe? */}
             <div className="max-w-6xl mx-auto">
-                <h3 className="text-2xl font-bold text-slate-900 mb-8 text-center">Why choose a subscription?</h3>
+                <h3 className="text-2xl font-bold text-slate-900 mb-8 text-center">{t.whySubscribe}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <BenefitItem 
-                        icon={Zap} 
-                        title="Commitment Device" 
-                        desc="Build a consistent habit with fixed weekly schedules. No more putting off lessons." 
+                    <BenefitItem
+                        icon={Zap}
+                        title={t.benefitTitle1}
+                        desc={t.benefitDesc1}
                     />
-                    <BenefitItem 
-                        icon={Shield} 
-                        title="Better Rates" 
-                        desc="Save up to 20% compared to booking single lessons with credits." 
+                    <BenefitItem
+                        icon={Shield}
+                        title={t.benefitTitle2}
+                        desc={t.benefitDesc2}
                     />
-                    <BenefitItem 
-                        icon={Calendar} 
-                        title="Guaranteed Slots" 
-                        desc="Secure your favorite mentor's prime time slots 4 weeks in advance." 
+                    <BenefitItem
+                        icon={Calendar}
+                        title={t.benefitTitle3}
+                        desc={t.benefitDesc3}
                     />
                 </div>
             </div>
@@ -120,20 +120,20 @@ export default function MenteeSubscriptions() {
             {/* FAQ */}
             <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-8">
                 <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <HelpCircle className="text-slate-400" /> Frequently Asked Questions
+                    <HelpCircle className="text-slate-400" /> {t.faqTitle}
                 </h3>
                 <div className="space-y-1">
-                    <FAQItem 
-                        q="Can I reschedule a lesson?" 
-                        a="Yes, depending on your plan. The Starter plan allows 1 reschedule per month. Cancellation must be done 24h in advance." 
+                    <FAQItem
+                        q={t.faq1Question}
+                        a={t.faq1Answer}
                     />
-                    <FAQItem 
-                        q="What happens if my mentor cancels?" 
-                        a="If a mentor cancels, the session credit is returned to your quota, and you can rebook anytime." 
+                    <FAQItem
+                        q={t.faq2Question}
+                        a={t.faq2Answer}
                     />
-                    <FAQItem 
-                        q="Do credits roll over?" 
-                        a="No, subscription sessions must be used within the 4-week cycle to encourage consistent practice." 
+                    <FAQItem
+                        q={t.faq3Question}
+                        a={t.faq3Answer}
                     />
                 </div>
             </div>

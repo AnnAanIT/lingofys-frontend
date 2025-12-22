@@ -1,6 +1,5 @@
-
-import { Provider, ProviderLevel, Referral, ProviderCommission, User, Transaction, SystemLog } from '../types';
-import { INITIAL_PROVIDER_LEVELS, INITIAL_PROVIDERS, INITIAL_REFERRALS, INITIAL_USERS, INITIAL_TRANSACTIONS, INITIAL_LOGS } from '../mockData';
+import { Provider, ProviderLevel, Referral, ProviderCommission, User, Transaction, SystemLog } from '../../types';
+import { INITIAL_PROVIDER_LEVELS, INITIAL_PROVIDERS, INITIAL_REFERRALS, INITIAL_USERS, INITIAL_TRANSACTIONS, INITIAL_LOGS } from '../../mockData';
 
 const getStore = <T>(key: string, initial: T): T => {
     const s = localStorage.getItem(key);
@@ -11,7 +10,7 @@ const setStore = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
 };
 
-export const providerCommissionEngine = {
+export const providerCommissionServiceV2 = {
     // 1. RESOLVE PROVIDER LEVEL & RATE
     getProviderRate: (providerId: string): { levelId: string, name: string, percent: number, status: string } => {
         const users = getStore<User[]>('users', INITIAL_USERS);
@@ -43,7 +42,7 @@ export const providerCommissionEngine = {
         const providerId = referral.providerId;
         
         try {
-            const { percent, status } = providerCommissionEngine.getProviderRate(providerId);
+            const { percent, status } = providerCommissionServiceV2.getProviderRate(providerId);
 
             // LOGIC QUAN TRỌNG: Nếu Provider không ACTIVE (ví dụ BANNED), không tính hoa hồng
             if (status !== 'ACTIVE') {
@@ -81,54 +80,65 @@ export const providerCommissionEngine = {
                 commissionPercent: percent,
                 commissionAmountUsd: commissionAmount,
                 status: 'PENDING',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                paidAt: null
             };
 
             commissions.push(newCommission);
             setStore('providerCommissions', commissions);
 
-            // Cộng dồn vào balance của provider
-            const users = getStore<User[]>('users', INITIAL_USERS);
-            const userIdx = users.findIndex(u => u.id === providerId);
-            if (userIdx !== -1) {
-                users[userIdx].balance += commissionAmount;
-                setStore('users', users);
-            }
-
-            providers[providerIdx].balance += commissionAmount; 
-            setStore('providers', providers);
-
+            // Log transaction
             const txs = getStore<Transaction[]>('transactions', INITIAL_TRANSACTIONS);
             txs.push({
-                id: `tx_comm_${newCommission.id}`,
+                id: `tx_${Date.now()}_commission_${providerId}`,
                 userId: providerId,
                 amount: commissionAmount,
                 type: 'PROVIDER_COMMISSION',
-                description: `Commission from ${mentee?.name} top-up ($${topupAmountUsd})`,
+                description: `Commission from mentee top-up ($${topupAmountUsd})`,
                 date: new Date().toISOString(),
-                relatedEntityId: newCommission.id,
-                status: 'COMPLETED' 
+                relatedEntityId: topupTransactionId,
+                status: 'PENDING'
             });
             setStore('transactions', txs);
 
+            return newCommission;
+        } catch (err) {
             const logs = getStore<SystemLog[]>('logs', INITIAL_LOGS);
             logs.unshift({
                 ts: Date.now(),
-                lvl: 'info',
-                src: 'payment',
-                msg: `Provider ${providerId} earned $${commissionAmount} commission on topup ${topupTransactionId}`
+                lvl: 'error',
+                src: 'system',
+                msg: `Failed to process commission: ${err}`
             });
             setStore('logs', logs);
-            
-            referral.totalSpending += topupAmountUsd;
-            referral.totalCommission += commissionAmount;
-            setStore('referrals', referrals);
-
-            return newCommission;
-        } catch (e) {
-            // Trường hợp Provider đã bị xóa khỏi bảng users hoặc bảng providers
-            console.error("Commission engine error:", e);
             return null;
         }
+    },
+
+    // 3. GET PENDING COMMISSIONS FOR PAYOUT
+    getPendingCommissions: (providerId: string): ProviderCommission[] => {
+        const commissions = getStore<ProviderCommission[]>('providerCommissions', []);
+        return commissions.filter(c => c.providerId === providerId && c.status === 'PENDING');
+    },
+
+    // 4. MARK COMMISSIONS AS PAID
+    markCommissionsPaid: (providerId: string, payoutId: string): void => {
+        const commissions = getStore<ProviderCommission[]>('providerCommissions', []);
+        const now = new Date().toISOString();
+        
+        commissions.forEach(c => {
+            if (c.providerId === providerId && c.status === 'PENDING') {
+                c.status = 'PAID';
+                c.paidAt = now;
+            }
+        });
+        
+        setStore('providerCommissions', commissions);
+    },
+
+    // 5. GET TOTAL PENDING COMMISSION FOR PROVIDER
+    getTotalPendingCommission: (providerId: string): number => {
+        const pending = providerCommissionServiceV2.getPendingCommissions(providerId);
+        return Number(pending.reduce((sum, c) => sum + c.commissionAmountUsd, 0).toFixed(2));
     }
 };

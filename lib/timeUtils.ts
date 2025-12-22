@@ -62,6 +62,47 @@ export const getTimezoneByCountry = (country: string): string => {
   return mapping[country] || mapping[country.toUpperCase()] || Intl.DateTimeFormat().resolvedOptions().timeZone;
 };
 
+// ✅ FIX BUG #11: Valid timezones list for validation
+export const VALID_TIMEZONES = [
+    'Asia/Ho_Chi_Minh',
+    'Asia/Tokyo',
+    'Asia/Seoul',
+    'Asia/Shanghai',
+    'Asia/Singapore',
+    'America/New_York',
+    'America/Los_Angeles',
+    'America/Chicago',
+    'America/Toronto',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Australia/Sydney',
+    'Pacific/Auckland'
+];
+
+/**
+ * ✅ FIX BUG #11: Validate timezone string
+ */
+export const isValidTimezone = (timezone: string): boolean => {
+    return VALID_TIMEZONES.includes(timezone);
+};
+
+/**
+ * ✅ FIX BUG #11: Validate and normalize timezone
+ * Returns valid timezone or throws error
+ */
+export const validateTimezone = (timezone: string | undefined, fallbackCountry: string = 'US'): string => {
+    if (!timezone) {
+        return getTimezoneByCountry(fallbackCountry);
+    }
+
+    if (!isValidTimezone(timezone)) {
+        throw new Error(`Invalid timezone: ${timezone}. Must be one of: ${VALID_TIMEZONES.join(', ')}`);
+    }
+
+    return timezone;
+};
+
 /**
  * Tạo một đối tượng Date (UTC) từ thông tin ngày/giờ địa phương của một múi giờ cụ thể
  */

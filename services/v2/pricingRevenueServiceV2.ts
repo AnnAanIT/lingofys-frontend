@@ -1,6 +1,5 @@
-
-import { SystemSettings, PricingCountry, PricingGroup, Mentor } from '../types';
-import { INITIAL_SETTINGS, INITIAL_PRICING_COUNTRIES, INITIAL_PRICING_GROUPS, INITIAL_MENTORS } from '../mockData';
+import { SystemSettings, PricingCountry, PricingGroup, Mentor } from '../../types';
+import { INITIAL_SETTINGS, INITIAL_PRICING_COUNTRIES, INITIAL_PRICING_GROUPS, INITIAL_MENTORS } from '../../mockData';
 
 // Helper to get fresh data from "DB" (LocalStorage)
 const getStore = (key: string, initial: any) => {
@@ -15,7 +14,7 @@ export interface FinancialResult {
     systemRevenue: number;
 }
 
-export const pricingRevenueEngine = {
+export const pricingRevenueServiceV2 = {
     /**
      * CORE CALCULATION LOGIC
      * Price = Admin Base Price * Country Multiplier * Mentor Group Multiplier
@@ -56,8 +55,8 @@ export const pricingRevenueEngine = {
 
     // 3. Complete Financial Calculation (Lightweight)
     calculateBookingFinancials: (mentorId: string, menteeCountryId: string): FinancialResult => {
-        const price = pricingRevenueEngine.calculatePrice(mentorId, menteeCountryId);
-        const { mentorEarning, systemRevenue } = pricingRevenueEngine.calculateSplit(price, mentorId);
+        const price = pricingRevenueServiceV2.calculatePrice(mentorId, menteeCountryId);
+        const { mentorEarning, systemRevenue } = pricingRevenueServiceV2.calculateSplit(price, mentorId);
 
         return {
             price,

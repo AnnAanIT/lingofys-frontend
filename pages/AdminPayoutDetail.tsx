@@ -13,6 +13,7 @@ export default function AdminPayoutDetail() {
     const navigate = useNavigate();
     const [payout, setPayout] = useState<Payout | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     
     // Modal states
@@ -21,6 +22,11 @@ export default function AdminPayoutDetail() {
 
     useEffect(() => {
         loadData();
+        // Get current user from App context if available
+        const userData = localStorage.getItem('currentUser');
+        if (userData) {
+          setCurrentUser(JSON.parse(userData));
+        }
     }, [id]);
 
     const loadData = async () => {
@@ -36,7 +42,7 @@ export default function AdminPayoutDetail() {
 
     const handleApprove = async (data: { method: string; adminNote: string }) => {
         if (!payout) return;
-        await api.approvePayout(payout.id, data.method, data.adminNote);
+        await api.approvePayout(currentUser, payout.id, data.adminNote);
         // Fix: Ensured logAction is called with exactly 3 arguments as per API definition
         await api.logAction('PAYOUT_APPROVED', `Admin approved payout #${payout.id}. Pending payment execution.`, 'u3');
         loadData();
@@ -44,7 +50,7 @@ export default function AdminPayoutDetail() {
 
     const handleReject = async (data: { reason: string; adminNote: string }) => {
         if (!payout) return;
-        await api.rejectPayout(payout.id, data.reason, data.adminNote);
+        await api.rejectPayout(currentUser, payout.id, data.reason);
         // Fix: Ensured logAction is called with exactly 3 arguments as per API definition
         await api.logAction('PAYOUT_REJECTED', `Admin rejected payout #${payout.id}. Reason: ${data.reason}`, 'u3');
         loadData();

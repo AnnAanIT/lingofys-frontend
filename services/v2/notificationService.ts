@@ -14,13 +14,15 @@
 import {
     User,
     UserRole,
-    Notification
+    Notification,
+    Language
 } from '../../types';
 import {
     INITIAL_USERS,
     INITIAL_NOTIFICATIONS
 } from '../../mockData';
 import { generateUniqueId } from '../../utils/helpers';
+import { translations } from '../../lib/i18n';
 
 // --- HELPERS FOR LOCAL STORAGE SIMULATION ---
 const getStore = <T>(key: string, initial: T): T => {
@@ -47,6 +49,14 @@ interface NotificationPreferences {
 }
 
 export const notificationService = {
+    /**
+     * Get user's language preference for notifications
+     * NOTE: Always return 'en' for notifications - all notifications are in English only
+     */
+    getUserLanguage: (userId: string): Language => {
+        return 'en'; // Force English for all notifications
+    },
+
     /**
      * ✅ FIX BUG #44: Check user preferences before sending notification
      */
@@ -126,12 +136,15 @@ export const notificationService = {
         menteeName: string,
         topupAmount: number
     ): Promise<void> => {
+        const lang = notificationService.getUserLanguage(providerId);
+        const t = translations[lang].notifications;
+
         await notificationService.sendNotification({
             userId: providerId,
             role: UserRole.PROVIDER,
             type: 'success',
-            title: 'Commission Earned!',
-            message: `You earned $${amount.toFixed(2)} commission from ${menteeName}'s $${topupAmount} top-up.`,
+            title: t.commissionEarned,
+            message: t.commissionMessage(amount, menteeName, topupAmount),
             actionType: 'wallet'
         });
     },
@@ -148,32 +161,35 @@ export const notificationService = {
         const user = users.find(u => u.id === userId);
         if (!user) return;
 
+        const lang = notificationService.getUserLanguage(userId);
+        const t = translations[lang].notifications;
+
         let title = '';
         let message = '';
         let type: 'success' | 'error' | 'warning' | 'info' = 'info';
 
         switch (newStatus) {
             case 'ACTIVE':
-                title = 'Account Activated';
-                message = 'Your account has been activated. You can now use all platform features.';
+                title = t.accountActivated;
+                message = t.accountActivatedMessage;
                 type = 'success';
                 break;
 
             case 'BANNED':
-                title = 'Account Suspended';
-                message = `Your account has been suspended${reason ? `: ${reason}` : '.'}`;
+                title = t.accountSuspended;
+                message = t.accountSuspendedMessage(reason);
                 type = 'error';
                 break;
 
             case 'PENDING_APPROVAL':
-                title = 'Pending Approval';
-                message = 'Your account is pending approval. We will notify you once it\'s reviewed.';
+                title = t.pendingApproval;
+                message = t.pendingApprovalMessage;
                 type = 'warning';
                 break;
 
             case 'REJECTED':
-                title = 'Account Rejected';
-                message = `Your account application was rejected${reason ? `: ${reason}` : '.'}`;
+                title = t.accountRejected;
+                message = t.accountRejectedMessage(reason);
                 type = 'error';
                 break;
         }
@@ -197,12 +213,15 @@ export const notificationService = {
         startTime: string,
         bookingId: string
     ): Promise<void> => {
+        const lang = notificationService.getUserLanguage(mentorId);
+        const t = translations[lang].notifications;
+
         await notificationService.sendNotification({
             userId: mentorId,
             role: UserRole.MENTOR,
             type: 'info',
-            title: 'New Booking!',
-            message: `${menteeName} booked a lesson at ${new Date(startTime).toLocaleString()}`,
+            title: t.newBooking,
+            message: t.newBookingMessage(menteeName, startTime),
             actionType: 'booking',
             actionId: bookingId
         });
@@ -217,26 +236,29 @@ export const notificationService = {
         status: string,
         bookingId: string
     ): Promise<void> => {
+        const lang = notificationService.getUserLanguage(menteeId);
+        const t = translations[lang].notifications;
+
         let title = '';
         let message = '';
         let type: 'success' | 'error' | 'warning' | 'info' = 'info';
 
         switch (status) {
             case 'COMPLETED':
-                title = 'Lesson Completed';
-                message = `Your lesson with ${mentorName} has been completed. Please leave a review!`;
+                title = t.lessonCompleted;
+                message = t.lessonCompletedMessage(mentorName);
                 type = 'success';
                 break;
 
             case 'CANCELLED':
-                title = 'Booking Cancelled';
-                message = `Your booking with ${mentorName} has been cancelled. Credits have been refunded.`;
+                title = t.bookingCancelled;
+                message = t.bookingCancelledMessage(mentorName);
                 type = 'warning';
                 break;
 
             case 'RESCHEDULED':
-                title = 'Booking Rescheduled';
-                message = `Your lesson with ${mentorName} has been rescheduled.`;
+                title = t.bookingRescheduled;
+                message = t.bookingRescheduledMessage(mentorName);
                 type = 'info';
                 break;
         }
@@ -262,26 +284,29 @@ export const notificationService = {
         payoutId: string,
         note?: string
     ): Promise<void> => {
+        const lang = notificationService.getUserLanguage(mentorId);
+        const t = translations[lang].notifications;
+
         let title = '';
         let message = '';
         let type: 'success' | 'error' | 'warning' | 'info' = 'info';
 
         switch (status) {
             case 'APPROVED_PENDING_PAYMENT':
-                title = 'Payout Approved';
-                message = `Your payout of $${amount} has been approved and will be processed soon.`;
+                title = t.payoutApproved;
+                message = t.payoutApprovedMessage(amount);
                 type = 'success';
                 break;
 
             case 'PAID':
-                title = 'Payout Completed';
-                message = `Your payout of $${amount} has been sent. Please check your payment method.`;
+                title = t.payoutCompleted;
+                message = t.payoutCompletedMessage(amount);
                 type = 'success';
                 break;
 
             case 'REJECTED':
-                title = 'Payout Rejected';
-                message = `Your payout request was rejected${note ? `: ${note}` : '.'}`;
+                title = t.payoutRejected;
+                message = t.payoutRejectedMessage(note);
                 type = 'error';
                 break;
         }
@@ -307,32 +332,35 @@ export const notificationService = {
         type: 'topup' | 'refund' | 'earning' | 'admin_adjustment',
         note?: string
     ): Promise<void> => {
+        const lang = notificationService.getUserLanguage(userId);
+        const t = translations[lang].notifications;
+
         let title = '';
         let message = '';
         let notifType: 'success' | 'info' = 'info';
 
         switch (type) {
             case 'topup':
-                title = 'Credits Added';
-                message = `${amount} credits have been added to your wallet.`;
+                title = t.creditsAdded;
+                message = t.creditsAddedMessage(amount);
                 notifType = 'success';
                 break;
 
             case 'refund':
-                title = 'Refund Received';
-                message = `You received a refund of ${amount} credits${note ? `: ${note}` : '.'}`;
+                title = t.refundReceived;
+                message = t.refundReceivedMessage(amount, note);
                 notifType = 'success';
                 break;
 
             case 'earning':
-                title = 'Earnings Received';
-                message = `You earned ${amount} credits from a completed lesson.`;
+                title = t.earningsReceived;
+                message = t.earningsReceivedMessage(amount);
                 notifType = 'success';
                 break;
 
             case 'admin_adjustment':
-                title = 'Credit Adjustment';
-                message = `Admin adjusted your balance${note ? `: ${note}` : '.'}`;
+                title = t.creditAdjustment;
+                message = t.creditAdjustmentMessage(note);
                 notifType = 'info';
                 break;
         }
@@ -356,12 +384,15 @@ export const notificationService = {
         expiryDate: string,
         subscriptionId: string
     ): Promise<void> => {
+        const lang = notificationService.getUserLanguage(userId);
+        const t = translations[lang].notifications;
+
         await notificationService.sendNotification({
             userId,
             role: UserRole.MENTEE,
             type: 'warning',
-            title: 'Subscription Expiring Soon',
-            message: `Your ${planName} subscription expires on ${new Date(expiryDate).toLocaleDateString()}. Renew now to continue!`,
+            title: t.subscriptionExpiring,
+            message: t.subscriptionExpiringMessage(planName, expiryDate),
             actionType: 'subscription',
             actionId: subscriptionId
         });

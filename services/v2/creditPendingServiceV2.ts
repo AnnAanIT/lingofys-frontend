@@ -1,20 +1,17 @@
-
 import { 
     SystemCreditLedgerEntry, 
     User, 
-    MentorEarning, 
     Booking, 
     Transaction,
     CreditHistoryEntry
-} from '../types';
+} from '../../types';
 import { 
     INITIAL_USERS, 
     INITIAL_BOOKINGS, 
     INITIAL_SYSTEM_CREDIT_LEDGER, 
-    INITIAL_MENTOR_EARNINGS, 
     INITIAL_TRANSACTIONS, 
     INITIAL_CREDIT_HISTORY 
-} from '../mockData';
+} from '../../mockData';
 
 // --- HELPERS FOR LOCAL STORAGE SIMULATION ---
 const getStore = <T>(key: string, initial: T): T => {
@@ -26,7 +23,7 @@ const setStore = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
 };
 
-export const creditPendingEngine = {
+export const creditPendingServiceV2 = {
     
     // 1. HOLD CREDIT (On Booking)
     // Deducts from Mentee -> Moves to System Ledger (Status: Holding)
@@ -98,135 +95,123 @@ export const creditPendingEngine = {
         if (entryIdx === -1) return; // Already released or returned
         
         ledger[entryIdx].status = 'released';
-        ledger[entryIdx].toUserId = booking.mentorId; 
+        ledger[entryIdx].toUserId = booking.mentorId;
         ledger[entryIdx].updatedAt = new Date().toISOString();
 
-        // 2. Update Mentor Wallet
+        // 2. Credit Mentor
         const users = getStore<User[]>('users', INITIAL_USERS);
         const mentorIdx = users.findIndex(u => u.id === booking.mentorId);
-        if (mentorIdx === -1) throw new Error("Mentor not found");
-        
-        users[mentorIdx].credits += booking.totalCost; 
-
-        // 3. Create/Update Mentor Earning Record
-        const earnings = getStore<MentorEarning[]>('mentorEarnings', INITIAL_MENTOR_EARNINGS);
-        const earningIdx = earnings.findIndex(e => e.bookingId === bookingId);
-        
-        if (earningIdx > -1) {
-            earnings[earningIdx].status = 'payable';
-        } else {
-            earnings.push({
-                id: `me_${Date.now()}`,
-                mentorId: booking.mentorId,
-                bookingId: booking.id,
-                amount: booking.totalCost,
-                status: 'payable',
-                createdAt: new Date().toISOString()
-            });
+        if (mentorIdx !== -1) {
+            users[mentorIdx].credits += ledger[entryIdx].amount;
         }
 
-        // 4. Update Booking local copy (though caller handles saving bookings usually)
-        booking.creditStatus = 'released';
-        
-        // Save All
         setStore('systemCreditLedger', ledger);
-        setStore('mentorEarnings', earnings);
         setStore('users', users);
 
-        // Transaction Log
+        // Log transaction for Admin Financials
         const txs = getStore<Transaction[]>('transactions', INITIAL_TRANSACTIONS);
         txs.push({
-            id: `tx_earn_${Date.now()}`,
+            id: `tx_${Date.now()}_${bookingId}`,
             userId: booking.mentorId,
-            amount: booking.totalCost,
+            amount: ledger[entryIdx].amount,
             type: 'EARNING',
-            description: `Released for booking #${bookingId}`,
+            description: `Earned from completed booking #${bookingId}`,
             date: new Date().toISOString(),
             relatedEntityId: bookingId,
             status: 'COMPLETED'
         });
         setStore('transactions', txs);
 
-        // Mentor Credit History
+        // Log credit history for mentor
         const history = getStore<CreditHistoryEntry[]>('creditHistory', INITIAL_CREDIT_HISTORY);
         history.push({
-            id: `ch_earn_${Date.now()}`,
+            id: `ch_${Date.now()}_${bookingId}_earn`,
             userId: booking.mentorId,
             type: 'earning',
-            amount: booking.totalCost,
-            balanceAfter: users[mentorIdx].credits,
-            note: `Earnings from Booking #${bookingId.slice(-8)}`,
+            amount: ledger[entryIdx].amount,
+            balanceAfter: users[mentorIdx]?.credits || 0,
+            note: `Booking #${bookingId.slice(-8)} (Completed)`,
             timestamp: new Date().toISOString()
         });
         setStore('creditHistory', history);
     },
 
-    // 3. REFUND CREDIT (On Cancellation / No-Show)
+    // 3. REFUND CREDIT (On Booking Cancellation)
     refundCreditToMentee: (bookingId: string): void => {
         const bookings = getStore<Booking[]>('bookings', INITIAL_BOOKINGS);
         const booking = bookings.find(b => b.id === bookingId);
         if (!booking) throw new Error("Booking not found");
 
-        // 1. Update Ledger
+        // 1. Find Ledger Entry
         const ledger = getStore<SystemCreditLedgerEntry[]>('systemCreditLedger', INITIAL_SYSTEM_CREDIT_LEDGER);
+        // ✅ FIX BUG #1: Only refund if status is 'holding' - prevent refund after credits already released to mentor
         const entryIdx = ledger.findIndex(e => e.bookingId === bookingId && e.status === 'holding');
-        
-        if (entryIdx === -1) return; // Already released or returned
 
+        if (entryIdx === -1) {
+            // Check if already released - throw error to prevent double refund
+            const releasedEntry = ledger.find(e => e.bookingId === bookingId && e.status === 'released');
+            if (releasedEntry) {
+                throw new Error("Cannot refund: Credits already released to mentor");
+            }
+            return; // Already refunded or no entry found
+        }
+
+        const creditAmount = ledger[entryIdx].amount;
+        const menteeId = ledger[entryIdx].fromUserId;
+
+        // 2. Mark as Returned
         ledger[entryIdx].status = 'returned';
-        ledger[entryIdx].toUserId = booking.menteeId; 
         ledger[entryIdx].updatedAt = new Date().toISOString();
 
-        // 2. Refund Mentee Balance
+        // 3. Refund Mentee
         const users = getStore<User[]>('users', INITIAL_USERS);
-        const menteeIdx = users.findIndex(u => u.id === booking.menteeId);
-        
-        if (menteeIdx > -1) {
-            users[menteeIdx].credits += booking.totalCost;
+        const menteeIdx = users.findIndex(u => u.id === menteeId);
+        if (menteeIdx !== -1) {
+            users[menteeIdx].credits += creditAmount;
         }
 
-        // 3. Cancel Mentor Pending Earning if exists
-        const earnings = getStore<MentorEarning[]>('mentorEarnings', INITIAL_MENTOR_EARNINGS);
-        const earningIdx = earnings.findIndex(e => e.bookingId === bookingId);
-        if (earningIdx > -1) {
-            earnings.splice(earningIdx, 1); 
-        }
-
-        // 4. Update Booking local copy
-        booking.creditStatus = 'refunded';
-
-        // Save All
         setStore('systemCreditLedger', ledger);
-        setStore('mentorEarnings', earnings);
         setStore('users', users);
 
-        // Transaction Log
+        // Log transaction
         const txs = getStore<Transaction[]>('transactions', INITIAL_TRANSACTIONS);
         txs.push({
-            id: `tx_refund_${Date.now()}`,
-            userId: booking.menteeId,
-            amount: booking.totalCost,
+            id: `tx_${Date.now()}_${bookingId}_refund`,
+            userId: menteeId,
+            amount: creditAmount,
             type: 'REFUND',
-            description: `Refund for booking #${bookingId}`,
+            description: `Refund for cancelled booking #${bookingId}`,
             date: new Date().toISOString(),
             relatedEntityId: bookingId,
             status: 'COMPLETED'
         });
         setStore('transactions', txs);
 
-        // Mentee Credit History
-        if (menteeIdx > -1) {
-            const history = getStore<CreditHistoryEntry[]>('creditHistory', INITIAL_CREDIT_HISTORY);
-            history.push({
-                id: `ch_ref_${Date.now()}`,
-                userId: booking.menteeId,
-                type: 'refund',
-                amount: booking.totalCost,
-                balanceAfter: users[menteeIdx].credits,
-                note: `Refund for Booking #${bookingId.slice(-8)}`,
-                timestamp: new Date().toISOString()
-            });
-            setStore('creditHistory', history);
-        }
+        // Log credit history for mentee
+        const history = getStore<CreditHistoryEntry[]>('creditHistory', INITIAL_CREDIT_HISTORY);
+        history.push({
+            id: `ch_${Date.now()}_${bookingId}_refund`,
+            userId: menteeId,
+            type: 'refund',
+            amount: creditAmount,
+            balanceAfter: users[menteeIdx]?.credits || 0,
+            note: `Booking #${bookingId.slice(-8)} Refunded`,
+            timestamp: new Date().toISOString()
+        });
+        setStore('creditHistory', history);
+    },
+
+    // 4. GET LEDGER STATUS
+    getLedgerStatus: (bookingId: string): SystemCreditLedgerEntry | null => {
+        const ledger = getStore<SystemCreditLedgerEntry[]>('systemCreditLedger', INITIAL_SYSTEM_CREDIT_LEDGER);
+        return ledger.find(e => e.bookingId === bookingId) || null;
+    },
+
+    // 5. GET USER CREDIT HISTORY
+    getUserCreditHistory: (userId: string): CreditHistoryEntry[] => {
+        const history = getStore<CreditHistoryEntry[]>('creditHistory', INITIAL_CREDIT_HISTORY);
+        return history.filter(h => h.userId === userId).sort((a, b) => 
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
     }
 };
