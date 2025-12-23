@@ -59,34 +59,52 @@ export default function MenteeMentorDetail() {
       }
   }, [user, id]);
 
-  const displayTz = user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // ✅ FIX: Use MENTOR timezone for calendar display to match event generation
+  const displayTz = mentor?.timezone || getTimezoneByCountry(mentor?.country || 'US');
 
   const generateEvents = () => {
       const events: any[] = [];
       const today = new Date();
-      
+
       if (!mentor) return [];
 
       // Múi giờ của Mentor để hiểu các slot "Mon 18:00"
       const mentorTz = mentor.timezone || getTimezoneByCountry(mentor.country || 'US');
 
-      for(let i=0; i<21; i++) { 
-          const d = new Date(today);
-          d.setDate(today.getDate() + i);
-          // dayName dựa trên múi giờ mentor
-          const dayInMentorTz = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: mentorTz });
-          
-          const slots = mentor.availability.filter(slot => slot.day === dayInMentorTz);
-          
-          slots.forEach(slot => {
+      console.log('🔍 [Availability Debug] Generating events for mentor:', mentor.name);
+      console.log('📍 Mentor timezone:', mentorTz);
+      console.log('📅 Mentor availability slots:', mentor.availability);
+      console.log('📚 Mentor bookings:', mentorBookings);
+
+      // ✅ FIX: Iterate through ALL availability slots for ALL days
+      mentor.availability.forEach(slot => {
+          for(let i=0; i<21; i++) {
+              const d = new Date(today);
+              d.setDate(today.getDate() + i);
+
+              // Get the day name of this date in mentor's timezone
+              const dayInMentorTz = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: mentorTz });
+
+              // Only generate event if this day matches the slot's day
+              if (dayInMentorTz !== slot.day) {
+                  continue; // Skip to next day
+              }
+
+              // Generate the absolute start time
               const start = createAbsoluteDate(d, slot.startTime, mentorTz);
               const end = new Date(start.getTime() + slot.duration * 60000);
-              
+
+              // Check if this slot is already booked
               const isBooked = mentorBookings.some(b => {
                   if (!['SCHEDULED', 'COMPLETED'].includes(b.status)) return false;
                   const bTime = new Date(b.startTime).getTime();
                   return Math.abs(bTime - start.getTime()) < 1000;
               });
+
+              if (i < 3) {
+                  console.log(`📆 Day ${i} (${d.toDateString()}): dayInMentorTz="${dayInMentorTz}", slot.day="${slot.day}"`);
+                  console.log(`  ⏰ Slot ${slot.day} ${slot.startTime}: start=${start.toISOString()}, isBooked=${isBooked}`);
+              }
 
               if (!isBooked) {
                   events.push({
@@ -97,8 +115,12 @@ export default function MenteeMentorDetail() {
                       type: 'available' as const
                   });
               }
-          });
-      }
+          }
+      });
+
+      console.log(`✅ Total events generated: ${events.length}`);
+      console.log('Events:', events);
+
       return events;
   };
 
@@ -200,7 +222,7 @@ export default function MenteeMentorDetail() {
                         <Globe size={20} className="text-brand-600" /> {t.mentorSchedule}
                     </h3>
                     <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold border border-green-100 uppercase tracking-wide">
-                        {t.timezoneConversion.replace('{tz}', displayTz)}
+                        Mentor's Time ({displayTz})
                     </div>
                 </div>
                 <div className="flex-1 min-h-0">

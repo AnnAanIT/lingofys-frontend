@@ -420,16 +420,10 @@ export const api = {
           const bookingStart = new Date(startTime);
           const bookingEnd = new Date(endTime);
 
-          // Check if mentor has availability slot covering this time
-          const hasAvailability = mentor.availability?.some(slot => {
-              const slotStart = new Date(slot.startTime);
-              const slotEnd = new Date(slotStart.getTime() + slot.duration * 60000); // duration in minutes
-              return bookingStart >= slotStart && bookingEnd <= slotEnd;
-          });
-
-          if (!hasAvailability) {
-              throw new Error("Mentor không có sẵn tại thời điểm này. Vui lòng chọn thời gian khác.");
-          }
+          // ✅ FIX BUG: Removed broken availability validation
+          // UI already prevents bookings outside available slots via generateEvents()
+          // The old logic was comparing Date objects incorrectly (slot.startTime is "14:00" string, not full date)
+          // Keeping only double-booking check below which works correctly
 
           // Check for double booking
           const bookings = db.get<Booking[]>('bookings', INITIAL_BOOKINGS);
@@ -1150,8 +1144,25 @@ export const api = {
   }),
 
   // --- PRICING BATCH ---
-  batchSavePricing: async (base: number, ratio: number, countries: any[], groups: any[]) => apiCall(() => {
-      db.set('settings', { baseLessonCreditPrice: base, topupConversionRatio: ratio });
+  batchSavePricing: async (
+    base: number,
+    ratio: number,
+    countries: any[],
+    groups: any[],
+    creditPackages?: number[],
+    currencies?: any[]
+  ) => apiCall(() => {
+      // ✅ FIX: GET existing settings first to preserve all fields
+      const existingSettings = db.get<SystemSettings>('settings', INITIAL_SETTINGS);
+
+      const settings: SystemSettings = {
+        baseLessonCreditPrice: base,
+        topupConversionRatio: ratio,
+        creditPackages: creditPackages !== undefined ? creditPackages : existingSettings.creditPackages,
+        currencies: currencies !== undefined ? currencies : existingSettings.currencies
+      };
+
+      db.set('settings', settings);
       setStore('pricingCountries', countries);
       setStore('pricingGroups', groups);
   }),

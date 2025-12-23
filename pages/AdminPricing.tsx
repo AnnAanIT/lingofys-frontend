@@ -4,9 +4,9 @@ import { api } from '../services/api';
 import { AdminLayout, ConfirmDialog } from '../components/AdminComponents';
 import { PricingPreview } from '../components/Admin/PricingPreview';
 import { PricingCountryModal } from '../components/Admin/PricingCountryModal';
-import { PricingCountry, PricingGroup } from '../types';
-import { 
-    Globe, Users, DollarSign, Save, RotateCcw, Settings, Plus, Trash2, TrendingUp, AlertTriangle
+import { PricingCountry, PricingGroup, CurrencyConfig } from '../types';
+import {
+    Globe, Users, DollarSign, Save, RotateCcw, Settings, Plus, Trash2, TrendingUp, AlertTriangle, Package, Coins
 } from 'lucide-react';
 
 export default function AdminPricing() {
@@ -16,10 +16,12 @@ export default function AdminPricing() {
     // --- DATA STATE ---
     const [countries, setCountries] = useState<PricingCountry[]>([]);
     const [groups, setGroups] = useState<PricingGroup[]>([]);
-    
+
     // --- EDITABLE CONFIG STATE ---
     const [basePrice, setBasePrice] = useState<number>(10);
     const [topupRatio, setTopupRatio] = useState<number>(1.0);
+    const [creditPackages, setCreditPackages] = useState<number[]>([40, 100, 200, 400]);
+    const [currencies, setCurrencies] = useState<CurrencyConfig[]>([]);
 
     // --- PREVIEW STATE ---
     const [previewCountry, setPreviewCountry] = useState<string>('');
@@ -46,6 +48,8 @@ export default function AdminPricing() {
         setGroups(gData);
         setBasePrice(sysData.baseLessonCreditPrice);
         setTopupRatio(sysData.topupConversionRatio || 1.0);
+        setCreditPackages(sysData.creditPackages || [40, 100, 200, 400]);
+        setCurrencies(sysData.currencies || []);
 
         if(cData.length > 0 && !previewCountry) setPreviewCountry(cData[0].id);
         if(gData.length > 0 && !previewGroup) setPreviewGroup(gData[0].id);
@@ -67,7 +71,7 @@ export default function AdminPricing() {
         setIsSaving(true);
         try {
             // Sử dụng BATCH SAVE để ghi đè toàn bộ LocalStorage an toàn
-            await api.batchSavePricing(basePrice, topupRatio, countries, groups);
+            await api.batchSavePricing(basePrice, topupRatio, countries, groups, creditPackages, currencies);
             await api.logAction('CONFIG_UPDATE', 'Admin updated core pricing and multipliers via batch save', 'u3');
             alert("Settings saved successfully!");
             await loadData(); // Reload to sync
@@ -181,6 +185,122 @@ export default function AdminPricing() {
                                             </span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Credit Packages Management */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 bg-slate-50">
+                                <h2 className="text-xl font-bold text-slate-900 flex items-center">
+                                    <Package className="mr-2 text-orange-600" /> Credit Packages
+                                </h2>
+                                <p className="text-sm text-slate-500 mt-1">Configure credit amounts shown in the Top-Up modal.</p>
+                            </div>
+
+                            <div className="p-8">
+                                <div className="flex gap-3 mb-4">
+                                    {creditPackages.map((pkg, idx) => (
+                                        <div key={idx} className="flex-1">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={pkg}
+                                                onChange={(e) => {
+                                                    const newPackages = [...creditPackages];
+                                                    newPackages[idx] = Number(e.target.value);
+                                                    setCreditPackages(newPackages);
+                                                }}
+                                                className="w-full p-3 text-center text-lg font-bold border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                                            />
+                                            <div className="text-xs text-slate-400 text-center mt-1">Package {idx + 1}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setCreditPackages([...creditPackages, 50])}
+                                        className="px-4 py-2 bg-orange-50 text-orange-600 rounded-lg font-bold hover:bg-orange-100 flex items-center text-sm"
+                                    >
+                                        <Plus size={16} className="mr-1" /> Add Package
+                                    </button>
+                                    {creditPackages.length > 1 && (
+                                        <button
+                                            onClick={() => setCreditPackages(creditPackages.slice(0, -1))}
+                                            className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 flex items-center text-sm"
+                                        >
+                                            <Trash2 size={16} className="mr-1" /> Remove Last
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Multi-Currency Management */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 flex items-center">
+                                        <Coins className="mr-2 text-green-600" /> Multi-Currency Configuration
+                                    </h2>
+                                    <p className="text-sm text-slate-500 mt-1">Exchange rates for top-up display ONLY (not for lesson pricing).</p>
+                                </div>
+                            </div>
+
+                            <div className="p-8">
+                                <div className="overflow-hidden border border-slate-200 rounded-xl mb-4">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 text-slate-500 font-bold">
+                                            <tr>
+                                                <th className="px-4 py-3">Currency</th>
+                                                <th className="px-4 py-3 w-24">Symbol</th>
+                                                <th className="px-4 py-3 w-32">Exchange Rate</th>
+                                                <th className="px-4 py-3 w-20 text-center">Enabled</th>
+                                                <th className="px-4 py-3">Payment Methods</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {currencies.map((curr, idx) => (
+                                                <tr key={curr.code} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-4 py-3 font-bold text-slate-700">
+                                                        {curr.name} ({curr.code})
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono">{curr.symbol}</td>
+                                                    <td className="px-4 py-3">
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={curr.exchangeRate}
+                                                            onChange={(e) => {
+                                                                const newCurrencies = [...currencies];
+                                                                newCurrencies[idx].exchangeRate = Number(e.target.value);
+                                                                setCurrencies(newCurrencies);
+                                                            }}
+                                                            className="w-full p-1.5 border border-slate-200 rounded text-center font-bold focus:border-green-500 outline-none"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={curr.enabled}
+                                                            onChange={(e) => {
+                                                                const newCurrencies = [...currencies];
+                                                                newCurrencies[idx].enabled = e.target.checked;
+                                                                setCurrencies(newCurrencies);
+                                                            }}
+                                                            className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-slate-500">
+                                                        {curr.paymentMethods.join(', ')}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
+                                    <strong>Note:</strong> Exchange rates are for display purposes only. Geographic Multipliers (below) affect lesson pricing, not top-up display.
                                 </div>
                             </div>
                         </div>

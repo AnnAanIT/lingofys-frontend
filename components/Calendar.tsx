@@ -119,17 +119,37 @@ export const WeeklyCalendar: React.FC<CalendarProps> = ({ events, onSlotClick, o
                 </div>
             )}
 
-            {hours.map(hour => (
+            {hours.map(hour => {
+              // DEBUG: Log first iteration only
+              if (hour === 7) {
+                console.log(`🎨 [Calendar Render] Rendering hours for ${days.length} days`);
+                console.log(`📅 Days:`, days.map(d => d.toDateString()));
+                console.log(`🎯 Events to match:`, events.length);
+                console.log(`🌍 Timezone:`, timezone);
+              }
+
+              return (
               <div key={hour} className="grid grid-cols-8 border-b border-slate-50 min-h-[60px]">
                 <div className="p-2 text-right text-[10px] font-black text-slate-400 border-r border-slate-100 bg-slate-50/20 sticky left-0 z-10 backdrop-blur-sm">{hour}:00</div>
-                {days.map(day => {
+                {days.map((day, dayIdx) => {
                   const event = events.find(e => {
                       // Chuyển thời gian bắt đầu của event (UTC) sang múi giờ đang hiển thị
                       const eStartInTz = convertTimezone(e.start, timezone);
-                      return eStartInTz.getDate() === day.getDate() && 
-                             eStartInTz.getMonth() === day.getMonth() && 
-                             eStartInTz.getFullYear() === day.getFullYear() && 
+
+                      const matches = eStartInTz.getDate() === day.getDate() &&
+                             eStartInTz.getMonth() === day.getMonth() &&
+                             eStartInTz.getFullYear() === day.getFullYear() &&
                              eStartInTz.getHours() === hour;
+
+                      // DEBUG: Log matching attempts for hour 14
+                      if (hour === 14 && dayIdx === 0 && events.length > 0) {
+                        console.log(`🔍 [Match Check] Hour ${hour}, Day ${day.toDateString()}`);
+                        console.log(`  Event start (UTC): ${e.start.toISOString()}`);
+                        console.log(`  Event start (TZ):  ${eStartInTz.toString()}`);
+                        console.log(`  Match result: ${matches}`);
+                      }
+
+                      return matches;
                   });
 
                   // Xác định xem slot này đã qua chưa
@@ -178,7 +198,8 @@ export const WeeklyCalendar: React.FC<CalendarProps> = ({ events, onSlotClick, o
                   );
                 })}
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       </div>

@@ -32,7 +32,37 @@ export const COUNTRY_TO_TIMEZONE: Record<string, string> = {
 
 export const INITIAL_SETTINGS: SystemSettings = {
   baseLessonCreditPrice: 10,
-  topupConversionRatio: 0.8,  
+  topupConversionRatio: 0.8,
+  creditPackages: [40, 100, 200, 400], // Admin-configurable credit packages
+  currencies: [
+    {
+      code: 'USD',
+      name: 'US Dollar',
+      symbol: '$',
+      symbolPosition: 'before',
+      exchangeRate: 1,
+      enabled: true,
+      paymentMethods: ['Stripe', 'PayPal']
+    },
+    {
+      code: 'VND',
+      name: 'Vietnamese Dong',
+      symbol: '₫',
+      symbolPosition: 'after',
+      exchangeRate: 25000,
+      enabled: true,
+      paymentMethods: ['Momo', 'ZaloPay', 'VNPay', 'Stripe']
+    },
+    {
+      code: 'JPY',
+      name: 'Japanese Yen',
+      symbol: '¥',
+      symbolPosition: 'before',
+      exchangeRate: 150,
+      enabled: true,
+      paymentMethods: ['PayPay', 'Stripe']
+    }
+  ]
 };
 
 export const INITIAL_PRICING_COUNTRIES: PricingCountry[] = [
