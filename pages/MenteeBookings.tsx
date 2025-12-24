@@ -23,7 +23,16 @@ export default function MenteeBookings() {
 
   const fetchData = async () => {
       if (user) {
+          console.log('📋 [BOOKINGS PAGE] Fetching bookings for user:', user.id, user.name);
           const data = await api.getBookings(user.id, UserRole.MENTEE);
+          console.log('  Total bookings fetched:', data.length);
+          console.log('  Bookings:', data.map(b => ({
+              id: b.id.slice(-6),
+              type: b.type,
+              status: b.status,
+              mentor: b.mentorName,
+              subscriptionId: b.subscriptionId
+          })));
           setBookings(data);
       }
   };

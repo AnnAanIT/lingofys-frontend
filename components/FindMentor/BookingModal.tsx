@@ -158,12 +158,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     >
                         Cancel
                     </button>
-                    <button 
-                        onClick={() => onConfirm(selectedMethod === 'SUBSCRIPTION')}
+                    <button
+                        onClick={() => {
+                            console.log('🔘 [MODAL] Confirm button clicked');
+                            console.log('  selectedMethod:', selectedMethod);
+                            console.log('  useSubscription:', selectedMethod === 'SUBSCRIPTION');
+                            console.log('  canBook:', canBook);
+                            console.log('  isProcessing:', isProcessing);
+                            onConfirm(selectedMethod === 'SUBSCRIPTION');
+                        }}
                         disabled={!canBook || isProcessing}
                         className={`flex-[2] py-4 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                            canBook 
-                                ? 'bg-brand-600 hover:bg-brand-700 shadow-brand-500/20' 
+                            canBook
+                                ? 'bg-brand-600 hover:bg-brand-700 shadow-brand-500/20'
                                 : 'bg-slate-200 cursor-not-allowed shadow-none'
                         }`}
                     >

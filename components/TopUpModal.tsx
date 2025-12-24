@@ -7,6 +7,37 @@ import { translations } from '../lib/i18n';
 import { CurrencyConfig } from '../types';
 import { formatCurrency, calculateLocalPrice, getUserPreferredCurrency, saveUserPreferredCurrency } from '../utils/currencyUtils';
 
+// ✅ FIX VERCEL BUG: Default currencies fallback for SSR/SSG environments
+const DEFAULT_CURRENCIES: CurrencyConfig[] = [
+    {
+        code: 'USD',
+        name: 'US Dollar',
+        symbol: '$',
+        symbolPosition: 'before',
+        exchangeRate: 1,
+        enabled: true,
+        paymentMethods: ['Stripe', 'PayPal']
+    },
+    {
+        code: 'VND',
+        name: 'Vietnamese Dong',
+        symbol: '₫',
+        symbolPosition: 'after',
+        exchangeRate: 25000,
+        enabled: true,
+        paymentMethods: ['VNPay', 'MoMo']
+    },
+    {
+        code: 'JPY',
+        name: 'Japanese Yen',
+        symbol: '¥',
+        symbolPosition: 'before',
+        exchangeRate: 150,
+        enabled: true,
+        paymentMethods: ['Stripe']
+    }
+];
+
 interface Props {
     isOpen: boolean;
     onClose: () => void;
@@ -35,14 +66,21 @@ export const TopUpModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, userId
                 const packages = settings.creditPackages || [40, 100, 200, 400];
                 setCreditPackages(packages.length > 0 ? packages : [40, 100, 200, 400]);
 
-                setCurrencies(settings.currencies || []);
+                // ✅ FIX VERCEL BUG: Use DEFAULT_CURRENCIES fallback when settings.currencies is empty
+                const availableCurrencies = (settings.currencies && settings.currencies.length > 0)
+                    ? settings.currencies
+                    : DEFAULT_CURRENCIES;
 
-                // Set user's preferred currency
-                if (settings.currencies && settings.currencies.length > 0) {
-                    const preferredCode = getUserPreferredCurrency(user?.country);
-                    const preferred = settings.currencies.find(c => c.code === preferredCode && c.enabled);
-                    setSelectedCurrency(preferred || settings.currencies.find(c => c.enabled) || settings.currencies[0]);
-                }
+                setCurrencies(availableCurrencies);
+
+                // Set user's preferred currency (always guaranteed to have at least one currency now)
+                const preferredCode = getUserPreferredCurrency(user?.country);
+                const preferred = availableCurrencies.find(c => c.code === preferredCode && c.enabled);
+                setSelectedCurrency(
+                    preferred ||
+                    availableCurrencies.find(c => c.enabled) ||
+                    availableCurrencies[0]
+                );
             });
         }
     }, [isOpen, user?.country]);

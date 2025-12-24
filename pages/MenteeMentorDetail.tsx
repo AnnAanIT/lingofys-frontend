@@ -141,6 +141,12 @@ export default function MenteeMentorDetail() {
     if (!selectedDate || !user || !priceDetails || !mentor) return;
     setIsProcessing(true);
     try {
+        console.log('🎫 [BOOKING DEBUG] Creating booking...');
+        console.log('  useSubscription:', useSubscription);
+        console.log('  mentee:', user.id, user.name);
+        console.log('  mentor:', mentor.id, mentor.name);
+        console.log('  startTime:', selectedDate.toISOString());
+
         const newBooking = await api.createOneTimeBooking(
             user.id,
             mentor.id,
@@ -149,9 +155,21 @@ export default function MenteeMentorDetail() {
             priceDetails.finalPrice,
             useSubscription
         );
+
+        console.log('✅ Booking created:', newBooking);
+        console.log('  bookingId:', newBooking.id);
+        console.log('  type:', newBooking.type);
+        console.log('  subscriptionId:', newBooking.subscriptionId);
+
+        // Debug: Check localStorage
+        const allBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+        console.log('📦 All bookings in localStorage:', allBookings.length);
+        console.log('  Latest booking:', allBookings[allBookings.length - 1]);
+
         await refreshUser();
         navigate(`/mentee/booking-success/${newBooking.id}`);
     } catch (error: any) {
+        console.error('❌ Booking failed:', error);
         alert("Booking failed: " + error.message);
     } finally {
         setIsProcessing(false);

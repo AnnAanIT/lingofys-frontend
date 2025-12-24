@@ -490,8 +490,14 @@ export const api = {
               joinLink: 'https://meet.google.com/demo-call'
           };
 
+          console.log('💾 [API] Saving booking to localStorage...');
+          console.log('  Current bookings count:', bookings.length);
+          console.log('  New booking:', newBooking);
+
           bookings.push(newBooking);
           db.set('bookings', bookings);
+
+          console.log('✅ Booking saved. Total bookings now:', bookings.length);
 
           // Use notificationService for i18n support
           await notificationService.notifyNewBooking(mentorId, mentee.name, startTime, bookingId);
@@ -1257,7 +1263,22 @@ export const api = {
   
   getBookings: async (userId: string, role: UserRole) => apiCall(() => {
       const all = db.get<Booking[]>('bookings', INITIAL_BOOKINGS);
-      return all.filter(b => role === UserRole.MENTEE ? b.menteeId === userId : b.mentorId === userId);
+      console.log('🔍 [API getBookings] Fetching bookings...');
+      console.log('  userId:', userId);
+      console.log('  role:', role);
+      console.log('  Total bookings in DB:', all.length);
+
+      const filtered = all.filter(b => role === UserRole.MENTEE ? b.menteeId === userId : b.mentorId === userId);
+      console.log('  Filtered bookings:', filtered.length);
+      console.log('  Details:', filtered.map(b => ({
+          id: b.id.slice(-6),
+          menteeId: b.menteeId.slice(0, 3),
+          mentorId: b.mentorId.slice(0, 3),
+          type: b.type,
+          status: b.status
+      })));
+
+      return filtered;
   }),
   getAllBookings: async () => apiCall(() => db.get<Booking[]>('bookings', INITIAL_BOOKINGS)),
   getSystemSettings: async () => apiCall(() => db.get('settings', INITIAL_SETTINGS)),
