@@ -28,6 +28,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const loadMessages = async () => {
         try {
+            // Skip loading for temp conversations (will have messages after first send)
+            if (conversation.id.startsWith('temp_')) {
+                setMessages([]);
+                setLoading(false);
+                return;
+            }
+            
             const msgs = await api.getMessages(conversation.id);
             setMessages(msgs || []);
             setLoading(false);
@@ -40,6 +47,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const markRead = async () => {
         try {
+            // Skip for temp conversations
+            if (conversation.id.startsWith('temp_')) {
+                return;
+            }
             await api.markAsRead(conversation.id);
         } catch (error) {
             console.error('Failed to mark as read:', error);

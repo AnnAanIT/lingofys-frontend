@@ -69,14 +69,17 @@ export default function AdminMessages() {
     };
 
     const handleStartNewChat = (targetUser: User) => {
-        const convId = `conv_${targetUser.id}`;
-        const existing = conversations.find(c => c.id === convId);
+        // SIMPLIFIED: Check if conversation already exists in loaded list
+        const existing = conversations.find(c => c.participantId === targetUser.id);
         
         if (existing) {
-            setSelectedConvId(convId);
+            // Conversation already loaded, just select it
+            setSelectedConvId(existing.id);
         } else {
+            // No existing conversation - create temp one for UI
+            // Backend will create real conversation on first message
             const tempConv: Conversation = {
-                id: convId,
+                id: `temp_${targetUser.id}_${Date.now()}`, // Temporary ID for UI only
                 participantId: targetUser.id,
                 participantName: targetUser.name,
                 participantAvatar: targetUser.avatar,
@@ -84,11 +87,11 @@ export default function AdminMessages() {
                 assignedAdminId: user?.id || null,
                 status: 'OPEN',
                 lastMessageAt: new Date().toISOString(),
-                lastMessagePreview: 'Started by Admin',
+                lastMessagePreview: 'New conversation',
                 unreadCount: 0
             };
             setConversations(prev => [tempConv, ...prev]);
-            setSelectedConvId(convId);
+            setSelectedConvId(tempConv.id);
         }
     };
 
