@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "vercel-install": "npm install --legacy-peer-deps"
   },
   "dependencies": {
     "clsx": "^2.1.1",
