@@ -11,7 +11,7 @@ export default function ProviderProfile() {
     if (!user) return null;
 
     const handleAvatarUpload = async (newUrl: string) => {
-        await api.updateUserProfile(user.id, { avatar: newUrl });
+        await api.updateUserProfile({ avatar: newUrl });
         refreshUser();
     };
 

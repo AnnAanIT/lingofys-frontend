@@ -8,7 +8,7 @@ interface RevenueChartProps {
 }
 
 export const RevenueChart: React.FC<RevenueChartProps> = ({ data, type }) => {
-    if (data.length === 0) return <div className="h-80 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50">No data available</div>;
+    if (!data || data.length === 0) return <div className="h-80 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50">No data available</div>;
 
     const chartHeight = 320;
     const padding = { top: 40, bottom: 40, left: 60, right: 20 };

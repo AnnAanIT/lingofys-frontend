@@ -2,26 +2,28 @@
 import React, { useState } from 'react';
 import { Copy, Check, DollarSign, Users, TrendingUp, Download, Clock } from 'lucide-react';
 import { Referral, Commission, Payout, Provider } from '../types';
+import { BRAND } from '../constants/brand';
 
 // --- REFERRAL CARD ---
 export const ReferralCard: React.FC<{ provider: Provider }> = ({ provider }) => {
     const [copied, setCopied] = useState(false);
-    const link = `https://mentorship.io/?ref=${provider.refCode}`;
+    const referralCode = provider.providerProfile?.referralCode || '';
+    const link = BRAND.getReferralUrl(referralCode);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(link);
+        navigator.clipboard.writeText(referralCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h3 className="font-bold text-slate-900 mb-2">Your Referral Link</h3>
-            <p className="text-sm text-slate-500 mb-4">Share this link to earn 10% commission on every booking.</p>
+            <h3 className="font-bold text-slate-900 mb-2">Your Referral Code</h3>
+            <p className="text-sm text-slate-500 mb-4">Share this code with mentees to earn commission on their top-ups.</p>
             
-            <div className="flex flex-col md:flex-row gap-3">
-                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-600 font-mono text-sm truncate flex items-center justify-between">
-                    <span>{link}</span>
+            <div className="flex flex-col md:flex-row gap-3 items-center">
+                <div className="flex-1 bg-brand-50 border-2 border-brand-200 rounded-xl px-6 py-4 text-center">
+                    <div className="text-3xl font-bold text-brand-700 font-mono tracking-wider">{referralCode || 'N/A'}</div>
                 </div>
                 <button 
                     onClick={handleCopy}
@@ -30,12 +32,12 @@ export const ReferralCard: React.FC<{ provider: Provider }> = ({ provider }) => 
                     }`}
                 >
                     {copied ? <Check size={18} /> : <Copy size={18} />}
-                    <span>{copied ? 'Copied' : 'Copy Link'}</span>
+                    <span>{copied ? 'Copied!' : 'Copy Code'}</span>
                 </button>
             </div>
             
-            <div className="mt-4 flex items-center space-x-4 text-sm text-slate-500">
-                <span className="font-bold text-slate-700">Code:</span> <span className="bg-slate-100 px-2 py-1 rounded border border-slate-200 font-mono">{provider.refCode}</span>
+            <div className="mt-4 text-xs text-slate-500 text-center">
+                Mentees can enter this code during signup or in their profile
             </div>
         </div>
     );

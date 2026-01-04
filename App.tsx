@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { User, UserRole, Language } from './types';
 import { api } from './services/api';
 import { translations } from './lib/i18n';
 import { ToastProvider } from './components/ui/Toast';
 import { NotificationBell } from './components/Notifications/NotificationBell';
 import { ScrollToTop } from './components/ScrollToTop';
+import { BRAND } from './constants/brand';
 
 // ✅ Dev Tools - Only in development
 if (import.meta.env.DEV) {
@@ -14,10 +16,10 @@ if (import.meta.env.DEV) {
 }
 
 // --- ICONS ---
-import { 
-  Users, Calendar, MessageSquare, CreditCard, 
+import {
+  Users, Calendar, MessageSquare, CreditCard,
   LayoutDashboard, LogOut, CheckCircle, XCircle, BookOpen, Search, DollarSign, Award, User as UserIcon, Globe,
-  Menu, X, ChevronRight
+  Menu, X, ChevronRight, Star, Wallet
 } from 'lucide-react';
 
 // --- PAGES ---
@@ -25,6 +27,7 @@ import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import Readme from './pages/Readme';
 import PublicMentorBrowse from './pages/PublicMentorBrowse';
+import PublicMentorProfile from './pages/PublicMentorProfile';
 import { UITest } from './pages/UITest';
 import MenteeDashboard from './pages/MenteeDashboard';
 import MenteeFindMentor from './pages/MenteeFindMentor';
@@ -36,11 +39,13 @@ import MenteeSubscriptions from './pages/MenteeSubscriptions';
 import MenteeSubscriptionDetail from './pages/MenteeSubscriptionDetail';
 import MenteeActiveSubscription from './pages/MenteeActiveSubscription';
 import MenteeProfile from './pages/MenteeProfile';
+import MenteeFeedback from './pages/MenteeFeedback';
 
 import MentorDashboard from './pages/MentorDashboard';
 import MentorProfile from './pages/MentorProfile';
 import MentorBioPage from './pages/MentorBioPage';
 import MentorPayout from './pages/MentorPayout';
+import MentorFeedback from './pages/MentorFeedback';
 
 import ProviderDashboard from './pages/ProviderDashboard';
 import ProviderProfile from './pages/ProviderProfile';
@@ -66,7 +71,9 @@ import AdminPricingGroups from './pages/AdminPricingGroups';
 import AdminPricingRevenueAudit from './pages/AdminPricingRevenueAudit';
 import AdminCreditDashboard from './pages/AdminCreditDashboard';
 import AdminProviderLevels from './pages/AdminProviderLevels';
+import AdminProviderCommissions from './pages/AdminProviderCommissions';
 import AdminSubscriptionPlans from './pages/AdminSubscriptionPlans';
+import AdminFeedback from './pages/AdminFeedback';
 
 // --- HELPERS ---
 const getCookie = (name: string) => {
@@ -116,6 +123,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           { icon: Calendar, label: translations_t.nav.bookings, path: '/mentee/bookings' },
           { icon: Award, label: translations_t.nav.subscriptions, path: '/mentee/subscriptions' },
           { icon: BookOpen, label: translations_t.nav.homework, path: '/mentee/homework' },
+          { icon: Star, label: 'Feedback', path: '/mentee/feedback' },
           { icon: MessageSquare, label: translations_t.nav.messages, path: '/mentee/chat' },
           { icon: CreditCard, label: translations_t.nav.wallet, path: '/mentee/wallet' },
           { icon: UserIcon, label: translations_t.nav.profile, path: '/mentee/profile' },
@@ -125,13 +133,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           { icon: LayoutDashboard, label: 'Dashboard', path: '/mentor' },
           { icon: Calendar, label: 'Schedule', path: '/mentor/schedule' },
           { icon: BookOpen, label: 'Homework', path: '/mentor/homework' },
+          { icon: Star, label: 'Feedback', path: '/mentor/feedback' },
           { icon: MessageSquare, label: 'Admin Support', path: '/mentor/chat' },
           { icon: DollarSign, label: 'Earnings & Payout', path: '/mentor/payout' },
           { icon: UserIcon, label: 'Profile', path: '/mentor/profile' },
         ];
       case UserRole.PROVIDER:
         return [
-          { icon: LayoutDashboard, label: 'Dashboard', path: '/provider' },
+          { icon: LayoutDashboard, label: 'Overview', path: '/provider' },
+          { icon: DollarSign, label: 'Earnings', path: '/provider/earnings' },
+          { icon: Wallet, label: 'Payouts', path: '/provider/payouts' },
+          { icon: MessageSquare, label: 'Admin Support', path: '/provider/chat' },
           { icon: UserIcon, label: 'Profile', path: '/provider/profile' },
         ];
       case UserRole.ADMIN:
@@ -158,8 +170,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-64 bg-white border-r border-slate-200 z-40">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">M</div>
-            <span className="font-bold text-slate-800 text-base">Mentorship.io</span>
+            <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">{BRAND.logo.icon}</div>
+            <span className="font-bold text-slate-800 text-base">{BRAND.name}</span>
           </div>
         </div>
 
@@ -217,7 +229,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full bg-slate-200 object-cover flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-900 truncate">{user.name}</p>
-                  <p className="text-[10px] text-slate-500 truncate">{user.role}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{user.role === 'MENTOR' ? 'TEACHER' : user.role === 'MENTEE' ? 'STUDENT' : user.role}</p>
                 </div>
              </div>
              <div className="flex-shrink-0">
@@ -238,8 +250,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Mobile Top Bar - Show on mobile */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 p-4 z-30 flex items-center justify-between shadow-md">
         <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">M</div>
-          <span className="font-bold text-slate-800 text-base">Mentorship.io</span>
+          <div className="w-10 h-10 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">{BRAND.logo.icon}</div>
+          <span className="font-bold text-slate-800 text-base">{BRAND.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <NotificationBell />
@@ -354,7 +366,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full bg-slate-200 object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
-                    <p className="text-xs text-slate-500">{user.role}</p>
+                    <p className="text-xs text-slate-500">{user.role === 'MENTOR' ? 'TEACHER' : user.role === 'MENTEE' ? 'STUDENT' : user.role}</p>
                   </div>
                 </div>
               </div>
@@ -426,6 +438,7 @@ export default function App() {
   const [language, setLanguageState] = useState<Language>('en');
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Restore language preference
   useEffect(() => {
     const savedLang = getCookie('lang') as Language;
     if (savedLang && ['en', 'vi', 'zh', 'ko', 'ja'].includes(savedLang)) {
@@ -433,12 +446,51 @@ export default function App() {
     }
   }, []);
 
+  // Restore user session on app load
+  useEffect(() => {
+    const restoreSession = async () => {
+      const token = localStorage.getItem('authToken');
+      const savedUser = localStorage.getItem('user');
+
+      if (!token) {
+        return; // No token, user not logged in
+      }
+
+      if (savedUser) {
+        try {
+          // Try to use cached user data first
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+
+          // Then refresh in background
+          const freshUser = await api.getUserById(parsedUser.id);
+          if (freshUser) {
+            setUser(freshUser);
+            localStorage.setItem('user', JSON.stringify(freshUser));
+          }
+        } catch (error) {
+          console.error('Failed to restore session:', error);
+          // Clear invalid data
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+        }
+      } else {
+        // No cached user, token might be valid - try to get user from backend
+        // This requires a /api/auth/me endpoint or similar
+        console.log('Token exists but no cached user data');
+      }
+    };
+
+    restoreSession();
+  }, []);
+
   useEffect(() => {
     if (!user) return;
 
     const fetchUnread = async () => {
       try {
-        const count = await api.getUnreadCount(user.id, user.role);
+        const count = await api.getUnreadCount(user.id);
         setUnreadCount(count);
       } catch (e) {
         console.error("Failed to fetch unread count", e);
@@ -446,7 +498,7 @@ export default function App() {
     };
 
     fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
+    const interval = setInterval(fetchUnread, 30000); // Reduced from 10s to 30s to prevent 429 errors
 
     return () => clearInterval(interval);
   }, [user]);
@@ -462,8 +514,12 @@ export default function App() {
         if (typeof userDataOrRole === 'string') {
             const u = await api.loginByRole(userDataOrRole as UserRole);
             setUser(u);
+            // Cache user data for session restore
+            localStorage.setItem('user', JSON.stringify(u));
         } else {
             setUser(userDataOrRole as User);
+            // Cache user data for session restore
+            localStorage.setItem('user', JSON.stringify(userDataOrRole));
         }
     } catch (e) {
         console.error("Login state error", e);
@@ -475,6 +531,10 @@ export default function App() {
   const logout = () => {
     setUser(null);
     setUnreadCount(0);
+    // Clear all auth data
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
   };
 
   const refreshUser = async () => {
@@ -482,7 +542,11 @@ export default function App() {
     setIsLoading(true);
     try {
         const u = await api.getUserById(user.id);
-        if (u) setUser(u);
+        if (u) {
+            setUser(u);
+            // Update cached user data
+            localStorage.setItem('user', JSON.stringify(u));
+        }
     } catch (e) {
         console.error("Refresh user error", e);
     } finally {
@@ -491,6 +555,7 @@ export default function App() {
   };
 
   return (
+    <HelmetProvider>
     <ToastProvider>
         <AppContext.Provider value={{ user, login, logout, refreshUser, isLoading, language, setLanguage, unreadCount }}>
         <HashRouter>
@@ -508,6 +573,7 @@ export default function App() {
                 <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
                 <Route path="/readme" element={<Readme />} />
                 <Route path="/find-mentor" element={<PublicMentorBrowse />} />
+                <Route path="/mentors/:id" element={<PublicMentorProfile />} />
                 <Route path="/ui-test" element={<UITest />} />
 
                 {/* MENTEE ROUTES */}
@@ -526,6 +592,7 @@ export default function App() {
                 <Route path="/mentee/homework" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="homework" /> : <Navigate to="/" />} />
                 <Route path="/mentee/chat" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="chat" /> : <Navigate to="/" />} />
                 <Route path="/mentee/wallet" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="wallet" /> : <Navigate to="/" />} />
+                <Route path="/mentee/feedback" element={user?.role === UserRole.MENTEE ? <MenteeFeedback /> : <Navigate to="/" />} />
 
                 {/* MENTOR ROUTES */}
                 <Route path="/mentor" element={user?.role === UserRole.MENTOR ? <MentorDashboard tab="home" /> : <Navigate to="/" />} />
@@ -536,13 +603,14 @@ export default function App() {
                 <Route path="/mentor/chat" element={user?.role === UserRole.MENTOR ? <MentorDashboard tab="chat" /> : <Navigate to="/" />} />
                 <Route path="/mentor/earnings" element={user?.role === UserRole.MENTOR ? <MentorDashboard tab="earnings" /> : <Navigate to="/" />} />
                 <Route path="/mentor/payout" element={user?.role === UserRole.MENTOR ? <MentorPayout /> : <Navigate to="/" />} />
+                <Route path="/mentor/feedback" element={user?.role === UserRole.MENTOR ? <MentorFeedback /> : <Navigate to="/" />} />
 
                 {/* PROVIDER ROUTES */}
                 <Route path="/provider" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="overview" /> : <Navigate to="/" />} />
                 <Route path="/provider/profile" element={user?.role === UserRole.PROVIDER ? <ProviderProfile /> : <Navigate to="/" />} />
-                <Route path="/provider/referrals" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="referrals" /> : <Navigate to="/" />} />
-                <Route path="/provider/commissions" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="commissions" /> : <Navigate to="/" />} />
+                <Route path="/provider/earnings" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="earnings" /> : <Navigate to="/" />} />
                 <Route path="/provider/payouts" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="payouts" /> : <Navigate to="/" />} />
+                <Route path="/provider/chat" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="chat" /> : <Navigate to="/" />} />
 
                 {/* ADMIN ROUTES */}
                 <Route path="/admin" element={user?.role === UserRole.ADMIN ? <Navigate to="/admin/dashboard" /> : <Navigate to="/" />} />
@@ -557,6 +625,7 @@ export default function App() {
                 <Route path="/admin/pricing/countries" element={user?.role === UserRole.ADMIN ? <AdminPricingCountries /> : <Navigate to="/" />} />
                 <Route path="/admin/pricing/groups" element={user?.role === UserRole.ADMIN ? <AdminPricingGroups /> : <Navigate to="/" />} />
                 <Route path="/admin/provider-levels" element={user?.role === UserRole.ADMIN ? <AdminProviderLevels /> : <Navigate to="/" />} />
+                <Route path="/admin/provider-commissions" element={user?.role === UserRole.ADMIN ? <AdminProviderCommissions /> : <Navigate to="/" />} />
                 <Route path="/admin/pricing-revenue-audit" element={user?.role === UserRole.ADMIN ? <AdminPricingRevenueAudit /> : <Navigate to="/" />} />
                 <Route path="/admin/plans" element={user?.role === UserRole.ADMIN ? <AdminSubscriptionPlans /> : <Navigate to="/" />} />
                 <Route path="/admin/credit-dashboard" element={user?.role === UserRole.ADMIN ? <AdminCreditDashboard /> : <Navigate to="/" />} />
@@ -565,12 +634,14 @@ export default function App() {
                 <Route path="/admin/payments/:id" element={user?.role === UserRole.ADMIN ? <AdminPaymentDetail /> : <Navigate to="/" />} />
                 <Route path="/admin/payouts" element={user?.role === UserRole.ADMIN ? <AdminPayouts /> : <Navigate to="/" />} />
                 <Route path="/admin/payouts/:id" element={user?.role === UserRole.ADMIN ? <AdminPayoutDetail /> : <Navigate to="/" />} />
-                <Route path="/admin/homework" element={user?.role === UserRole.ADMIN ? <AdminHomework /> : <Navigate to="/" />} /> 
+                <Route path="/admin/homework" element={user?.role === UserRole.ADMIN ? <AdminHomework /> : <Navigate to="/" />} />
+                <Route path="/admin/feedback" element={user?.role === UserRole.ADMIN ? <AdminFeedback /> : <Navigate to="/" />} />
                 <Route path="/admin/logs" element={user?.role === UserRole.ADMIN ? <AdminLogs /> : <Navigate to="/" />} />
             </Routes>
             </Layout>
         </HashRouter>
         </AppContext.Provider>
     </ToastProvider>
+    </HelmetProvider>
   );
 }

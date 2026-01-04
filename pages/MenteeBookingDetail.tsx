@@ -10,14 +10,17 @@ import { SubscriptionBadge } from '../components/SubscriptionComponents';
 import { ReviewModal } from '../components/ReviewModal';
 import { HomeworkModal } from '../components/Mentee/HomeworkModal';
 import { translations } from '../lib/i18n';
+import { useToast } from '../components/ui/Toast';
 
 export default function MenteeBookingDetail() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [homework, setHomework] = useState<Homework | null>(null); 
+  const [cancelStats, setCancelStats] = useState<{ cancellationCount: number; remaining: number; canCancel: boolean } | null>(null);
   
   const { user, refreshUser, language } = useApp();
+  const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const t = translations[language].mentee;
 
@@ -25,6 +28,7 @@ export default function MenteeBookingDetail() {
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [isHomeworkOpen, setIsHomeworkOpen] = useState(false);
+  const [isMentorNoShowConfirmOpen, setIsMentorNoShowConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -38,15 +42,23 @@ export default function MenteeBookingDetail() {
       setBooking(b || null);
       
       if (user && b) {
-          if (b.type === 'subscription' && b.subscriptionId) {
+          if (b.type === 'SUBSCRIPTION' && b.subscriptionId) {
               // Fetch đúng gói subscription liên quan đến booking này
               const allSubs = await api.getUserSubscriptions(user.id);
               const sub = allSubs.find(s => s.id === b.subscriptionId);
               setSubscription(sub || null);
           }
-          const allHomework = await api.getHomework(user.id, UserRole.MENTEE);
+          const allHomework = await api.getHomework();
           const related = allHomework.find(h => h.bookingId === b.id);
           setHomework(related || null);
+          
+          // NEW: Fetch cancel stats
+          try {
+              const stats = await api.getMenteeCancellationStats();
+              setCancelStats(stats);
+          } catch (error) {
+              console.error('Failed to load cancel stats:', error);
+          }
       }
   };
 
@@ -58,10 +70,19 @@ export default function MenteeBookingDetail() {
           // Cực kỳ quan trọng: Làm mới user state để cập nhật credits/quota
           await refreshUser();
           await loadData();
-          alert(t.bookingCancelledSuccess);
+          
+          // Show success with remaining cancels
+          if (booking.type === 'CREDIT') {
+              const newStats = await api.getMenteeCancellationStats();
+              success(t.bookingCancelledSuccess, `Cancels remaining this month: ${newStats.remaining}/3`);
+          } else {
+              success(t.bookingCancelledSuccess, 'Your booking has been cancelled successfully');
+          }
+          
           setIsCancelOpen(false);
       } catch(err: any) {
-          alert("Error: " + (err.message || err));
+          const errorMsg = err.message || err;
+          showError('Cannot Cancel', errorMsg);
       } finally {
           setIsProcessing(false);
       }
@@ -71,13 +92,17 @@ export default function MenteeBookingDetail() {
       if(!booking) return;
       setIsProcessing(true);
       try {
-          await api.rescheduleBooking(booking.id, newTime);
+          // newTime is expected to be in ISO format or similar, split date and time
+          const newTimeDate = new Date(newTime);
+          const newDate = newTimeDate.toISOString().split('T')[0];
+          const newStartTime = newTimeDate.toTimeString().split(' ')[0].substring(0, 5);
+          await api.rescheduleBooking(booking.id, newDate, newStartTime);
           await refreshUser();
           await loadData();
           setIsRescheduleOpen(false);
-          alert(t.rescheduledSuccess);
+          success(t.rescheduledSuccess, 'Your lesson has been rescheduled successfully');
       } catch (err: any) {
-          alert("Error: " + (err.message || err));
+          showError('Reschedule Failed', err.message || String(err));
       } finally {
           setIsProcessing(false);
       }
@@ -87,6 +112,21 @@ export default function MenteeBookingDetail() {
       if(!booking) return;
       await api.submitReview(booking.id, rating, comment);
       await loadData();
+  };
+
+  const handleMentorNoShow = async () => {
+      if(!booking) return;
+      setIsProcessing(true);
+      try {
+          await api.markMentorNoShow(booking.id);
+          await loadData();
+          setIsMentorNoShowConfirmOpen(false);
+          success('Report Submitted', 'Our team will review and resolve this within 24-48 hours.');
+      } catch(err: any) {
+          showError('Report Failed', err.message || String(err));
+      } finally {
+          setIsProcessing(false);
+      }
   };
 
   if (!booking) return <div className="p-12 text-center text-slate-400">{t.loadingLessonDetails}</div>;
@@ -102,7 +142,7 @@ export default function MenteeBookingDetail() {
                 <div>
                     <div className="flex items-center gap-2">
                          <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t.lessonSummary}</h1>
-                         {booking.type === 'subscription' && <SubscriptionBadge />}
+                         {booking.type === 'SUBSCRIPTION' && <SubscriptionBadge />}
                     </div>
                     <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">ID: #{booking.id.slice(-8)}</p>
                 </div>
@@ -158,7 +198,7 @@ export default function MenteeBookingDetail() {
                         <div className="flex items-center justify-between gap-4">
                             <div className="font-bold text-slate-800 line-clamp-1">{homework.title}</div>
                             <button onClick={() => setIsHomeworkOpen(true)} className="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10">
-                                {homework.status === 'PENDING' ? t.openTask : t.result}
+                                {!homework.submittedAt ? t.openTask : t.result}
                             </button>
                         </div>
                     </div>
@@ -178,6 +218,16 @@ export default function MenteeBookingDetail() {
                                 {t.cancelLesson}
                             </button>
                         </div>
+
+                        {new Date(booking.startTime) < new Date() && (
+                            <button
+                                onClick={() => setIsMentorNoShowConfirmOpen(true)}
+                                className="w-full py-4 text-orange-600 font-black uppercase tracking-widest text-[11px] border border-orange-200 bg-orange-50 rounded-2xl hover:bg-orange-100 transition-all flex items-center justify-center gap-2"
+                            >
+                                <AlertTriangle size={16} />
+                                Mentor didn't show up
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -194,7 +244,8 @@ export default function MenteeBookingDetail() {
             onClose={() => setIsCancelOpen(false)} 
             onConfirm={handleCancel} 
             booking={booking} 
-            quota={subscription?.cancelQuota} 
+            quota={subscription?.cancelQuota}
+            cancelStats={cancelStats}
             isProcessing={isProcessing} 
         />
         <RescheduleModal 
@@ -212,6 +263,47 @@ export default function MenteeBookingDetail() {
             mentorName={booking.mentorName} 
         />
         {homework && <HomeworkModal isOpen={isHomeworkOpen} onClose={() => setIsHomeworkOpen(false)} homework={homework} onRefresh={loadData} />}
+
+        {/* Mentor No-Show Confirmation Dialog */}
+        {isMentorNoShowConfirmOpen && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 animate-scale-in">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-orange-100 rounded-xl">
+                            <AlertTriangle className="text-orange-600" size={24} />
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900">Report Mentor No-Show</h3>
+                    </div>
+
+                    <p className="text-slate-600">
+                        Are you sure the mentor did not attend this session? This will be reviewed by our admin team.
+                    </p>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <p className="text-xs text-yellow-800 font-bold">
+                            ⚠️ False reports may result in account suspension. Please only report if the mentor genuinely did not attend.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={() => setIsMentorNoShowConfirmOpen(false)}
+                            disabled={isProcessing}
+                            className="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleMentorNoShow}
+                            disabled={isProcessing}
+                            className="flex-1 py-3 bg-orange-600 text-white font-bold rounded-xl hover:bg-orange-700 transition-all disabled:opacity-50"
+                        >
+                            {isProcessing ? 'Submitting...' : 'Confirm Report'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 }

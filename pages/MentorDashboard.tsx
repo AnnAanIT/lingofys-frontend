@@ -3,15 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
 import { api } from '../services/api';
-import { Booking, UserRole, BookingStatus, AvailabilitySlot, MentorEarning, Conversation } from '../types';
+import { Booking, UserRole, BookingStatus, AvailabilitySlot, MentorEarning, Conversation, Homework } from '../types';
 import { WeeklyCalendar } from '../components/Calendar';
-import { LessonModal } from '../components/MentorComponents';
+import { LessonModal, HomeworkCard } from '../components/MentorComponents';
 import { AddAvailabilityModal } from '../components/AddAvailabilityModal';
 import { EditAvailabilityModal } from '../components/EditAvailabilityModal';
+import { MentorHomeworkModal } from '../components/Mentor/MentorHomeworkModal';
 import { createAbsoluteDate, getTimezoneByCountry } from '../lib/timeUtils';
-import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar as CalendarIcon, MessageSquare } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar as CalendarIcon, MessageSquare, FileText, GraduationCap } from 'lucide-react';
 import { ChatWindow } from '../components/Messages/ChatWindow';
 import { translations } from '../lib/i18n';
+import { useToast } from '../components/ui/Toast';
 
 interface Props {
   tab: 'home' | 'calendar' | 'chat' | 'homework' | 'earnings';
@@ -20,11 +22,14 @@ interface Props {
 export default function MentorDashboard({ tab }: Props) {
   const { user } = useApp();
   const navigate = useNavigate();
+  const { success, error: showError, warning } = useToast();
   const t = translations['en'].mentor; // Mentor always uses English
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
   const [balance, setBalance] = useState({ payable: 0, paid: 0, pending: 0 });
+  const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(false);
+  const [chatConvId, setChatConvId] = useState<string>('');  // ✅ FIX: Move state to top level
 
   // Modals for Bookings
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -34,20 +39,38 @@ export default function MentorDashboard({ tab }: Props) {
   const [initialSlotDate, setInitialSlotDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
 
+  // Modal for Homework
+  const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
+
   const fetchData = async () => {
     if(!user) return;
     setLoading(true);
     try {
-        const [b, a, bal] = await Promise.all([
-            api.getBookings(user.id, UserRole.MENTOR),
+        const promises: any[] = [
+            api.getBookings(),
             api.getAvailability(user.id),
             api.getMentorBalanceDetails(user.id)
-        ]);
-        setBookings(b);
-        setAvailability(a);
-        setBalance(bal);
+        ];
+
+        // Only fetch homework when on homework tab
+        if (tab === 'homework') {
+            promises.push(api.getHomework());
+        }
+
+        const results = await Promise.all(promises);
+        setBookings(results[0] || []);
+        setAvailability(results[1] || []);
+        setBalance(results[2] || { payable: 0, paid: 0, pending: 0 });
+
+        if (tab === 'homework' && results[3]) {
+            setHomeworks(results[3] || []);
+        }
     } catch (err) {
         console.error(err);
+        setBookings([]);
+        setAvailability([]);
+        setBalance({ payable: 0, paid: 0, pending: 0 });
+        setHomeworks([]);
     } finally {
         setLoading(false);
     }
@@ -57,39 +80,80 @@ export default function MentorDashboard({ tab }: Props) {
     fetchData();
   }, [user, tab]);
 
+  // ✅ FIX: Load conversation ID at top level (no hooks inside renderChat)
+  useEffect(() => {
+    if (user?.id && tab === 'chat') {
+      // Try to get existing conversations to find real ID
+      api.getConversations(user.id)
+        .then(convos => {
+          const adminConv = convos.find(c => c.participantRole === UserRole.ADMIN);
+          if (adminConv) {
+            setChatConvId(adminConv.id);  // ✅ Use real UUID
+          } else {
+            setChatConvId(`conv_${user.id}`);  // Fallback to temp ID
+          }
+        })
+        .catch(() => {
+          setChatConvId(`conv_${user.id}`);  // Fallback on error
+        });
+    }
+  }, [user?.id, tab]);
+
   const handleSaveNewSlot = async (slotData: Omit<AvailabilitySlot, 'id' | 'mentorId'>) => {
       if (!user) return;
       try {
-          await api.addAvailability(user.id, slotData);
+          // Get current availability and add new slot
+          const currentSlots = await api.getAvailability(user.id);
+          const newSlot: AvailabilitySlot = {
+            id: `temp-${Date.now()}`,
+            mentorId: user.id,
+            ...slotData
+          };
+          await api.addAvailability(user.id, [...currentSlots, newSlot]);
           await fetchData();
           setIsAddSlotOpen(false);
-          alert(t.slotRegistered);
+          success(t.slotRegistered, 'New availability slot has been added to your schedule');
       } catch (err: any) {
-          alert(t.errorSavingSlot + (err.message || err));
+          showError(t.errorSavingSlot, err.message || String(err));
       }
   };
 
   const handleUpdateSlot = async (id: string, updates: Partial<AvailabilitySlot>) => {
       if (!user) return;
       try {
-          await api.updateAvailability(user.id, id, updates);
+          // Get current availability and update the specific slot
+          const currentSlots = await api.getAvailability(user.id);
+          const updatedSlots = currentSlots.map(slot =>
+            slot.id === id ? { ...slot, ...updates } : slot
+          );
+          await api.updateAvailability(user.id, updatedSlots);
           await fetchData();
           setSelectedSlot(null);
-          alert(t.slotUpdated);
+          success(t.slotUpdated, 'Availability slot has been updated successfully');
       } catch (err: any) {
-          alert(t.errorUpdating + (err.message || err));
+          showError(t.errorUpdating, err.message || String(err));
       }
   };
 
   const handleDeleteSlot = async (id: string) => {
       if (!user) return;
       try {
-          await api.deleteAvailability(user.id, id);
+          // Get current availability, find the slot, and use its properties for delete
+          const currentSlots = await api.getAvailability(user.id);
+          const slotToDelete = currentSlots.find(slot => slot.id === id);
+          if (slotToDelete) {
+            // Convert day name to dayOfWeek number
+            const dayMap: {[key: string]: number} = {
+              'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+            };
+            const dayNum = dayMap[slotToDelete.day];
+            await api.deleteAvailability(user.id, dayNum, slotToDelete.startTime);
+          }
           await fetchData();
           setSelectedSlot(null);
-          alert(t.slotDeleted);
+          success(t.slotDeleted, 'Availability slot has been removed from your schedule');
       } catch (err: any) {
-          alert(t.errorDeleting + (err.message || err));
+          showError(t.errorDeleting, err.message || String(err));
       }
   };
 
@@ -113,7 +177,7 @@ export default function MentorDashboard({ tab }: Props) {
               <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden group">
                   <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><CheckCircle size={80} /></div>
                   <div className="text-[10px] font-black text-slate-400 uppercase mb-2">{t.paid}</div>
-                  <div className="text-4xl font-black">${balance.paid}</div>
+                  <div className="text-4xl font-black">{balance.paid} Cr</div>
                   <div className="text-xs text-slate-500 mt-4">{t.lifetimeEarnings}</div>
               </div>
           </div>
@@ -149,8 +213,9 @@ export default function MentorDashboard({ tab }: Props) {
   );
 
   const renderChat = () => {
+    // ✅ FIX: Use state from top level (no hooks inside render function)
     const supportConversation: Conversation = {
-        id: `conv_${user?.id}`,
+        id: chatConvId || `conv_${user?.id}`,  // ✅ Use state from top level
         participantId: user?.id || '',
         participantName: "Admin Support",
         participantAvatar: "",
@@ -311,9 +376,102 @@ export default function MentorDashboard({ tab }: Props) {
         {tab === 'chat' && renderChat()}
 
         {tab === 'homework' && (
-            <div className="max-w-5xl mx-auto space-y-6">
-                <h1 className="text-3xl font-black text-slate-900 uppercase">{t.assignedHomework}</h1>
-                <p className="text-slate-500">{t.manageGradeHomework}</p>
+            <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900 uppercase">{t.assignedHomework}</h1>
+                    <p className="text-slate-500 mt-2">{t.manageGradeHomework}</p>
+                </div>
+
+                {homeworks.length === 0 ? (
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 md:p-16 text-center">
+                        <div className="max-w-md mx-auto space-y-6">
+                            <div className="w-24 h-24 mx-auto bg-purple-50 rounded-full flex items-center justify-center">
+                                <GraduationCap size={48} className="text-purple-300" />
+                            </div>
+
+                            <div className="space-y-3">
+                                <h2 className="text-2xl font-black text-slate-900">No Homework Assigned Yet</h2>
+                                <p className="text-slate-500 text-base leading-relaxed">
+                                    Create homework assignments for your students after completing lessons. <br/>
+                                    Track submissions and provide valuable feedback!
+                                </p>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-2xl p-6 text-left space-y-3">
+                                <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">i</span>
+                                    How to Create Homework
+                                </h3>
+                                <ul className="space-y-2 text-sm text-slate-600">
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-purple-600 font-bold mt-0.5">1.</span>
+                                        <span>Complete a lesson with your student</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-purple-600 font-bold mt-0.5">2.</span>
+                                        <span>Go to the lesson details page</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-purple-600 font-bold mt-0.5">3.</span>
+                                        <span>Click "Create Homework" button</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-purple-600 font-bold mt-0.5">4.</span>
+                                        <span>Enter assignment details and deadline</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-purple-600 font-bold mt-0.5">5.</span>
+                                        <span>Student will submit work, then you can grade it here</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <button
+                                onClick={() => navigate('/mentor/schedule')}
+                                className="inline-flex items-center gap-2 px-8 py-3 bg-purple-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-purple-700 transition-all shadow-lg shadow-purple-500/20"
+                            >
+                                <CalendarIcon size={18} />
+                                View My Schedule
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div>
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                            <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-5">
+                                <div className="text-xs font-black text-yellow-600 uppercase tracking-wider mb-1">Pending Submission</div>
+                                <div className="text-3xl font-black text-yellow-700">
+                                    {homeworks.filter(h => !h.submittedAt).length}
+                                </div>
+                            </div>
+                            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                                <div className="text-xs font-black text-blue-600 uppercase tracking-wider mb-1">To Grade</div>
+                                <div className="text-3xl font-black text-blue-700">
+                                    {homeworks.filter(h => h.submittedAt && !h.gradedAt).length}
+                                </div>
+                            </div>
+                            <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
+                                <div className="text-xs font-black text-green-600 uppercase tracking-wider mb-1">Graded</div>
+                                <div className="text-3xl font-black text-green-700">
+                                    {homeworks.filter(h => h.gradedAt).length}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Homework List */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {homeworks.map(h => (
+                                <HomeworkCard
+                                    key={h.id}
+                                    homework={h}
+                                    role="MENTOR"
+                                    onClick={() => setSelectedHomework(h)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         )}
 
@@ -327,9 +485,34 @@ export default function MentorDashboard({ tab }: Props) {
                 isOpen={!!selectedBookingId}
                 onClose={() => setSelectedBookingId(null)}
                 booking={bookings.find(b => b.id === selectedBookingId)!}
-                onAction={async (action) => {
+                onAction={async (action, data) => {
                     if(!selectedBookingId) return;
-                    if (action === 'COMPLETE') await api.updateBookingStatus(selectedBookingId, BookingStatus.COMPLETED);
+                    
+                    if (action === 'COMPLETE') {
+                        await api.updateBookingStatus(selectedBookingId, BookingStatus.COMPLETED);
+                    } else if (action === 'RESCHEDULE' && data?.newStart) {
+                        // ❌ REMOVED: Mentor không thể reschedule
+                        // Mentor phải cancel và để mentee book lại
+                        warning('Reschedule Not Allowed', 'Mentors cannot reschedule bookings. Please cancel and let the mentee book a new time.');
+                        return; // Don't proceed
+                    } else if (action === 'NO_SHOW') {
+                        await api.updateBookingStatus(selectedBookingId, BookingStatus.NO_SHOW);
+                    } else if (action === 'CANCEL') {
+                        try {
+                            const result = await api.cancelBookingAsMentor(selectedBookingId);
+                            // Show success message with stats
+                            if (result.cancellationStats.wasLateCancellation) {
+                                success('Booking Canceled', `You have ${result.cancellationStats.remaining} late cancellations remaining this month.`);
+                            } else {
+                                success('Booking Canceled', 'Free cancellation - no limit count.');
+                            }
+                        } catch (error: any) {
+                            // Show error (could be limit reached)
+                            showError('Cancellation Failed', error.message || 'Failed to cancel booking');
+                            return; // Don't close modal or refresh on error
+                        }
+                    }
+                    
                     await fetchData();
                     setSelectedBookingId(null);
                 }}
@@ -353,6 +536,16 @@ export default function MentorDashboard({ tab }: Props) {
                 slot={selectedSlot}
                 onUpdate={handleUpdateSlot}
                 onDelete={handleDeleteSlot}
+            />
+        )}
+
+        {/* Modal to grade homework */}
+        {selectedHomework && (
+            <MentorHomeworkModal
+                isOpen={!!selectedHomework}
+                onClose={() => setSelectedHomework(null)}
+                homework={selectedHomework}
+                onRefresh={fetchData}
             />
         )}
     </div>

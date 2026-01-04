@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Mentor, Booking, BookingStatus, Homework, Payout } from '../types';
-import { Star, MapPin, ArrowRight, Clock, Video, CheckCircle, XCircle, Calendar, Upload, FileText, AlertCircle, DollarSign, Download } from 'lucide-react';
+import { Star, MapPin, ArrowRight, Clock, Video, CheckCircle, XCircle, Calendar, Upload, FileText, AlertCircle, AlertTriangle, DollarSign, Download } from 'lucide-react';
 
 // --- MENTOR CARD ---
 export const MentorCard: React.FC<{ mentor: Mentor; onSelect: () => void }> = ({ mentor, onSelect }) => {
@@ -25,7 +25,7 @@ export const MentorCard: React.FC<{ mentor: Mentor; onSelect: () => void }> = ({
             <MapPin size={12} className="mr-1" /> {mentor.country}
         </p>
         
-        <p className="text-slate-600 text-sm line-clamp-2 mb-4">{mentor.bio}</p>
+        <p className="text-slate-600 text-sm line-clamp-2 mb-4">{mentor.headline}</p>
         
         <div className="flex flex-wrap gap-2 justify-center mb-4">
             {mentor.specialties.slice(0, 3).map(s => (
@@ -36,7 +36,8 @@ export const MentorCard: React.FC<{ mentor: Mentor; onSelect: () => void }> = ({
       
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
         <div>
-            <span className="text-lg font-bold text-brand-600">{mentor.hourlyRate} Credits</span>
+            {/* Rate calculation moved to backend API - use getMentorLocalizedRate() */}
+            <span className="text-lg font-bold text-brand-600">--</span>
             <span className="text-xs text-slate-500"> / hour</span>
         </div>
         <button 
@@ -55,11 +56,11 @@ interface LessonModalProps {
     isOpen: boolean;
     onClose: () => void;
     booking: Booking;
-    onAction: (action: 'COMPLETE' | 'RESCHEDULE' | 'NO_SHOW', data?: any) => void;
+    onAction: (action: 'COMPLETE' | 'RESCHEDULE' | 'NO_SHOW' | 'CANCEL', data?: any) => void;
 }
 
 export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booking, onAction }) => {
-    const [view, setView] = useState<'DETAILS' | 'RESCHEDULE' | 'NO_SHOW'>('DETAILS');
+    const [view, setView] = useState<'DETAILS' | 'NO_SHOW' | 'CANCEL'>('DETAILS');
     const [rescheduleTime, setRescheduleTime] = useState('');
     const [rescheduleDate, setRescheduleDate] = useState('');
     const [evidence, setEvidence] = useState('');
@@ -102,26 +103,28 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
             )}
 
             {booking.status === BookingStatus.SCHEDULED && (
-                <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+                <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
                     <button 
                         onClick={() => onAction('COMPLETE')}
                         className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all"
                     >
-                        <CheckCircle size={24} className="mb-1 text-green-500" />
+                        <CheckCircle size={20} className="mb-1 text-green-500" />
                         <span className="text-xs font-bold">Complete</span>
                     </button>
+                    {/* ❌ REMOVED: Reschedule button - Mentor không thể reschedule */}
+                    {/* Mentor phải cancel và để mentee book lại */}
                     <button 
-                        onClick={() => setView('RESCHEDULE')}
-                        className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-yellow-50 hover:border-yellow-200 hover:text-yellow-700 transition-all"
+                        onClick={() => setView('CANCEL')}
+                        className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all"
                     >
-                        <Calendar size={24} className="mb-1 text-yellow-500" />
-                        <span className="text-xs font-bold">Reschedule</span>
+                        <XCircle size={20} className="mb-1 text-orange-500" />
+                        <span className="text-xs font-bold">Cancel</span>
                     </button>
                     <button 
                         onClick={() => setView('NO_SHOW')}
                         className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all"
                     >
-                        <XCircle size={24} className="mb-1 text-red-500" />
+                        <XCircle size={20} className="mb-1 text-red-500" />
                         <span className="text-xs font-bold">No-Show</span>
                     </button>
                 </div>
@@ -184,13 +187,101 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
         </div>
     );
 
+    const renderCancel = () => {
+        // Calculate hours until booking
+        const now = new Date();
+        const bookingStart = new Date(booking.startTime);
+        const hoursUntil = (bookingStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+        const isLateCancellation = hoursUntil < 6;
+
+        return (
+            <div className="space-y-4">
+                <h3 className="font-bold text-lg text-orange-600">Cancel Booking</h3>
+                
+                {/* Warning based on 6h rule */}
+                {isLateCancellation ? (
+                    <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg space-y-2">
+                        <div className="flex items-start">
+                            <AlertTriangle className="text-orange-600 mr-2 flex-shrink-0 mt-0.5" size={20} />
+                            <div>
+                                <p className="font-bold text-orange-900">Late Cancellation {'(<6 hours)'}</p>
+                                <p className="text-sm text-orange-800 mt-1">
+                                    This booking starts in {hoursUntil.toFixed(1)} hours. 
+                                    Canceling now will count toward your monthly limit.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="bg-white p-3 rounded border border-orange-200 text-sm">
+                            <p className="font-medium text-slate-700">⚠️ Monthly Cancellation Limit</p>
+                            <p className="text-slate-600 mt-1">
+                                • You have 3 late cancellations per month<br />
+                                • Cancellations {'>'}6h before booking are FREE<br />
+                                • After 3 late cancels, contact admin
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+                        <div className="flex items-start">
+                            <CheckCircle className="text-green-600 mr-2 flex-shrink-0" size={20} />
+                            <div>
+                                <p className="font-bold text-green-900">Free Cancellation</p>
+                                <p className="text-sm text-green-800 mt-1">
+                                    This booking starts in {hoursUntil.toFixed(1)} hours. 
+                                    Canceling now won't count toward your monthly limit.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Booking details */}
+                <div className="border border-slate-200 rounded-lg p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Student:</span>
+                        <span className="font-medium">{booking.menteeName}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Date:</span>
+                        <span className="font-medium">{bookingStart.toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Time:</span>
+                        <span className="font-medium">{bookingStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Credits:</span>
+                        <span className="font-medium">{booking.totalCost} (will be refunded to student)</span>
+                    </div>
+                </div>
+
+                 <div className="flex gap-2 pt-4">
+                    <button onClick={() => setView('DETAILS')} className="flex-1 py-2 text-slate-500 hover:bg-slate-50 rounded-lg border border-slate-200">
+                        Back
+                    </button>
+                    <button 
+                        onClick={() => onAction('CANCEL')} 
+                        className={`flex-1 py-3 text-white rounded-lg font-bold shadow-md ${
+                            isLateCancellation 
+                                ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200' 
+                                : 'bg-green-600 hover:bg-green-700 shadow-green-200'
+                        }`}
+                    >
+                        {isLateCancellation ? '⚠️ Confirm Late Cancel' : '✅ Confirm Cancel'}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-slide-up relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">&times;</button>
                 {view === 'DETAILS' && renderDetails()}
-                {view === 'RESCHEDULE' && renderReschedule()}
+                {/* RESCHEDULE view removed - Mentor cannot reschedule */}
                 {view === 'NO_SHOW' && renderNoShow()}
+                {view === 'CANCEL' && renderCancel()}
             </div>
         </div>
     );
@@ -198,6 +289,9 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
 
 // --- HOMEWORK CARD ---
 export const HomeworkCard: React.FC<{ homework: Homework, role: 'MENTOR' | 'MENTEE', onClick?: () => void }> = ({ homework, role, onClick }) => {
+    // Compute status from date fields
+    const status = homework.submittedAt ? (homework.gradedAt ? 'REVIEWED' : 'SUBMITTED') : 'PENDING';
+
     const statusColor = {
         'PENDING': 'bg-yellow-100 text-yellow-700',
         'SUBMITTED': 'bg-blue-100 text-blue-700',
@@ -211,24 +305,24 @@ export const HomeworkCard: React.FC<{ homework: Homework, role: 'MENTOR' | 'MENT
                      <h4 className="font-bold text-slate-900">{homework.title}</h4>
                      <p className="text-sm text-slate-500">Due: {new Date(homework.dueDate || '').toLocaleDateString()}</p>
                  </div>
-                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[homework.status]}`}>
-                     {homework.status}
+                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[status]}`}>
+                     {status}
                  </span>
              </div>
-             
+
              <p className="text-slate-600 text-sm mb-4 line-clamp-2">{homework.description}</p>
-             
-             {role === 'MENTOR' && homework.status === 'SUBMITTED' && (
+
+             {role === 'MENTOR' && status === 'SUBMITTED' && (
                  <div className="flex items-center text-blue-600 text-sm font-medium">
                      <FileText size={16} className="mr-2" /> Review Submission
                  </div>
              )}
-              {role === 'MENTEE' && homework.status === 'PENDING' && (
+              {role === 'MENTEE' && status === 'PENDING' && (
                  <div className="flex items-center text-slate-600 text-sm font-medium">
                      <Upload size={16} className="mr-2" /> Upload Work
                  </div>
              )}
-              {homework.status === 'REVIEWED' && (
+              {status === 'REVIEWED' && (
                  <div className="flex items-center text-green-600 text-sm font-medium">
                      <CheckCircle size={16} className="mr-2" /> See Feedback {homework.grade && `(${homework.grade})`}
                  </div>
@@ -273,7 +367,8 @@ interface SlotModalProps {
 export const SlotModal: React.FC<SlotModalProps> = ({ isOpen, onClose, onConfirm, mentor, date, isProcessing, userCredits }) => {
     if (!isOpen) return null;
 
-    const canAfford = userCredits >= mentor.hourlyRate;
+    // Rate calculated dynamically - check via getMentorLocalizedRate() API
+    const canAfford = true; // Disabled: userCredits >= mentor.hourlyRate;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -298,7 +393,8 @@ export const SlotModal: React.FC<SlotModalProps> = ({ isOpen, onClose, onConfirm
                     </div>
                     <div className="border-t border-slate-200 pt-3 flex justify-between">
                          <span className="text-slate-500 text-sm">Cost</span>
-                         <span className="font-bold text-brand-600">{mentor.hourlyRate} Credits</span>
+                         {/* Rate calculated dynamically via backend */}
+                         <span className="font-bold text-brand-600">--</span>
                     </div>
                 </div>
 

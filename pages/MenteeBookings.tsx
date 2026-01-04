@@ -9,11 +9,13 @@ import { SubscriptionBadge } from '../components/SubscriptionComponents';
 import { ReviewModal } from '../components/ReviewModal';
 import { DisputeModal } from '../components/Mentee/DisputeModal'; // Import Dispute Modal
 import { translations } from '../lib/i18n';
+import { useToast } from '../components/ui/Toast';
 
 type Tab = 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
 
 export default function MenteeBookings() {
   const { user, language } = useApp();
+  const { success } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('UPCOMING');
   const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
@@ -24,16 +26,26 @@ export default function MenteeBookings() {
   const fetchData = async () => {
       if (user) {
           console.log('📋 [BOOKINGS PAGE] Fetching bookings for user:', user.id, user.name);
-          const data = await api.getBookings(user.id, UserRole.MENTEE);
-          console.log('  Total bookings fetched:', data.length);
-          console.log('  Bookings:', data.map(b => ({
-              id: b.id.slice(-6),
-              type: b.type,
-              status: b.status,
-              mentor: b.mentorName,
-              subscriptionId: b.subscriptionId
-          })));
-          setBookings(data);
+          try {
+              const data = await api.getBookings();
+              console.log('  Total bookings fetched:', data?.length || 0);
+              if (data && Array.isArray(data)) {
+                  console.log('  Bookings:', data.map(b => ({
+                      id: b.id.slice(-6),
+                      type: b.type,
+                      status: b.status,
+                      mentor: b.mentorName,
+                      subscriptionId: b.subscriptionId
+                  })));
+                  setBookings(data);
+              } else {
+                  console.error('  Invalid bookings data:', data);
+                  setBookings([]);
+              }
+          } catch (error) {
+              console.error('  Error fetching bookings:', error);
+              setBookings([]);
+          }
       }
   };
 
@@ -52,11 +64,11 @@ export default function MenteeBookings() {
   const handleDisputeSuccess = async () => {
       await fetchData();
       setDisputeBooking(null);
-      alert(t.reportSubmitted);
+      success('Report Submitted', t.reportSubmitted);
   };
 
   const filteredBookings = bookings.filter(b => {
-      if (activeTab === 'UPCOMING') return ['SCHEDULED', 'RESCHEDULED'].includes(b.status);
+      if (activeTab === 'UPCOMING') return ['SCHEDULED', 'RESCHEDULED', 'MENTOR_NO_SHOW'].includes(b.status);
       if (activeTab === 'COMPLETED') return ['COMPLETED', 'DISPUTED', 'REFUNDED'].includes(b.status); // Show Disputed here
       if (activeTab === 'CANCELLED') return ['CANCELLED', 'NO_SHOW'].includes(b.status);
       return true;
@@ -74,6 +86,7 @@ export default function MenteeBookings() {
         case 'RESCHEDULED': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
         case 'DISPUTED': return 'bg-orange-100 text-orange-800 border-orange-200';
         case 'REFUNDED': return 'bg-purple-100 text-purple-700 border-purple-200';
+        case 'MENTOR_NO_SHOW': return 'bg-orange-100 text-orange-800 border-orange-200';
         default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
@@ -137,7 +150,7 @@ export default function MenteeBookings() {
                            <div>
                                <div className="flex items-center gap-2 mb-1">
                                    <h3 className="font-bold text-lg text-slate-900">{booking.mentorName}</h3>
-                                   {booking.type === 'subscription' && <SubscriptionBadge />}
+                                   {booking.type === 'SUBSCRIPTION' && <SubscriptionBadge />}
                                </div>
                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                                     <span className="flex items-center"><Clock size={14} className="mr-1.5"/> {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(booking.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>

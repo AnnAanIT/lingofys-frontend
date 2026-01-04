@@ -25,10 +25,13 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatar, o
 
         setUploading(true);
         try {
-            const url = await api.uploadFile(file);
+            console.log('Uploading file:', file.name, file.type, file.size);
+            const url = await api.uploadFile(file, 'avatar');
+            console.log('Upload successful, URL:', url);
             onUpload(url);
-        } catch (error) {
-            alert("Upload failed");
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            alert(`Upload failed: ${error.message || 'Unknown error'}`);
         } finally {
             setUploading(false);
         }

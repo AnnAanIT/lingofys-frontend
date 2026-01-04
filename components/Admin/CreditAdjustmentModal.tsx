@@ -12,7 +12,7 @@ interface CreditAdjustmentModalProps {
 }
 
 export const CreditAdjustmentModal: React.FC<CreditAdjustmentModalProps> = ({ isOpen, onClose, userId, onSuccess, resourceName = "Credit" }) => {
-    const [type, setType] = useState<'add' | 'subtract' | 'set'>('add');
+    const [type, setType] = useState<'add' | 'subtract'>('add');
     const [amount, setAmount] = useState('');
     const [note, setNote] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -23,13 +23,22 @@ export const CreditAdjustmentModal: React.FC<CreditAdjustmentModalProps> = ({ is
         e.preventDefault();
         setIsProcessing(true);
         try {
-            await api.updateUserCredit(userId, type, Number(amount), note);
+            // Convert amount based on adjustment type
+            let finalAmount = Number(amount);
+            if (type === 'subtract') {
+                finalAmount = -finalAmount;
+            }
+            
+            await api.updateUserCredit(userId, finalAmount, note);
             onSuccess();
             onClose();
             setAmount('');
             setNote('');
+            setType('add');
+            alert(`✅ ${resourceName} adjusted successfully!`);
         } catch (error) {
-            alert(`Failed to update ${resourceName.toLowerCase()}: ` + error);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            alert(`❌ Failed to update ${resourceName.toLowerCase()}: ${errorMsg}`);
         } finally {
             setIsProcessing(false);
         }
@@ -53,7 +62,6 @@ export const CreditAdjustmentModal: React.FC<CreditAdjustmentModalProps> = ({ is
                         >
                             <option value="add">Add {resourceName}</option>
                             <option value="subtract">Subtract {resourceName}</option>
-                            <option value="set">Set Exact {resourceName}</option>
                         </select>
                     </div>
 

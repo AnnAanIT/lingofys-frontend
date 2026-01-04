@@ -29,7 +29,7 @@ export const ProviderCommissionHistoryTable: React.FC<ProviderCommissionHistoryT
                                 <td className="px-6 py-3 text-right text-slate-600">${c.topupAmountUsd.toFixed(2)}</td>
                                 <td className="px-6 py-3 text-center text-slate-500">{c.commissionPercent}%</td>
                                 <td className="px-6 py-3 text-right font-mono font-bold text-green-600">
-                                    +${c.commissionAmountUsd.toFixed(2)}
+                                    +{c.commissionCredits.toFixed(2)} Cr
                                 </td>
                             </tr>
                         ))}

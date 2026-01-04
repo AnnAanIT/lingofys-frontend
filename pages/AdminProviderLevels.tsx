@@ -4,8 +4,10 @@ import { api } from '../services/api';
 import { AdminLayout, ConfirmDialog } from '../components/AdminComponents';
 import { ProviderLevel } from '../types';
 import { Plus, Edit2, Trash2, Shield } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminProviderLevels() {
+    const { error: showError } = useToast();
     const [levels, setLevels] = useState<ProviderLevel[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLevel, setEditingLevel] = useState<ProviderLevel | null>(null);
@@ -24,17 +26,24 @@ export default function AdminProviderLevels() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Map frontend field names to backend API requirements
+            const payload = {
+                name: form.name,
+                commissionRate: form.commissionPercent,  // Backend expects "commissionRate"
+                minReferrals: 0  // Default value (backend expects this field)
+            };
+
             if (editingLevel) {
-                await api.updateProviderLevel(form.id, form);
+                await api.updateProviderLevel(form.id, payload);
             } else {
-                await api.addProviderLevel(form);
+                await api.addProviderLevel(payload);
             }
             await loadData();
             setIsModalOpen(false);
             setEditingLevel(null);
             setForm({ id: '', name: '', commissionPercent: 5 });
         } catch (err) {
-            alert("Error saving level: " + err);
+            showError('Save Failed', String(err));
         }
     };
 

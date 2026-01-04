@@ -19,21 +19,47 @@ export const HomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework, onRe
     const commonT = translations[language].common;
     const [note, setNote] = useState('');
     const [loading, setLoading] = useState(false);
+    const [uploadedFileUrl, setUploadedFileUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     if (!isOpen) return null;
 
-    const handleUpload = async () => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            // Upload to Supabase and get the URL
+            const url = await api.uploadFile(file, 'homework');
+            console.log('Homework file uploaded successfully, URL:', url);
+            setUploadedFileUrl(url);
+        } catch (error: any) {
+            console.error('Homework upload error:', error);
+            alert(`Upload failed: ${error.message || 'Unknown error'}`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!uploadedFileUrl) {
+            alert('Please upload a file first');
+            return;
+        }
+
         setLoading(true);
         try {
-            await api.updateHomework(homework.id, {
-                status: 'SUBMITTED',
-                studentNote: note,
-                studentSubmission: 'file_uploaded.pdf'
-            });
+            // Pass both file URL and note to API
+            await api.submitHomework(homework.id, uploadedFileUrl, note);
             onRefresh();
             onClose();
-        } catch (e) {
-            alert("Submission Error");
+            // Reset state
+            setNote('');
+            setUploadedFileUrl('');
+        } catch (e: any) {
+            alert(e.message || "Submission Error");
         } finally {
             setLoading(false);
         }
@@ -51,25 +77,74 @@ export const HomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework, onRe
                         <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full"><X size={20} /></button>
                     </div>
 
-                    {homework.status === 'PENDING' ? (
+                    {!homework.submittedAt ? (
                         <div className="space-y-6">
-                            <textarea 
-                                value={note}
-                                onChange={e => setNote(e.target.value)}
-                                placeholder={t.placeholder}
-                                className="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none h-40 font-medium"
-                            />
-                            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <Upload className="mx-auto mb-2 text-slate-300 group-hover:text-brand-500 transition-colors" size={32} />
-                                <p className="text-slate-400 font-bold">{t.dropzone}</p>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Notes (Optional)</label>
+                                <textarea 
+                                    value={note}
+                                    onChange={e => setNote(e.target.value)}
+                                    placeholder={t.placeholder}
+                                    className="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none h-32 font-medium"
+                                />
                             </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Upload File <span className="text-red-500">*</span></label>
+                                <input 
+                                    ref={fileInputRef}
+                                    type="file" 
+                                    onChange={handleFileChange}
+                                    accept=".pdf,.doc,.docx,.txt,.zip"
+                                    className="hidden"
+                                />
+                                {!uploadedFileUrl ? (
+                                    <div 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center hover:bg-slate-50 transition-colors cursor-pointer group"
+                                    >
+                                        {uploading ? (
+                                            <>
+                                                <Loader2 className="mx-auto mb-2 text-brand-500 animate-spin" size={32} />
+                                                <p className="text-slate-600 font-bold">Uploading...</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="mx-auto mb-2 text-slate-300 group-hover:text-brand-500 transition-colors" size={32} />
+                                                <p className="text-slate-400 font-bold">{t.dropzone || 'Click to upload file'}</p>
+                                                <p className="text-xs text-slate-400 mt-2">PDF, DOC, DOCX, TXT, ZIP</p>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-2xl">
+                                        <div className="flex items-center gap-3">
+                                            <CheckCircle className="text-green-600" size={24} />
+                                            <div>
+                                                <p className="font-bold text-green-900">File uploaded successfully</p>
+                                                <p className="text-xs text-green-700">Ready to submit</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                setUploadedFileUrl('');
+                                                if (fileInputRef.current) fileInputRef.current.value = '';
+                                            }}
+                                            className="text-red-600 hover:text-red-800 font-medium text-sm"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
                             <button 
-                                onClick={handleUpload}
-                                disabled={loading}
-                                className="w-full py-4 bg-brand-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-brand-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                onClick={handleSubmit}
+                                disabled={loading || !uploadedFileUrl}
+                                className="w-full py-4 bg-brand-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : <CheckCircle size={18} />}
-                                {t.submitNow}
+                                {t.submitNow || 'Submit Homework'}
                             </button>
                         </div>
                     ) : (

@@ -7,9 +7,11 @@ import { PricingCountryTable } from '../components/Admin/PricingCountryTable';
 import { PricingCountryModal } from '../components/Admin/PricingCountryModal';
 import { PricingCountry } from '../types';
 import { Search, Plus, ArrowLeft } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPricingCountries() {
     const navigate = useNavigate();
+    const { error: showError } = useToast();
     const [countries, setCountries] = useState<PricingCountry[]>([]);
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function AdminPricingCountries() {
             setIsModalOpen(false);
             setEditingItem(null);
         } catch (error: any) {
-            alert(error);
+            showError('Operation Failed', String(error));
         }
     };
 

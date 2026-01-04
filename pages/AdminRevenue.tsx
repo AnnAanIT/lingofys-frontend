@@ -36,7 +36,7 @@ export default function AdminRevenue() {
   }, [view, month, year]);
 
   const loadData = async () => {
-      const h = await api.getSystemFinancialHealth(user);
+      const h = await api.getSystemFinancialHealth();
       setHealth(h);
 
       if (view === 'WEEKLY') {
@@ -44,7 +44,7 @@ export default function AdminRevenue() {
           setWeeklyData(data);
           setMonthlyData(null);
       } else {
-          const data = await api.getMonthlyRevenue(year, month);
+          const data = await api.getMonthlyRevenue();
           setMonthlyData(data);
           setWeeklyData(null);
       }
@@ -179,12 +179,12 @@ export default function AdminRevenue() {
                             {view === 'WEEKLY' ? <BarChart2 size={20} className="mr-2 text-brand-600" /> : <TrendingUp size={20} className="mr-2 text-brand-600" />} 
                             {displayLabel}
                         </h3>
-                        <RevenueChart data={activeData.days} type={view === 'WEEKLY' ? 'bar' : 'line'} />
+                        <RevenueChart data={activeData?.days || []} type={view === 'WEEKLY' ? 'bar' : 'line'} />
                     </div>
                 </div>
                 <div className="space-y-6">
-                    <RevenueSummary total={activeData.totalTopup} title="Total Top-up (In)" />
-                    <RevenueSummary total={activeData.totalPayout} title="Total Payout (Out)" />
+                    <RevenueSummary total={activeData?.totalTopup || 0} title="Total Top-up (In)" />
+                    <RevenueSummary total={activeData?.totalPayout || 0} title="Total Payout (Out)" />
                     
                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <h4 className="text-sm font-bold text-slate-500 mb-4">Internal Auditor Note</h4>

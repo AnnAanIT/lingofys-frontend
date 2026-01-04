@@ -15,14 +15,18 @@ export default function AdminLogs() {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   const fetchLogs = async () => {
-    const filter: any = {};
-    if (filterSrc !== 'ALL') filter.src = filterSrc;
-    if (filterLvl !== 'ALL') filter.lvl = filterLvl;
-    if (startDate) filter.from = startDate;
-    if (endDate) filter.to = endDate;
+    // TODO: Backend getLogs doesn't support filter parameters yet
+    // Will need to filter on frontend
+    const data = await api.getLogs();
 
-    const data = await api.getLogs(filter);
-    setLogs(data);
+    // Apply filters on frontend
+    let filtered = data;
+    if (filterSrc !== 'ALL') filtered = filtered.filter(log => (log as any).src === filterSrc);
+    if (filterLvl !== 'ALL') filtered = filtered.filter(log => (log as any).lvl === filterLvl);
+    if (startDate) filtered = filtered.filter(log => new Date(log.ts) >= new Date(startDate));
+    if (endDate) filtered = filtered.filter(log => new Date(log.ts) <= new Date(endDate));
+
+    setLogs(filtered);
   };
 
   useEffect(() => {

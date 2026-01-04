@@ -1,0 +1,265 @@
+{
+  "brand": {
+    "name": "Lingofys",
+    "tagline": "Master Languages Through 1:1 Expert Mentorship"
+  },
+  "nav": {
+    "howItWorks": "How it Works",
+    "mentors": "Mentors",
+    "pricing": "Pricing",
+    "login": "Log In",
+    "getStarted": "Get Started"
+  },
+  "hero": {
+    "title": "Learn {{language}} 1:1 with",
+    "titleHighlight": "Professional Teachers",
+    "description": "Connect with verified language teachers for personalized 1:1 online lessons. Learn English, Japanese, or Chinese at your own pace.",
+    "ctaPrimary": "Start Learning",
+    "ctaSecondary": "Become a Teacher",
+    "badges": {
+      "globalNetwork": "Global Network",
+      "verifiedTeachers": "Verified Teachers"
+    }
+  },
+  "languages": {
+    "english": "English",
+    "japanese": "Japanese",
+    "chinese": "Chinese",
+    "all": "All Languages"
+  },
+  "howItWorks": {
+    "title": "How it Works",
+    "subtitle": "Master a new language in three simple steps.",
+    "step1": {
+      "title": "1. Choose Teacher",
+      "description": "Browse profiles, watch intro videos, and filter by specialty."
+    },
+    "step2": {
+      "title": "2. Book Schedule",
+      "description": "Select a time slot that fits your busy lifestyle perfectly."
+    },
+    "step3": {
+      "title": "3. Start Learning",
+      "description": "Connect via high-quality video calls and interactive tools."
+    }
+  },
+  "mentorShowcase": {
+    "title": "Meet our Top Teachers",
+    "subtitle": "Learn from the best educators around the world.",
+    "viewAll": "View All Teachers",
+    "roles": {
+      "businessEnglish": "Business English",
+      "ieltsPrep": "IELTS Prep",
+      "dailyConversation": "Daily Conversation",
+      "grammarExpert": "Grammar Expert"
+    }
+  },
+  "pricing": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Choose the plan that fits your learning style. No hidden fees.",
+    "payAsYouGo": {
+      "title": "Pay As You Go",
+      "subtitle": "Maximum flexibility for busy learners.",
+      "price": "$10",
+      "unit": "/ credit",
+      "features": {
+        "noExpiration": "No expiration date",
+        "anyMentor": "Book any teacher",
+        "cancellation": "24h cancellation policy"
+      },
+      "cta": "Buy Credits"
+    },
+    "subscription": {
+      "title": "Monthly Subscription",
+      "subtitle": "Consistency for faster results.",
+      "price": "$8",
+      "unit": "/ lesson",
+      "badge": "POPULAR",
+      "features": {
+        "save20": "Save 20% vs credits",
+        "fixedSlots": "Fixed weekly slots",
+        "prioritySupport": "Priority support"
+      },
+      "cta": "View Plans"
+    }
+  },
+  "affiliate": {
+    "title": "Become a Partner",
+    "description": "Join our Affiliate Program and earn 10% lifetime commission for every student you refer. Help us spread knowledge while earning passive income.",
+    "cta": "Become a Provider"
+  },
+  "reviews": {
+    "title": "What our students say",
+    "placeholderText": "The teachers here are incredibly patient. I went from afraid to speak to having daily conversations in just 3 months!",
+    "placeholderName": "Student Name",
+    "placeholderJob": "Software Engineer"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "items": {
+      "credits": {
+        "question": "How do I book a lesson?",
+        "answer": "Simple! Browse our teachers, pick your favorite, select an available time slot, and confirm with your credits. "
+      },
+      "cancellation": {
+        "question": "Can I cancel a lesson?",
+        "answer": "Yes! If you cancel more than 6 hours before the lesson starts, you get a full refund of your credits. Late cancellations are non-refundable to respect the teacher's time."
+      },
+      "subscription": {
+        "question": "How do subscription plans work?",
+        "answer": "Subscriptions give you a set number of lessons per month at a discounted rate. You choose a fixed weekly slot (e.g., every Monday at 8 PM) to build a consistent habit."
+      },
+      "becomeMentor": {
+        "question": "How do I become a teacher?",
+        "answer": "Sign up as a Teacher, fill out your profile, and upload a short introduction video. Our team will review your application within 48 hours."
+      }
+    }
+  },
+  "footer": {
+    "description": "Empowering language learners across Asia through connection and technology.",
+    "platform": {
+      "title": "Platform",
+      "browse": "Browse Teachers",
+      "pricing": "Pricing",
+      "login": "Log In"
+    },
+    "company": {
+      "title": "Company",
+      "about": "About Us",
+      "careers": "Careers",
+      "contact": "Contact"
+    },
+    "legal": {
+      "title": "Legal",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "seo": {
+    "landing": {
+      "title": "Lingofys - Learn English, Japanese & Chinese Online",
+      "description": "Master English, Japanese, or Chinese through 1:1 online lessons with verified professional teachers. Flexible scheduling, affordable pricing, personalized learning. Start your language journey today!"
+    },
+    "find-mentor": {
+      "title": "Find Your Perfect Language Teacher",
+      "description": "Browse verified English, Japanese, and Chinese teachers. Filter by specialty, availability, and price. Book your first lesson today!"
+    },
+    "become-mentor": {
+      "title": "Become a Language Teacher - Teach Online",
+      "description": "Join Lingofys as a language teacher. Earn money teaching English, Japanese, or Chinese online. Flexible hours, global students."
+    },
+    "keywords": {
+      "english": "learn english online",
+      "japanese": "learn japanese online",
+      "chinese": "learn chinese online"
+    }
+  },
+  "readme": {
+    "backToLogin": "Back to Login",
+    "title": "Welcome to Lingofys",
+    "subtitle": "Platform connecting students and teachers for 1-1 online language learning (English, Chinese, Japanese)",
+    "intro": {
+      "title": "Learn languages 1-1 with professional teachers",
+      "description": "Lingofys connects you with experienced language teachers from Japan, China, Philippines and many other places. Learn English, Chinese, Japanese flexibly according to your schedule with transparent payment and high quality experience."
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "step1": {
+        "title": "Sign up",
+        "description": "Create a free account as a Student (to learn languages) or Teacher (to teach languages)."
+      },
+      "step2": {
+        "title": "Search & Book",
+        "description": "Browse teachers, view profiles and reviews. Choose a suitable time and book a lesson in just a few clicks."
+      },
+      "step3": {
+        "title": "Learn & Review",
+        "description": "Join online lessons via video call. After the lesson, rate the teacher to help the learning community."
+      }
+    },
+    "forStudents": {
+      "title": "For Students",
+      "globalTeachers": {
+        "title": "Global teachers",
+        "description": "Learn with native teachers from Japan, China, Philippines and many other countries around the world."
+      },
+      "flexibleSchedule": {
+        "title": "Flexible schedule",
+        "description": "Book according to your schedule. Can cancel or reschedule within allowed limits."
+      },
+      "transparentPayment": {
+        "title": "Transparent payment",
+        "description": "Top up Credit wallet, pay per lesson. Clear pricing, no hidden fees."
+      },
+      "oneOnOne": {
+        "title": "1-1 online learning",
+        "description": "Each lesson is a private meeting between you and the teacher, fully focused on your needs."
+      },
+      "protection": {
+        "title": "Rights protection",
+        "description": "Escrow system ensures your money is protected until the lesson is completed."
+      },
+      "reviews": {
+        "title": "Reviews & Ratings",
+        "description": "View reviews from other students to choose the teacher that best suits you."
+      }
+    },
+    "forTeachers": {
+      "title": "For Teachers",
+      "scheduleManagement": {
+        "title": "Teaching schedule management",
+        "description": "Set your available time slots and let students book. You decide when to teach."
+      },
+      "transparentIncome": {
+        "title": "Transparent income",
+        "description": "Receive Credits after each completed lesson. Withdraw to bank account anytime."
+      },
+      "globalReach": {
+        "title": "Global student reach",
+        "description": "Students from all over the world can find and book with you."
+      },
+      "support": {
+        "title": "Support & Protection",
+        "description": "Support team ready to help you solve any issues."
+      }
+    },
+    "payment": {
+      "title": "How payment works",
+      "systemTitle": "Credit system",
+      "systemDescription": "Lingofys uses an internal currency called Credit. You top up USD into your wallet and use Credits to pay for lessons.",
+      "step1": {
+        "label": "Step 1",
+        "title": "Top up",
+        "description": "Top up USD into wallet and receive corresponding Credits at current exchange rate."
+      },
+      "step2": {
+        "label": "Step 2",
+        "title": "Book lesson",
+        "description": "Credits are held temporarily when you book, ensuring safe transactions."
+      },
+      "step3": {
+        "label": "Step 3",
+        "title": "Complete",
+        "description": "After the lesson, Credits are transferred to the teacher. Teacher can withdraw to USD."
+      },
+      "protection": {
+        "title": "Transaction protection",
+        "description": "Escrow system ensures student money is protected until lesson is completed, and teachers are paid in full after completing the work."
+      }
+    },
+    "cta": {
+      "title": "Ready to start?",
+      "description": "Join the Lingofys community today. Whether you want to learn a new language or share your knowledge, we welcome you!",
+      "studentButton": "Sign up as Student",
+      "teacherButton": "Sign up as Teacher"
+    },
+    "support": {
+      "title": "Need support?",
+      "description": "If you have any questions or need support, don't hesitate to contact us:",
+      "email": "Email:",
+      "emailValue": "ad.lingofys@gmail.com",
+      "hours": "Working hours:",
+      "hoursValue": "Monday - Sunday, 9:00 - 22:00 (GMT+7)"
+    }
+  }
+}

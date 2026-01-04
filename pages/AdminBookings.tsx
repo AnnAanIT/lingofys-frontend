@@ -5,11 +5,13 @@ import { AdminLayout, StatusBadge, ConfirmDialog } from '../components/AdminComp
 import { Booking, BookingStatus } from '../types';
 import { MoreHorizontal, FileText, Search, Filter, Calendar, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { DisputeResolutionModal } from '../components/Admin/DisputeResolutionModal';
+import { useApp } from '../App';
 
 export default function AdminBookings() {
+  const { user: currentUser } = useApp();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [action, setAction] = useState<'CANCEL' | 'REFUND' | null>(null);
+  const [action, setAction] = useState<'CANCEL' | null>(null);
   
   // Dispute Modal
   const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
@@ -31,19 +33,20 @@ export default function AdminBookings() {
   }, []);
 
   const handleAction = async () => {
-    if (!selectedBooking || !action) return;
-    const newStatus = action === 'CANCEL' ? BookingStatus.CANCELLED : BookingStatus.REFUNDED;
-    await api.updateBookingStatus(selectedBooking.id, newStatus);
-    await api.logAction('BOOKING_UPDATE', `Admin set booking ${selectedBooking.id} to ${newStatus}`, 'u3');
+    if (!selectedBooking || !action || !currentUser) return;
+    // Only CANCEL action is supported for direct status updates
+    // REFUNDED status can only be achieved through dispute resolution
+    await api.updateBookingStatus(selectedBooking.id, BookingStatus.CANCELLED);
+    await api.logAction('BOOKING_UPDATE', currentUser.id, `Admin cancelled booking ${selectedBooking.id}`);
     fetchBookings();
     setSelectedBooking(null);
     setAction(null);
   };
 
   const handleResolveDispute = async (outcome: 'REFUND_MENTEE' | 'DISMISS', note: string) => {
-      if (!disputeBooking) return;
+      if (!disputeBooking || !currentUser) return;
       await api.resolveDispute(disputeBooking.id, outcome, note);
-      await api.logAction('DISPUTE_RESOLVED', `Admin resolved dispute for #${disputeBooking.id} as ${outcome}`, 'u3');
+      await api.logAction('DISPUTE_RESOLVED', currentUser.id, `Admin resolved dispute for #${disputeBooking.id} as ${outcome}`);
       fetchBookings();
       setDisputeBooking(null);
   };

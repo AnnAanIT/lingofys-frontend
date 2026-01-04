@@ -21,6 +21,7 @@ export default function MenteeDashboard({ tab }: Props) {
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
+  const [chatConvId, setChatConvId] = useState<string>('');  // ✅ FIX: Move state to top level
 
   const t = translations[language].mentee;
   const commonT = translations[language].common;
@@ -29,8 +30,8 @@ export default function MenteeDashboard({ tab }: Props) {
   const fetchData = useCallback(async () => {
     if (!user) return;
     const [b, h] = await Promise.all([
-        api.getBookings(user.id, UserRole.MENTEE),
-        api.getHomework(user.id, UserRole.MENTEE)
+        api.getBookings(),
+        api.getHomework()
     ]);
     setBookings(b);
     setHomeworks(h);
@@ -44,6 +45,24 @@ export default function MenteeDashboard({ tab }: Props) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // ✅ FIX: Load real conversation ID for chat
+  useEffect(() => {
+    if (user?.id && tab === 'chat') {
+      api.getConversations(user.id)
+        .then(convos => {
+          const adminConv = convos.find(c => c.participantRole === UserRole.ADMIN);
+          if (adminConv) {
+            setChatConvId(adminConv.id);
+          } else {
+            setChatConvId(`conv_${user.id}`);  // Fallback to temp ID
+          }
+        })
+        .catch(() => {
+          setChatConvId(`conv_${user.id}`);  // Fallback on error
+        });
+    }
+  }, [user?.id, tab]);
 
   const renderHome = () => {
       const upcoming = bookings
@@ -64,7 +83,7 @@ export default function MenteeDashboard({ tab }: Props) {
                           <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 pt-3 md:pt-4">
                               <div className="bg-white/10 backdrop-blur-md px-5 md:px-6 py-3 rounded-2xl border border-white/10 w-full sm:w-auto">
                                   <div className="text-[10px] uppercase font-black text-slate-400 mb-1">{t.availableBalance}</div>
-                                  <div className="font-black text-2xl md:text-3xl">{user?.credits.toFixed(0)} {t.creditsLabel}</div>
+                                  <div className="font-black text-2xl md:text-3xl">{Number(user?.credits || 0).toFixed(0)} {t.creditsLabel}</div>
                               </div>
                               <button onClick={() => setIsTopUpOpen(true)} className="bg-brand-600 hover:bg-brand-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-brand-900/40 w-full sm:w-auto text-center">
                                 + {t.topUp}
@@ -116,17 +135,27 @@ export default function MenteeDashboard({ tab }: Props) {
                   <div className="space-y-6">
                       <h3 className="font-black text-lg md:text-xl text-slate-800 uppercase tracking-tight">{t.homeworkTitle}</h3>
                       <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-200 p-5 md:p-6 space-y-3 md:space-y-4">
-                          {homeworks.filter(h => h.status === 'PENDING').length > 0 ? (
-                              homeworks.filter(h => h.status === 'PENDING').slice(0, 3).map(h => (
+                          {homeworks.filter(h => !h.submittedAt).length > 0 ? (
+                              homeworks.filter(h => !h.submittedAt).slice(0, 3).map(h => (
                                   <div key={h.id} onClick={() => setSelectedHomework(h)} className="p-4 rounded-xl md:rounded-2xl bg-slate-50 hover:bg-brand-50 cursor-pointer border border-slate-100 transition-all">
                                       <div className="font-bold text-slate-900 text-sm truncate">{h.title}</div>
                                       <div className="text-[10px] font-black text-slate-400 uppercase mt-1">{t.validUntil}: {new Date(h.dueDate || '').toLocaleDateString()}</div>
                                   </div>
                               ))
                           ) : (
-                              <div className="text-center py-6">
-                                  <CheckCircle className="text-green-500 mx-auto mb-2" size={32} />
-                                  <p className="text-slate-800 font-bold text-sm">{t.allDone}</p>
+                              <div className="text-center py-6 md:py-8">
+                                  {homeworks.length === 0 ? (
+                                      <>
+                                          <FileText className="text-slate-300 mx-auto mb-3" size={40} />
+                                          <p className="text-slate-500 font-medium text-sm">No homework yet</p>
+                                          <p className="text-slate-400 text-xs mt-1">Assignments will appear here</p>
+                                      </>
+                                  ) : (
+                                      <>
+                                          <CheckCircle className="text-green-500 mx-auto mb-2" size={32} />
+                                          <p className="text-slate-800 font-bold text-sm">{t.allDone}</p>
+                                      </>
+                                  )}
                               </div>
                           )}
                           <Link to="/mentee/homework" className="block text-center text-xs font-black uppercase text-brand-600 hover:underline pt-2 md:pt-3">{commonT.viewAll}</Link>
@@ -144,7 +173,7 @@ export default function MenteeDashboard({ tab }: Props) {
               <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-10">
                   <div className="flex-1">
                       <p className="text-slate-400 font-black uppercase tracking-widest text-[11px] mb-2">{t.availableBalance}</p>
-                      <div className="text-4xl md:text-6xl font-black tracking-tighter mb-3 md:mb-4">{user?.credits.toFixed(0)} <span className="text-lg md:text-xl font-bold text-slate-600">{t.creditsLabel}</span></div>
+                      <div className="text-4xl md:text-6xl font-black tracking-tighter mb-3 md:mb-4">{Number(user?.credits || 0).toFixed(0)} <span className="text-lg md:text-xl font-bold text-slate-600">{t.creditsLabel}</span></div>
                       <p className="text-slate-500 text-sm md:text-base">{t.creditsDescription}</p>
                   </div>
                   <button onClick={() => setIsTopUpOpen(true)} className="px-6 md:px-10 py-3 md:py-5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all flex items-center justify-center w-full md:w-auto">
@@ -187,8 +216,9 @@ export default function MenteeDashboard({ tab }: Props) {
   );
 
   const renderChat = () => {
+    // ✅ FIX: Use state from top level (no hooks inside render function)
     const supportConversation: Conversation = {
-        id: `conv_${user?.id}`,
+        id: chatConvId || `conv_${user?.id}`,  // ✅ Use state from top level
         participantId: user?.id || '',
         participantName: "Admin Support",
         participantAvatar: "",
@@ -220,22 +250,76 @@ export default function MenteeDashboard({ tab }: Props) {
         {tab === 'wallet' && renderWallet()}
         {tab === 'chat' && renderChat()}
         {tab === 'homework' && (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
                 <h1 className="text-3xl font-black text-slate-900 uppercase">{t.homeworkTitle}</h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {homeworks.map(h => (
-                        <div key={h.id} onClick={() => setSelectedHomework(h)} className="bg-white p-6 rounded-3xl border border-slate-200 hover:shadow-xl transition-all cursor-pointer">
-                            <div className="flex justify-between items-start mb-4">
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${h.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                    {h.status}
-                                </span>
-                                <FileText className="text-slate-200" size={24} />
+
+                {homeworks.length === 0 ? (
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 md:p-16 text-center">
+                        <div className="max-w-md mx-auto space-y-6">
+                            <div className="w-24 h-24 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
+                                <FileText size={48} className="text-slate-300" />
                             </div>
-                            <h3 className="font-bold text-lg text-slate-900 mb-2">{h.title}</h3>
-                            <p className="text-slate-500 text-sm line-clamp-2">{h.description}</p>
+
+                            <div className="space-y-3">
+                                <h2 className="text-2xl font-black text-slate-900">No Homework Yet</h2>
+                                <p className="text-slate-500 text-base leading-relaxed">
+                                    Your teacher will assign homework after your lessons. <br/>
+                                    Complete assignments to improve your English skills!
+                                </p>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-2xl p-6 text-left space-y-3">
+                                <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                                    <span className="w-6 h-6 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs">i</span>
+                                    How It Works
+                                </h3>
+                                <ul className="space-y-2 text-sm text-slate-600">
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-brand-600 font-bold mt-0.5">1.</span>
+                                        <span>After each lesson, your teacher may assign homework</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-brand-600 font-bold mt-0.5">2.</span>
+                                        <span>You'll see assignments here with due dates</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-brand-600 font-bold mt-0.5">3.</span>
+                                        <span>Submit your work before the deadline</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-brand-600 font-bold mt-0.5">4.</span>
+                                        <span>Get feedback and grades from your teacher</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <Link
+                                to="/mentee/find-mentor"
+                                className="inline-flex items-center gap-2 px-8 py-3 bg-brand-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20"
+                            >
+                                Book A Lesson <ChevronRight size={18} />
+                            </Link>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {homeworks.map(h => {
+                            const status = h.submittedAt ? (h.gradedAt ? 'REVIEWED' : 'SUBMITTED') : 'PENDING';
+                            return (
+                                <div key={h.id} onClick={() => setSelectedHomework(h)} className="bg-white p-6 rounded-3xl border border-slate-200 hover:shadow-xl transition-all cursor-pointer">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : status === 'SUBMITTED' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                            {status}
+                                        </span>
+                                        <FileText className="text-slate-200" size={24} />
+                                    </div>
+                                    <h3 className="font-bold text-lg text-slate-900 mb-2">{h.title}</h3>
+                                    <p className="text-slate-500 text-sm line-clamp-2">{h.description}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         )}
 

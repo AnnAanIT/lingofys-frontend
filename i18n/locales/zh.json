@@ -1,0 +1,265 @@
+{
+  "brand": {
+    "name": "Lingofys",
+    "tagline": "通过一对一专家指导掌握语言"
+  },
+  "nav": {
+    "howItWorks": "工作原理",
+    "mentors": "导师",
+    "pricing": "价格",
+    "login": "登录",
+    "getStarted": "开始使用"
+  },
+  "hero": {
+    "title": "一对一学习{{language}}",
+    "titleHighlight": "专业教师",
+    "description": "与经过认证的语言教师进行个性化的一对一在线课程。按照自己的节奏学习英语、日语或中文。",
+    "ctaPrimary": "开始学习",
+    "ctaSecondary": "成为教师",
+    "badges": {
+      "globalNetwork": "全球网络",
+      "verifiedTeachers": "认证教师"
+    }
+  },
+  "languages": {
+    "english": "英语",
+    "japanese": "日语",
+    "chinese": "中文",
+    "all": "所有语言"
+  },
+  "howItWorks": {
+    "title": "工作原理",
+    "subtitle": "通过三个简单步骤掌握新语言。",
+    "step1": {
+      "title": "1. 选择教师",
+      "description": "浏览个人资料，观看介绍视频，并按专业筛选。"
+    },
+    "step2": {
+      "title": "2. 预约时间",
+      "description": "选择适合您繁忙生活方式的时间段。"
+    },
+    "step3": {
+      "title": "3. 开始学习",
+      "description": "通过高质量视频通话和互动工具进行连接。"
+    }
+  },
+  "mentorShowcase": {
+    "title": "认识我们的顶级教师",
+    "subtitle": "向世界各地最优秀的教育工作者学习。",
+    "viewAll": "查看所有教师",
+    "roles": {
+      "businessEnglish": "商务英语",
+      "ieltsPrep": "雅思备考",
+      "dailyConversation": "日常会话",
+      "grammarExpert": "语法专家"
+    }
+  },
+  "pricing": {
+    "title": "简单透明的定价",
+    "subtitle": "选择适合您学习风格的计划。没有隐藏费用。",
+    "payAsYouGo": {
+      "title": "按需付费",
+      "subtitle": "为忙碌的学习者提供最大的灵活性。",
+      "price": "$10",
+      "unit": "/ 学分",
+      "features": {
+        "noExpiration": "无过期日期",
+        "anyMentor": "预约任何教师",
+        "cancellation": "24小时取消政策"
+      },
+      "cta": "购买学分"
+    },
+    "subscription": {
+      "title": "月度订阅",
+      "subtitle": "持续学习以获得更快的结果。",
+      "price": "$8",
+      "unit": "/ 课程",
+      "badge": "热门",
+      "features": {
+        "save20": "比学分节省20%",
+        "fixedSlots": "固定的每周时间段",
+        "prioritySupport": "优先支持"
+      },
+      "cta": "查看计划"
+    }
+  },
+  "affiliate": {
+    "title": "成为合作伙伴",
+    "description": "加入我们的联盟计划，为您推荐的每位学生赚取10%的终身佣金。在传播知识的同时赚取被动收入。",
+    "cta": "成为提供者"
+  },
+  "reviews": {
+    "title": "学生评价",
+    "placeholderText": "这里的老师非常耐心。我从害怕说话到仅用3个月就能进行日常对话！",
+    "placeholderName": "学生姓名",
+    "placeholderJob": "软件工程师"
+  },
+  "faq": {
+    "title": "常见问题",
+    "items": {
+      "credits": {
+        "question": "如何预订课程？",
+        "answer": "很简单！浏览教师列表，选择您喜欢的老师，选择可用时间段，用积分确认即可。！"
+      },
+      "cancellation": {
+        "question": "我可以取消课程吗？",
+        "answer": "可以！如果您在课程开始前6小时以上取消，将获得学分全额退款。为尊重教师的时间，迟到取消不予退款。"
+      },
+      "subscription": {
+        "question": "订阅计划如何运作？",
+        "answer": "订阅为您提供每月固定数量的课程，价格优惠。您选择固定的每周时间段（例如：每周一晚上8点）以建立持续的习惯。"
+      },
+      "becomeMentor": {
+        "question": "如何成为教师？",
+        "answer": "注册成为教师，填写您的个人资料，并上传简短的介绍视频。我们的团队将在48小时内审核您的申请。"
+      }
+    }
+  },
+  "footer": {
+    "description": "通过连接和技术赋能亚洲各地的语言学习者。",
+    "platform": {
+      "title": "平台",
+      "browse": "浏览教师",
+      "pricing": "价格",
+      "login": "登录"
+    },
+    "company": {
+      "title": "公司",
+      "about": "关于我们",
+      "careers": "招聘",
+      "contact": "联系我们"
+    },
+    "legal": {
+      "title": "法律",
+      "terms": "服务条款",
+      "privacy": "隐私政策"
+    }
+  },
+  "seo": {
+    "landing": {
+      "title": "Lingofys - 在线学习英语、日语和中文",
+      "description": "通过经过验证的专业教师的1对1在线课程，掌握英语、日语或中文。灵活的时间安排、实惠的价格、个性化学习。立即开始您的语言学习之旅！"
+    },
+    "find-mentor": {
+      "title": "找到您完美的语言教师",
+      "description": "浏览经过验证的英语、日语和中文教师。按专业、可用性和价格筛选。立即预订您的第一堂课！"
+    },
+    "become-mentor": {
+      "title": "成为语言教师 - 在线教学",
+      "description": "以语言教师的身份加入Lingofys。通过在线教授英语、日语或中文赚钱。灵活的工作时间，全球学生。"
+    },
+    "keywords": {
+      "english": "在线学习英语",
+      "japanese": "在线学习日语",
+      "chinese": "在线学习中文"
+    }
+  },
+  "readme": {
+    "backToLogin": "返回登录",
+    "title": "欢迎来到Lingofys",
+    "subtitle": "连接学生和教师的一对一在线语言学习平台（英语、中文、日语）",
+    "intro": {
+      "title": "与专业教师一对一学习语言",
+      "description": "Lingofys将您与来自日本、中国、菲律宾和许多其他地方的经验丰富的语言教师联系起来。根据您的时间表灵活学习英语、中文、日语，享受透明的支付和高质量的体验。"
+    },
+    "howItWorks": {
+      "title": "工作原理",
+      "step1": {
+        "title": "注册账户",
+        "description": "创建免费账户，选择学生角色（学习语言）或教师角色（教授语言）。"
+      },
+      "step2": {
+        "title": "搜索和预约",
+        "description": "浏览教师列表，查看个人资料和评价。选择合适的时间，只需几次点击即可预订课程。"
+      },
+      "step3": {
+        "title": "学习和评价",
+        "description": "通过视频通话参加在线课程。课程结束后，评价教师以帮助学习社区。"
+      }
+    },
+    "forStudents": {
+      "title": "学生专区",
+      "globalTeachers": {
+        "title": "多国教师",
+        "description": "与来自日本、中国、菲律宾和世界各地的母语教师学习。"
+      },
+      "flexibleSchedule": {
+        "title": "灵活的时间表",
+        "description": "根据您的时间安排预约。可在允许范围内取消或重新安排。"
+      },
+      "transparentPayment": {
+        "title": "透明支付",
+        "description": "向学分钱包充值，按课程付费。价格清晰，无隐藏费用。"
+      },
+      "oneOnOne": {
+        "title": "一对一在线学习",
+        "description": "每节课都是您和教师之间的私人会面，完全专注于您的需求。"
+      },
+      "protection": {
+        "title": "权益保护",
+        "description": "托管系统确保您的资金受到保护，直到课程完成。"
+      },
+      "reviews": {
+        "title": "评价和评分",
+        "description": "查看其他学生的评价，选择最适合您的教师。"
+      }
+    },
+    "forTeachers": {
+      "title": "教师专区",
+      "scheduleManagement": {
+        "title": "教学时间管理",
+        "description": "设置您的空闲时间段，让学生预约。您决定何时授课。"
+      },
+      "transparentIncome": {
+        "title": "透明收入",
+        "description": "每次课程完成后获得学分。随时提现到银行账户。"
+      },
+      "globalReach": {
+        "title": "触达全球学生",
+        "description": "来自世界各地的学生可以找到您并与您预约。"
+      },
+      "support": {
+        "title": "支持和保护",
+        "description": "支持团队随时准备帮助您解决任何问题。"
+      }
+    },
+    "payment": {
+      "title": "支付方式",
+      "systemTitle": "学分系统",
+      "systemDescription": "Lingofys使用称为学分的内部货币。您向钱包充值美元，使用学分支付课程费用。",
+      "step1": {
+        "label": "步骤1",
+        "title": "充值",
+        "description": "向钱包充值美元，按当前汇率获得相应学分。"
+      },
+      "step2": {
+        "label": "步骤2",
+        "title": "预约课程",
+        "description": "预约时学分会被暂时冻结，确保交易安全。"
+      },
+      "step3": {
+        "label": "步骤3",
+        "title": "完成",
+        "description": "课程结束后，学分转移给教师。教师可以提现为美元。"
+      },
+      "protection": {
+        "title": "交易保护",
+        "description": "托管系统确保学生的资金受到保护，直到课程完成，教师在完成工作后获得全额报酬。"
+      }
+    },
+    "cta": {
+      "title": "准备开始了吗？",
+      "description": "立即加入Lingofys社区。无论您是想学习新语言还是分享您的知识，我们都欢迎您！",
+      "studentButton": "注册为学生",
+      "teacherButton": "注册为教师"
+    },
+    "support": {
+      "title": "需要支持？",
+      "description": "如果您有任何问题或需要支持，请随时与我们联系：",
+      "email": "电子邮件：",
+      "emailValue": "ad.lingofys@gmail.com",
+      "hours": "工作时间：",
+      "hoursValue": "周一至周日，9:00 - 22:00（GMT+7）"
+    }
+  }
+}

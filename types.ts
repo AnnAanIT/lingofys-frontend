@@ -19,8 +19,8 @@ export enum BookingStatus {
   REFUNDED = 'REFUNDED'
 }
 
-export type CreditStatus = 'pending' | 'released' | 'refunded';
-export type LedgerStatus = 'holding' | 'released' | 'returned';
+export type CreditStatus = 'PENDING' | 'RELEASED' | 'REFUNDED';  // Fixed: Backend returns uppercase
+export type LedgerStatus = 'HOLDING' | 'RELEASED' | 'RETURNED';  // Fixed: Backend returns uppercase
 
 export interface User {
   id: string;
@@ -29,31 +29,40 @@ export interface User {
   role: UserRole;
   avatar: string;
   credits: number; // Pure Credit Unit
-  balance: number; // USD (Legacy Provider / Payout Staging)
   status: 'ACTIVE' | 'BANNED' | 'PENDING_APPROVAL' | 'REJECTED';
+  isSystemAdmin?: boolean; // Protected system admin flag
   joinedAt: string;
-  phone?: string;
   country?: string;
   timezone?: string;
   password?: string;
-  mentorGroupId?: string;
   providerId?: string; // ID của provider giới thiệu
-  language?: Language; // Only for mentees (en, zh, ko, ja, vi)
-  rejectionReason?: string; // Admin's reason for rejection
+  rejectionReason?: string; // Admin's reason for rejection or ban
   appliedAt?: string; // When MENTOR/PROVIDER first applied
+  paymentMethod?: string; // Paypay, Bank, Wise, Momo
+  paymentDetails?: string; // Paypay email, Bank account, Momo number, etc.
+  menteeCancelCount?: number; // Number of times mentee cancelled bookings
+  lastMenteeCancelAt?: Date; // Last time mentee cancelled a booking
 }
 
 export interface ProviderLevel {
   id: string;
   name: string; // e.g., Bronze, Silver, Gold
-  commissionPercent: number; // e.g., 5, 8, 12
+  commissionRate: number; // e.g., 5, 8, 12 (actually stored as Decimal in DB)
+  commissionPercent: number; // Same as commissionRate (alias for frontend display)
 }
 
 export interface Provider extends User {
-  refCode: string;
-  payoutMethod: 'PayPal' | 'Bank Transfer' | 'Wise';
-  payoutDetails: string;
-  levelId: string; // Links to ProviderLevel
+  providerProfile?: {
+    id: string;
+    userId: string;
+    levelId: string | null;
+    referralCode: string;
+    commissionRate: number;
+    totalEarnings: number;
+    bio: string | null;
+    website: string | null;
+    payoutDetails?: string; // Payout method details (bank account, PayPal, etc.)
+  };
 }
 
 export interface ProviderCommission {
@@ -64,7 +73,8 @@ export interface ProviderCommission {
   menteeName: string;
   topupAmountUsd: number;
   commissionPercent: number;
-  commissionAmountUsd: number;
+  commissionAmountUsd: number; // Legacy field (still sent by backend)
+  commissionCredits: number; // ✅ New: Commission in credits (5% of credits from topup)
   status: 'PENDING' | 'PAID';
   createdAt: string;
   paidAt?: string;
@@ -80,17 +90,21 @@ export interface AvailabilitySlot {
 }
 
 export interface Mentor extends User {
-  bio: string; 
-  bioLong?: string; 
-  teachingStyle?: string; 
+  headline: string;              // Short tagline (replaces "bio" in API layer)
+  bio?: string;                  // Legacy field alias for headline
+  aboutMe?: string;              // Full story (replaces "bioLong" in API layer)
   videoIntro?: string; 
   specialties: string[];
-  hourlyRate: number; // In Credits
+  teachingLanguages: string[];   // NEW: Languages this mentor teaches (e.g., ["English", "Chinese"])
+  mentorGroupId: string;         // Tier: basic, expert, native, vip (affects rate multiplier)
+  mentorGroup?: any;             // Populated mentorGroup object from backend
   availability: AvailabilitySlot[]; 
   rating: number;
   reviewCount: number;
   experienceYears: number;
   certificates?: string[];
+  cancellationCount?: number;    // Number of times mentor cancelled bookings
+  lastCancelAt?: Date;           // Last time mentor cancelled a booking
 }
 
 export interface Booking {
@@ -99,11 +113,11 @@ export interface Booking {
   mentorId: string;
   mentorName: string;
   menteeName: string;
-  startTime: string; 
-  endTime: string; 
+  startTime: string;
+  endTime: string;
   status: BookingStatus;
   creditStatus: CreditStatus;
-  type: 'credit' | 'subscription';
+  type: 'CREDIT' | 'SUBSCRIPTION';  // Fixed: Backend returns uppercase
   subscriptionId?: string; 
   notes?: string;
   evidenceImage?: string; 
@@ -166,25 +180,40 @@ export interface Subscription {
   remainingSessions: number;
   cancelQuota: number;
   rescheduleQuota: number;
-  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'COMPLETED';
+  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';  // Fixed: Backend doesn't have 'COMPLETED' status
   bookings: string[];
 }
 
 export interface Homework {
   id: string;
   bookingId: string;
-  mentorId: string;
-  menteeId: string;
   title: string;
   description: string;
-  attachment?: string; 
-  studentSubmission?: string; 
-  studentNote?: string;
-  mentorFeedback?: string;
-  feedbackAttachment?: string;
-  grade?: string;
-  status: 'PENDING' | 'SUBMITTED' | 'REVIEWED';
-  dueDate?: string;
+  dueDate: string;
+  submittedAt?: string;
+  submissionUrl?: string;
+  submissionNote?: string;
+  grade?: number; // 0-100
+  feedback?: string;
+  gradedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Nested booking data (from backend include)
+  booking?: {
+    id: string;
+    menteeId: string;
+    mentorId: string;
+    mentee?: {
+      id: string;
+      name: string;
+      avatar?: string;
+    };
+    mentor?: {
+      id: string;
+      name: string;
+      avatar?: string;
+    };
+  };
 }
 
 export interface Message {
@@ -262,9 +291,9 @@ export interface Referral {
   menteeId: string;
   menteeName: string;
   signupDate: string;
-  country: string;
-  totalSpending: number;
-  totalCommission: number;
+  country?: string; // Mentee's country
+  totalSpending: number; // Total amount spent by this mentee
+  totalCommission: number; // Total commission earned from this mentee
 }
 
 export interface Commission {

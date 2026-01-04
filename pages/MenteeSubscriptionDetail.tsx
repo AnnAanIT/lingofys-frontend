@@ -7,11 +7,13 @@ import { CalendarSlotPicker } from '../components/CalendarSlotPicker';
 import { useApp } from '../App';
 import { translations } from '../lib/i18n';
 import { ArrowLeft, Check, User as UserIcon, Calendar, CreditCard, AlertCircle, Clock, ChevronRight, Sparkles } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function MenteeSubscriptionDetail() {
     const { planId } = useParams();
     const navigate = useNavigate();
     const { user, refreshUser, language } = useApp();
+    const { error: showError } = useToast();
     const t = translations[language].mentee.subscriptionDetail;
     const commonT = translations[language].common;
     
@@ -54,11 +56,16 @@ export default function MenteeSubscriptionDetail() {
         if (!user || !selectedMentorId) return;
         setIsProcessing(true);
         try {
-            await api.createSubscription(user.id, plan.id, selectedMentorId, selectedSlots);
+            await api.createSubscription({
+                menteeId: user.id,
+                mentorId: selectedMentorId,
+                planId: plan.id,
+                paymentMethod: 'stripe'
+            });
             await refreshUser();
             navigate('/mentee/subscriptions/active');
         } catch (error: any) {
-            alert("Failed to subscribe: " + error);
+            showError('Subscription Failed', String(error));
             setIsProcessing(false);
         }
     };

@@ -137,7 +137,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                     <>
                                         <div className="flex justify-between text-xs pt-2 border-t border-brand-200/50 mt-2">
                                             <span className="text-slate-400 font-bold">Your Balance</span>
-                                            <span className="font-bold text-slate-700">{user.credits.toFixed(0)}</span>
+                                            <span className="font-bold text-slate-700">{Number(user.credits || 0).toFixed(0)}</span>
                                         </div>
                                         {!canAffordCredit && (
                                             <div className="flex items-center text-[10px] font-black text-red-600 mt-2 uppercase tracking-widest gap-1">

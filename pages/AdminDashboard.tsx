@@ -6,10 +6,13 @@ import { Users, BookOpen, DollarSign, Activity, AlertCircle, ShieldCheck, Scale,
 import { Booking, User, Payout, Transaction } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user } = useApp();  const [stats, setStats] = useState({
+  const { user } = useApp();
+  const { warning } = useToast();
+  const [stats, setStats] = useState({
     users: 0,
     mentors: 0,
     bookings: 0,
@@ -21,24 +24,29 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [users, bookings, payouts, txs, health] = await Promise.all([
+      try {
+        const [users, bookings, payouts, txs, health] = await Promise.all([
           api.getUsers(),
           api.getAllBookings(),
           api.getAllPayouts(),
           api.getAllTransactions(),
-          api.getSystemFinancialHealth(user)
+          api.getSystemFinancialHealth()
       ]);
 
       setStats({
         users: users.length,
         mentors: users.filter(u => u.role === 'MENTOR').length,
         bookings: bookings.filter(b => b.status === 'COMPLETED').length,
-        revenue: txs.filter(t => t.type === 'TOPUP').reduce((acc, t) => acc + t.amount, 0)
+        revenue: txs.filter(t => t.type === 'TOPUP').reduce((acc, t) => acc + Number(t.amount), 0)
       });
 
       setRecentBookings(bookings.sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5));
       setPendingPayouts(payouts.filter(p => p.status === 'PENDING').slice(0, 5));
       setFinancialHealth(health);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+        warning('Load Failed', 'Failed to load dashboard. Some data may be missing.');
+      }
     };
     loadData();
   }, []);

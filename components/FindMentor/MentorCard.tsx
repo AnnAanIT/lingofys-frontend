@@ -16,9 +16,19 @@ export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect }) => {
 
     useEffect(() => {
         const fetchRate = async () => {
-            // Calculate rate dynamically based on current viewer's country
-            const rate = await api.getMentorLocalizedRate(mentor.id, user?.country || 'US');
-            setDisplayRate(rate);
+            try {
+                // Calculate rate dynamically based on current viewer's country
+                const rateData = await api.getMentorLocalizedRate(mentor.id, user?.country || 'US');
+                // Extract the localizedRate number from the response object
+                const rate = typeof rateData === 'object' && rateData !== null
+                    ? (rateData as any).localizedRate
+                    : rateData;
+                setDisplayRate(rate);
+            } catch (error) {
+                console.error('Failed to fetch localized rate:', error);
+                // No fallback - rate must be fetched from backend
+                setDisplayRate(0);
+            }
         };
         fetchRate();
     }, [mentor.id, user?.country]);
@@ -51,16 +61,35 @@ export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect }) => {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 justify-center mb-6">
-                    {mentor.specialties.slice(0, 3).map(s => (
+                <div className="flex flex-wrap gap-1.5 justify-center mb-4">
+                    {(mentor.specialties || []).slice(0, 3).map(s => (
                         <span key={s} className="px-2.5 py-1 bg-slate-50 text-slate-600 text-xs rounded-md font-medium border border-slate-100">
                             {s}
                         </span>
                     ))}
                 </div>
 
+                {/* Teaching Languages with flags */}
+                {mentor.teachingLanguages && mentor.teachingLanguages.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 justify-center mb-4">
+                        {mentor.teachingLanguages.map(lang => {
+                            const flags: Record<string, string> = {
+                                'English': '🇬🇧',
+                                'Chinese': '🇨🇳',
+                                'Japanese': '🇯🇵',
+                                'Korean': '🇰🇷'
+                            };
+                            return (
+                                <span key={lang} className="px-2 py-1 bg-brand-50 text-brand-700 text-xs rounded-md font-bold border border-brand-200">
+                                    {flags[lang] || '🌐'} {lang}
+                                </span>
+                            );
+                        })}
+                    </div>
+                )}
+
                 <p className="text-slate-500 text-sm text-center line-clamp-2 mb-4 px-2">
-                    {mentor.bio}
+                    {mentor.headline}
                 </p>
             </div>
 

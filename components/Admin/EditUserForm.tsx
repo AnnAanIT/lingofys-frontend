@@ -2,7 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mentor, Provider, UserRole, PricingCountry, ProviderLevel } from '../../types';
 import { api } from '../../services/api';
-import { X } from 'lucide-react';
+import { X, Globe } from 'lucide-react';
+
+// Available teaching languages for multi-select (matching MentorBioEditor)
+const TEACHING_LANGUAGES = [
+    { value: 'English', label: 'English 🇬🇧', flag: '🇬🇧' },
+    { value: 'Chinese', label: 'Chinese 🇨🇳', flag: '🇨🇳' },
+    { value: 'Japanese', label: 'Japanese 🇯🇵', flag: '🇯🇵' },
+    { value: 'Korean', label: 'Korean 🇰🇷', flag: '🇰🇷' },
+];
 
 interface EditUserFormProps {
     isOpen: boolean;
@@ -15,13 +23,31 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ isOpen, onClose, use
     const [formData, setFormData] = useState<any>({});
     const [countries, setCountries] = useState<PricingCountry[]>([]);
     const [providerLevels, setProviderLevels] = useState<ProviderLevel[]>([]);
+    const [providerProfile, setProviderProfile] = useState<any>(null);
 
     useEffect(() => {
         if (user) {
             setFormData({ 
                 ...user,
-                specialties: (user as any).specialties ? (user as any).specialties.join(', ') : ''
+                specialties: (user as any).specialties ? (user as any).specialties.join(', ') : '',
+                teachingLanguages: (user as any).teachingLanguages || []
             });
+            
+            // Load provider profile if user is provider
+            if (user.role === UserRole.PROVIDER) {
+                api.getProviderProfile(user.id).then((provider: any) => {
+                    if (provider?.providerProfile) {
+                        setProviderProfile(provider.providerProfile);
+                        setFormData((prev: any) => ({
+                            ...prev,
+                            levelId: provider.providerProfile?.levelId,
+                            referralCode: provider.providerProfile?.referralCode
+                        }));
+                    }
+                }).catch(() => {
+                    // Provider profile not found, continue with empty
+                });
+            }
         }
         api.getPricingCountries().then(setCountries);
         if (user?.role === UserRole.PROVIDER) {
@@ -34,9 +60,19 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ isOpen, onClose, use
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const finalData = { ...formData };
+        
+        // Process Mentor fields
         if (user.role === UserRole.MENTOR) {
-            finalData.specialties = formData.specialties.split(',').map((s: string) => s.trim()).filter((s: string) => s !== '');
+            // Split comma-separated specialties into array
+            finalData.specialties = formData.specialties
+                .split(',')
+                .map((s: string) => s.trim())
+                .filter((s: string) => s !== '');
+            
+            // Ensure teachingLanguages is array (already is from button clicks)
+            finalData.teachingLanguages = formData.teachingLanguages || [];
         }
+        
         onSave(user.id, finalData);
         onClose();
     };
@@ -52,72 +88,118 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ isOpen, onClose, use
                     <X size={20} />
                 </button>
                 
-                <h3 className="text-xl font-bold text-slate-900 mb-6">Edit {user.role === 'MENTEE' ? 'User' : user.role} Profile</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-6">Edit {user.role === 'MENTEE' ? 'Student' : user.role === 'MENTOR' ? 'Teacher' : user.role} Profile</h3>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 required
-                                value={formData.name || ''} 
+                                value={formData.name || ''}
                                 onChange={(e) => handleChange('name', e.target.value)}
+                                autoComplete="name"
                                 className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                            <input 
-                                type="email" 
+                            <input
+                                type="email"
                                 required
-                                value={formData.email || ''} 
+                                value={formData.email || ''}
                                 onChange={(e) => handleChange('email', e.target.value)}
+                                autoComplete="email"
                                 className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
                             />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                            <input 
-                                type="text" 
-                                value={formData.phone || ''} 
-                                onChange={(e) => handleChange('phone', e.target.value)}
-                                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
-                            <select 
-                                value={formData.country || ''} 
-                                onChange={(e) => handleChange('country', e.target.value)}
-                                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                            >
-                                <option value="">Select Country</option>
-                                {countries.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+                        <select
+                            value={formData.country || ''}
+                            onChange={(e) => handleChange('country', e.target.value)}
+                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                        >
+                            <option value="">Select Country</option>
+                            {countries.map(c => (
+                                <option key={c.id} value={c.name}>{c.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {user.role === UserRole.MENTOR && (
                         <>
                             <div className="border-t border-slate-100 pt-4 mt-4">
-                                <h4 className="font-bold text-slate-800 mb-3 text-sm">Mentor Details</h4>
+                                <h4 className="font-bold text-slate-800 mb-3 text-sm">
+                                    Mentor Profile (Admin has FULL edit permissions)
+                                </h4>
                                 <div className="space-y-4">
+                                    {/* Headline (Short Tagline) */}
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Short Bio / Headline</label>
-                                        <textarea 
-                                            rows={2}
-                                            value={formData.bio || ''} 
-                                            onChange={(e) => handleChange('bio', e.target.value)}
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            Headline <span className="text-red-500">*</span>
+                                        </label>
+                                        <input 
+                                            type="text"
+                                            value={formData.headline || ''}
+                                            onChange={(e) => handleChange('headline', e.target.value)}
+                                            maxLength={100}
                                             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                                            placeholder="Introduce the mentor..."
+                                            placeholder="Native English speaker with 10 years experience"
+                                        />
+                                        <p className="text-xs text-slate-400 mt-1">Short, catchy tagline</p>
+                                    </div>
+
+                                    {/* About Me (Full Bio) */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            About Me <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            rows={6}
+                                            value={formData.aboutMe || ''}
+                                            onChange={(e) => handleChange('aboutMe', e.target.value)}
+                                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                                            placeholder="Full story: education, teaching approach, why students should choose..."
                                         />
                                     </div>
+
+                                    {/* Teaching Languages - Multi-select */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                                            <Globe size={14} className="inline mr-1" />
+                                            Languages Taught <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {TEACHING_LANGUAGES.map(lang => (
+                                                <button
+                                                    key={lang.value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = formData.teachingLanguages || [];
+                                                        const updated = current.includes(lang.value)
+                                                            ? current.filter((l: string) => l !== lang.value)
+                                                            : [...current, lang.value];
+                                                        handleChange('teachingLanguages', updated);
+                                                    }}
+                                                    className={`
+                                                        px-2 py-1.5 rounded-lg border text-xs font-medium transition-all
+                                                        ${(formData.teachingLanguages || []).includes(lang.value)
+                                                            ? 'border-brand-500 bg-brand-50 text-brand-700'
+                                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                                        }
+                                                    `}
+                                                >
+                                                    {lang.flag} {lang.value}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Specialties */}
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Specialties (comma separated)</label>
                                         <input 
@@ -125,28 +207,31 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ isOpen, onClose, use
                                             value={formData.specialties || ''} 
                                             onChange={(e) => handleChange('specialties', e.target.value)}
                                             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                                            placeholder="IELTS, Business, Daily Talk..."
+                                            placeholder="IELTS, Business, Kids..."
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Hourly Rate (Credits)</label>
-                                            <input 
-                                                type="number" 
-                                                value={formData.hourlyRate || 0} 
-                                                onChange={(e) => handleChange('hourlyRate', Number(e.target.value))}
-                                                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Experience (Years)</label>
-                                            <input 
-                                                type="number" 
-                                                value={formData.experienceYears || 0} 
-                                                onChange={(e) => handleChange('experienceYears', Number(e.target.value))}
-                                                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                                            />
-                                        </div>
+
+                                    {/* Experience Years */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Experience (Years)</label>
+                                        <input 
+                                            type="number" 
+                                            value={formData.experienceYears || 0} 
+                                            onChange={(e) => handleChange('experienceYears', Number(e.target.value))}
+                                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                                        />
+                                    </div>
+
+                                    {/* Video Intro URL */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Video Intro (filename)</label>
+                                        <input 
+                                            type="text"
+                                            value={formData.videoIntro || ''}
+                                            onChange={(e) => handleChange('videoIntro', e.target.value)}
+                                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                                            placeholder="video-123.mp4"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -171,28 +256,14 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ isOpen, onClose, use
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Payout Method</label>
-                                            <select 
-                                                value={formData.payoutMethod || 'PayPal'} 
-                                                onChange={(e) => handleChange('payoutMethod', e.target.value)}
-                                                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                                            >
-                                                <option value="PayPal">PayPal</option>
-                                                <option value="Bank Transfer">Bank Transfer</option>
-                                                <option value="Wise">Wise</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Referral Code</label>
-                                            <input 
-                                                type="text" 
-                                                value={formData.refCode || ''} 
-                                                onChange={(e) => handleChange('refCode', e.target.value)}
-                                                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-slate-50"
-                                            />
-                                        </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Referral Code</label>
+                                        <input 
+                                            type="text" 
+                                            value={formData.referralCode || ''} 
+                                            onChange={(e) => handleChange('referralCode', e.target.value)}
+                                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-slate-50"
+                                        />
                                     </div>
                                 </div>
                             </div>

@@ -25,6 +25,21 @@ export const PricingCountryModal: React.FC<PricingCountryModalProps> = ({ isOpen
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validation
+        if (!formData.id || formData.id.length < 2) {
+            alert('Please enter a valid country code (min 2 characters)');
+            return;
+        }
+        if (!formData.name || formData.name.length < 2) {
+            alert('Please enter a valid country name');
+            return;
+        }
+        if (formData.multiplier < 0.1 || formData.multiplier > 5.0) {
+            alert('Multiplier must be between 0.1 and 5.0');
+            return;
+        }
+
         onSave(formData);
         onClose();
     };

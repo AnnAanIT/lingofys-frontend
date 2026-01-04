@@ -7,9 +7,11 @@ import { PricingGroupTable } from '../components/Admin/PricingGroupTable';
 import { PricingGroupModal } from '../components/Admin/PricingGroupModal';
 import { PricingGroup } from '../types';
 import { Search, Plus, ArrowLeft } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPricingGroups() {
     const navigate = useNavigate();
+    const { error: showError } = useToast();
     const [groups, setGroups] = useState<PricingGroup[]>([]);
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function AdminPricingGroups() {
             setIsModalOpen(false);
             setEditingItem(null);
         } catch (error: any) {
-            alert(error);
+            showError('Operation Failed', String(error));
         }
     };
 

@@ -20,15 +20,15 @@ export const EvidenceUploader: React.FC<EvidenceUploaderProps> = ({ onUpload, cu
 
         setUploading(true);
         try {
-            // In a real app, this would upload to server and return a URL/path
-            // api.uploadFile mock returns a simulated filename or blob url
-            const result = await api.uploadFile(file); 
-            // We'll use a mocked filename for the record
-            const mockName = `proof_${Date.now()}_${file.name}`;
-            setFileName(mockName);
-            onUpload(mockName);
-        } catch (error) {
-            alert("Upload failed");
+            // Upload to Supabase and get the URL
+            const url = await api.uploadFile(file, 'payout_evidence'); 
+            console.log('Evidence uploaded successfully, URL:', url);
+            // Save the real URL instead of mock filename
+            setFileName(url);
+            onUpload(url);
+        } catch (error: any) {
+            console.error('Evidence upload error:', error);
+            alert(`Upload failed: ${error.message || 'Unknown error'}`);
         } finally {
             setUploading(false);
         }

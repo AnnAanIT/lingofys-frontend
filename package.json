@@ -1,4 +1,3 @@
-
 {
   "name": "mentorship-io-platform",
   "private": true,
@@ -10,12 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "i18next": "^25.7.3",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-helmet-async": "^2.0.5",
+    "react-i18next": "^16.5.1",
     "react-router-dom": "^7.1.3",
-    "lucide-react": "^0.475.0",
     "recharts": "^2.15.0",
-    "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {

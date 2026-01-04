@@ -2,14 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useApp } from '../App';
 import { Transaction, Payout } from '../types';
 import { AdminLayout, StatusBadge } from '../components/AdminComponents';
 import { EvidenceUploader } from '../components/Admin/EvidenceUploader';
 import { ArrowLeft, DollarSign, CheckCircle, XCircle, AlertTriangle, Calendar, CreditCard } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPaymentDetail() {
     const { id } = useParams(); // Transaction ID
     const navigate = useNavigate();
+    const { user } = useApp();
+    const { warning } = useToast();
     const [transaction, setTransaction] = useState<Transaction | null>(null);
     const [payout, setPayout] = useState<Payout | null>(null);
     const [loading, setLoading] = useState(true);
@@ -37,38 +41,38 @@ export default function AdminPaymentDetail() {
     };
 
     const handleComplete = async () => {
-        if (!transaction) return;
+        if (!payout) {
+            warning('No Payout', 'No associated payout found.');
+            return;
+        }
         if (!evidenceFile) {
-            alert("Proof of payment is required.");
+            warning('Missing Evidence', 'Proof of payment is required.');
             return;
         }
         setIsSubmitting(true);
-        await api.completePayment(transaction.id, evidenceFile, note);
-        await api.logAction('PAYMENT_COMPLETE', `Admin marked transaction #${transaction.id} as SUCCESS`, 'u3');
-        
+        // Use markPayoutPaid endpoint instead of completePayment
+        await api.markPayoutPaid(payout.id, evidenceFile);
+        await api.logAction('PAYMENT_COMPLETE', user!.id, `Admin marked payout #${payout.id} as PAID`);
+
         // Redirect back to payout detail
-        if (payout) {
-            navigate(`/admin/payouts/${payout.id}`);
-        } else {
-            loadData();
-        }
+        navigate(`/admin/payouts/${payout.id}`);
         setIsSubmitting(false);
     };
 
     const handleFail = async () => {
-        if (!transaction) return;
+        if (!payout) {
+            alert("No associated payout found.");
+            return;
+        }
         const reason = prompt("Enter failure reason:");
         if (reason) {
             setIsSubmitting(true);
-            await api.failPayment(transaction.id, reason);
+            // Use rejectPayout endpoint instead of failPayment
+            await api.rejectPayout(payout.id, user!.id, reason);
             // Fix: Ensured logAction is called with exactly 3 arguments as per API definition
-            await api.logAction('PAYMENT_FAILED', `Admin marked transaction #${transaction.id} as FAILED. Reason: ${reason}`, 'u3');
-            
-            if (payout) {
-                navigate(`/admin/payouts/${payout.id}`);
-            } else {
-                loadData();
-            }
+            await api.logAction('PAYMENT_FAILED', user!.id, `Admin rejected payout #${payout.id}. Reason: ${reason}`);
+
+            navigate(`/admin/payouts/${payout.id}`);
             setIsSubmitting(false);
         }
     };

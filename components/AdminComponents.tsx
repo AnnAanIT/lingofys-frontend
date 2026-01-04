@@ -67,6 +67,7 @@ export const AdminSidebar: React.FC = () => {
         { label: 'Credit Audit', path: '/admin/credit-dashboard', icon: Scale },
         { label: 'Transactions', path: '/admin/payments', icon: CreditCard },
         { label: 'Payout Requests', path: '/admin/payouts', icon: DollarSign },
+        { label: 'Provider Commissions', path: '/admin/provider-commissions', icon: DollarSign },
       ]
     },
     {

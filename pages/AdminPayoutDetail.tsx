@@ -42,17 +42,17 @@ export default function AdminPayoutDetail() {
 
     const handleApprove = async (data: { method: string; adminNote: string }) => {
         if (!payout) return;
-        await api.approvePayout(currentUser, payout.id, data.adminNote);
+        await api.approvePayout(payout.id, currentUser.id, data.adminNote);
         // Fix: Ensured logAction is called with exactly 3 arguments as per API definition
-        await api.logAction('PAYOUT_APPROVED', `Admin approved payout #${payout.id}. Pending payment execution.`, 'u3');
+        await api.logAction('PAYOUT_APPROVED', currentUser.id, `Admin approved payout #${payout.id}. Pending payment execution.`);
         loadData();
     };
 
     const handleReject = async (data: { reason: string; adminNote: string }) => {
         if (!payout) return;
-        await api.rejectPayout(currentUser, payout.id, data.reason);
+        await api.rejectPayout(payout.id, currentUser.id, data.reason);
         // Fix: Ensured logAction is called with exactly 3 arguments as per API definition
-        await api.logAction('PAYOUT_REJECTED', `Admin rejected payout #${payout.id}. Reason: ${data.reason}`, 'u3');
+        await api.logAction('PAYOUT_REJECTED', currentUser.id, `Admin rejected payout #${payout.id}. Reason: ${data.reason}`);
         loadData();
     };
 
@@ -203,8 +203,8 @@ export default function AdminPayoutDetail() {
                                     <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-bold uppercase">{user.role}</span>
                                     
                                     <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between text-sm">
-                                        <span className="text-slate-500">Balance</span>
-                                        <span className="font-bold text-slate-900">${user.balance}</span>
+                                        <span className="text-slate-500">Credits</span>
+                                        <span className="font-bold text-slate-900">{user.credits || 0} Cr</span>
                                     </div>
                                     <button 
                                         onClick={() => navigate(`/admin/users/${user.id}`)}

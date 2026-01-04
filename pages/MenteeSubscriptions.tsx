@@ -46,7 +46,11 @@ export default function MenteeSubscriptions() {
     useEffect(() => {
         api.getSubscriptionPlans().then(setPlans);
         if (user) {
-            api.getActiveSubscription(user.id).then(setActiveSub);
+            // Get all subscriptions and find first active one
+            api.getUserSubscriptions(user.id).then((subs) => {
+                const activeSub = subs.find(s => s.status === 'ACTIVE') || null;
+                setActiveSub(activeSub);
+            });
         }
     }, [user]);
 

@@ -5,9 +5,11 @@ import { AdminLayout } from '../components/AdminComponents';
 import { User, UserRole } from '../types';
 import { CheckCircle, XCircle, Clock, Mail, MapPin, Calendar, AlertCircle } from 'lucide-react';
 import { useApp } from '../App';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPendingApprovals() {
   const { user: currentUser } = useApp();
+  const { success, error: showError, warning } = useToast();
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -30,12 +32,12 @@ export default function AdminPendingApprovals() {
     setIsProcessing(true);
     try {
       await api.approveUser(user.id);
-      await api.logAction('USER_APPROVED', `Admin approved ${user.role} account for ${user.name} (${user.email})`, currentUser?.id || 'admin');
+      await api.logAction('USER_APPROVED', currentUser?.id || 'admin', `Admin approved ${user.role} account for ${user.name} (${user.email})`);
       await fetchPendingUsers();
       setSelectedUser(null);
       setActionType(null);
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      showError('Approval Failed', err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -43,20 +45,20 @@ export default function AdminPendingApprovals() {
 
   const handleReject = async () => {
     if (!selectedUser || !rejectionReason.trim()) {
-      alert('Please provide a rejection reason');
+      warning('Missing Reason', 'Please provide a rejection reason');
       return;
     }
 
     setIsProcessing(true);
     try {
       await api.rejectUser(selectedUser.id, rejectionReason);
-      await api.logAction('USER_REJECTED', `Admin rejected ${selectedUser.role} account for ${selectedUser.name}. Reason: ${rejectionReason}`, currentUser?.id || 'admin');
+      await api.logAction('USER_REJECTED', currentUser?.id || 'admin', `Admin rejected ${selectedUser.role} account for ${selectedUser.name}. Reason: ${rejectionReason}`);
       await fetchPendingUsers();
       setSelectedUser(null);
       setActionType(null);
       setRejectionReason('');
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      showError('Rejection Failed', err.message);
     } finally {
       setIsProcessing(false);
     }

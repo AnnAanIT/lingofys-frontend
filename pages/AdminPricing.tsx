@@ -4,12 +4,15 @@ import { api } from '../services/api';
 import { AdminLayout, ConfirmDialog } from '../components/AdminComponents';
 import { PricingPreview } from '../components/Admin/PricingPreview';
 import { PricingCountryModal } from '../components/Admin/PricingCountryModal';
+import { CurrencyModal } from '../components/Admin/CurrencyModal';
 import { PricingCountry, PricingGroup, CurrencyConfig } from '../types';
 import {
     Globe, Users, DollarSign, Save, RotateCcw, Settings, Plus, Trash2, TrendingUp, AlertTriangle, Package, Coins
 } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPricing() {
+    const { success, error: showError, warning } = useToast();
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -32,29 +35,40 @@ export default function AdminPricing() {
     const [editingCountry, setEditingCountry] = useState<PricingCountry | null>(null);
     const [deletingCountry, setDeletingCountry] = useState<PricingCountry | null>(null);
 
+    const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false);
+    const [editingCurrency, setEditingCurrency] = useState<CurrencyConfig | null>(null);
+
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
         setLoading(true);
-        const [cData, gData, sysData] = await Promise.all([
-            api.getPricingCountries(),
-            api.getPricingGroups(),
-            api.getSystemSettings()
-        ]);
+        try {
+            const [cData, gData, sysData] = await Promise.all([
+                api.getPricingCountries(),
+                api.getPricingGroups(),
+                api.getSystemSettings()
+            ]);
 
-        setCountries(cData);
-        setGroups(gData);
-        setBasePrice(sysData.baseLessonCreditPrice);
-        setTopupRatio(sysData.topupConversionRatio || 1.0);
-        setCreditPackages(sysData.creditPackages || [40, 100, 200, 400]);
-        setCurrencies(sysData.currencies || []);
+            setCountries(cData || []);
+            setGroups(gData || []);
+            setBasePrice(sysData.baseLessonCreditPrice || 10);
+            setTopupRatio(sysData.topupConversionRatio || 1.0);
+            setCreditPackages(sysData.creditPackages || [40, 100, 200, 400]);
+            setCurrencies(sysData.currencies || []);
 
-        if(cData.length > 0 && !previewCountry) setPreviewCountry(cData[0].id);
-        if(gData.length > 0 && !previewGroup) setPreviewGroup(gData[0].id);
-
-        setLoading(false);
+            if((cData || []).length > 0 && !previewCountry) setPreviewCountry(cData[0].id);
+            if((gData || []).length > 0 && !previewGroup) setPreviewGroup(gData[0].id);
+        } catch (error) {
+            console.error('Failed to load pricing data:', error);
+            warning('Load Failed', 'Failed to load pricing configuration. Some features may not work.');
+            setCountries([]);
+            setGroups([]);
+            setCurrencies([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // --- HANDLERS ---
@@ -71,12 +85,11 @@ export default function AdminPricing() {
         setIsSaving(true);
         try {
             // Sử dụng BATCH SAVE để ghi đè toàn bộ LocalStorage an toàn
-            await api.batchSavePricing(basePrice, topupRatio, countries, groups, creditPackages, currencies);
-            await api.logAction('CONFIG_UPDATE', 'Admin updated core pricing and multipliers via batch save', 'u3');
-            alert("Settings saved successfully!");
+            await api.batchSavePricing({ basePrice, topupRatio, countries, groups, creditPackages, currencies });
+            success('Settings Saved', 'All pricing settings have been updated successfully');
             await loadData(); // Reload to sync
         } catch (error) {
-            alert("Error saving settings: " + error);
+            showError('Save Failed', String(error));
         } finally {
             setIsSaving(false);
         }
@@ -97,6 +110,16 @@ export default function AdminPricing() {
         if (!deletingCountry) return;
         setCountries(prev => prev.filter(c => c.id !== deletingCountry.id));
         setDeletingCountry(null);
+    };
+
+    const handleSaveCurrencyModal = (data: CurrencyConfig) => {
+        if (editingCurrency) {
+            setCurrencies(prev => prev.map(c => c.code === data.code ? data : c));
+        } else {
+            setCurrencies(prev => [...prev, data]);
+        }
+        setIsCurrencyModalOpen(false);
+        setEditingCurrency(null);
     };
 
     if (loading) return <AdminLayout><div>Loading...</div></AdminLayout>;
@@ -245,6 +268,15 @@ export default function AdminPricing() {
                                     </h2>
                                     <p className="text-sm text-slate-500 mt-1">Exchange rates for top-up display ONLY (not for lesson pricing).</p>
                                 </div>
+                                <button
+                                    onClick={() => {
+                                        setEditingCurrency(null);
+                                        setIsCurrencyModalOpen(true);
+                                    }}
+                                    className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                                >
+                                    <Plus size={18} className="mr-1" /> Add Currency
+                                </button>
                             </div>
 
                             <div className="p-8">
@@ -252,47 +284,58 @@ export default function AdminPricing() {
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 text-slate-500 font-bold">
                                             <tr>
-                                                <th className="px-4 py-3">Currency</th>
-                                                <th className="px-4 py-3 w-24">Symbol</th>
+                                                <th className="px-4 py-3">Currency Code</th>
                                                 <th className="px-4 py-3 w-32">Exchange Rate</th>
-                                                <th className="px-4 py-3 w-20 text-center">Enabled</th>
-                                                <th className="px-4 py-3">Payment Methods</th>
+                                                <th className="px-4 py-3 w-20 text-right">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {currencies.map((curr, idx) => (
+                                            {(currencies || []).map((curr, idx) => (
                                                 <tr key={curr.code} className="hover:bg-slate-50 transition-colors">
                                                     <td className="px-4 py-3 font-bold text-slate-700">
-                                                        {curr.name} ({curr.code})
+                                                        {curr.code || 'N/A'}
                                                     </td>
-                                                    <td className="px-4 py-3 font-mono">{curr.symbol}</td>
                                                     <td className="px-4 py-3">
                                                         <input
                                                             type="number"
                                                             step="0.01"
-                                                            value={curr.exchangeRate}
+                                                            min="0.01"
+                                                            value={curr.exchangeRate || 1}
+                                                            onFocus={(e) => e.target.select()}
                                                             onChange={(e) => {
+                                                                const value = Number(e.target.value);
+                                                                const validValue = value < 0.01 ? 0.01 : value;
                                                                 const newCurrencies = [...currencies];
-                                                                newCurrencies[idx].exchangeRate = Number(e.target.value);
+                                                                newCurrencies[idx].exchangeRate = validValue || 1;
                                                                 setCurrencies(newCurrencies);
                                                             }}
-                                                            className="w-full p-1.5 border border-slate-200 rounded text-center font-bold focus:border-green-500 outline-none"
+                                                            className="w-full p-2 border border-slate-200 rounded text-center font-bold focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-3 text-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={curr.enabled}
-                                                            onChange={(e) => {
-                                                                const newCurrencies = [...currencies];
-                                                                newCurrencies[idx].enabled = e.target.checked;
-                                                                setCurrencies(newCurrencies);
-                                                            }}
-                                                            className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-xs text-slate-500">
-                                                        {curr.paymentMethods.join(', ')}
+                                                    <td className="px-4 py-3 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingCurrency(curr);
+                                                                    setIsCurrencyModalOpen(true);
+                                                                }}
+                                                                className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                                                                title="Edit Currency"
+                                                            >
+                                                                <Settings size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (confirm(`Delete ${curr.code}?`)) {
+                                                                        setCurrencies(currencies.filter((_, i) => i !== idx));
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+                                                                title="Delete Currency"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -317,12 +360,14 @@ export default function AdminPricing() {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2">Base Price (Credits per Lesson)</label>
                                     <div className="flex items-center gap-4">
-                                        <input 
-                                            type="number" 
-                                            min="0"
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            step="1"
                                             value={basePrice}
-                                            onChange={(e) => setBasePrice(Number(e.target.value))}
-                                            className="w-48 p-3 text-lg font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={(e) => setBasePrice(Number(e.target.value) || 10)}
+                                            className="w-48 p-3 text-lg font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
                                         />
                                         <span className="text-sm text-slate-400">Credits needed for a standard class</span>
                                     </div>
@@ -350,16 +395,23 @@ export default function AdminPricing() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
-                                                {countries.map(c => (
+                                                {(countries || []).map(c => (
                                                     <tr key={c.id} className="hover:bg-slate-50 transition-colors group">
-                                                        <td className="px-4 py-3 font-medium text-slate-700">{c.name}</td>
+                                                        <td className="px-4 py-3 font-medium text-slate-700">{c.name || 'Unknown'}</td>
                                                         <td className="px-4 py-3">
-                                                            <input 
-                                                                type="number" 
+                                                            <input
+                                                                type="number"
                                                                 step="0.05"
-                                                                value={c.multiplier}
-                                                                onChange={(e) => updateCountryMultiplier(c.id, Number(e.target.value))}
-                                                                className="w-20 p-1 border border-slate-200 rounded text-center font-bold focus:border-brand-500 outline-none"
+                                                                min="0.1"
+                                                                max="5"
+                                                                value={c.multiplier || 1}
+                                                                onFocus={(e) => e.target.select()}
+                                                                onChange={(e) => {
+                                                                    const value = Number(e.target.value);
+                                                                    const validValue = value < 0.1 ? 0.1 : (value > 5 ? 5 : value);
+                                                                    updateCountryMultiplier(c.id, validValue || 1);
+                                                                }}
+                                                                className="w-24 p-2 border border-slate-200 rounded text-center font-bold focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition-all"
                                                             />
                                                         </td>
                                                         <td className="px-4 py-3 text-right">
@@ -386,20 +438,27 @@ export default function AdminPricing() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
-                                                {groups.map(g => (
+                                                {(groups || []).map(g => (
                                                     <tr key={g.id} className="hover:bg-slate-50 transition-colors">
-                                                        <td className="px-4 py-3 font-medium text-slate-700">{g.name}</td>
+                                                        <td className="px-4 py-3 font-medium text-slate-700">{g.name || 'Unknown'}</td>
                                                         <td className="px-4 py-3">
-                                                            <input 
-                                                                type="number" 
+                                                            <input
+                                                                type="number"
                                                                 step="0.1"
-                                                                value={g.multiplier}
-                                                                onChange={(e) => updateGroupMultiplier(g.id, Number(e.target.value))}
-                                                                className="w-20 p-1 border border-slate-200 rounded text-center font-bold focus:border-brand-500 outline-none"
+                                                                min="0.5"
+                                                                max="3"
+                                                                value={g.multiplier || 1}
+                                                                onFocus={(e) => e.target.select()}
+                                                                onChange={(e) => {
+                                                                    const value = Number(e.target.value);
+                                                                    const validValue = value < 0.5 ? 0.5 : (value > 3 ? 3 : value);
+                                                                    updateGroupMultiplier(g.id, validValue || 1);
+                                                                }}
+                                                                className="w-24 p-2 border border-slate-200 rounded text-center font-bold focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                                                             />
                                                         </td>
                                                         <td className="px-4 py-3 text-right text-slate-400 font-mono">
-                                                            x{g.multiplier.toFixed(2)}
+                                                            x{(g.multiplier || 1).toFixed(2)}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -421,13 +480,13 @@ export default function AdminPricing() {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Country</label>
                                         <select value={previewCountry} onChange={e => setPreviewCountry(e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg outline-none bg-slate-50 font-medium">
-                                            {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            {(countries || []).map(c => <option key={c.id} value={c.id}>{c.name || 'Unknown'}</option>)}
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Mentor Group</label>
                                         <select value={previewGroup} onChange={e => setPreviewGroup(e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg outline-none bg-slate-50 font-medium">
-                                            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                            {(groups || []).map(g => <option key={g.id} value={g.id}>{g.name || 'Unknown'}</option>)}
                                         </select>
                                     </div>
                                 </div>
@@ -444,6 +503,7 @@ export default function AdminPricing() {
                 </div>
 
                 <PricingCountryModal isOpen={isCountryModalOpen} onClose={() => setIsCountryModalOpen(false)} country={editingCountry} onSave={handleSaveCountryModal} />
+                <CurrencyModal isOpen={isCurrencyModalOpen} onClose={() => setIsCurrencyModalOpen(false)} currency={editingCurrency} onSave={handleSaveCurrencyModal} />
                 <ConfirmDialog isOpen={!!deletingCountry} onClose={() => setDeletingCountry(null)} onConfirm={handleConfirmDelete} title="Remove Geographic Adjustment" message={`Are you sure you want to remove pricing rules for ${deletingCountry?.name}?`} />
             </div>
         </AdminLayout>

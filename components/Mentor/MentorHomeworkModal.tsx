@@ -12,24 +12,47 @@ interface Props {
 }
 
 export const MentorHomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework, onRefresh }) => {
-    const [feedback, setFeedback] = useState(homework.mentorFeedback || '');
-    const [grade, setGrade] = useState(homework.grade || '');
+    const [feedback, setFeedback] = useState(homework.feedback || '');
+    const [grade, setGrade] = useState(homework.grade?.toString() || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Letter grade to numeric conversion
+    const gradeToNumeric: { [key: string]: number } = {
+        'A+': 97, 'A': 93, 'A-': 90,
+        'B+': 87, 'B': 83, 'B-': 80,
+        'C+': 77, 'C': 73, 'C-': 70,
+        'D+': 67, 'D': 63, 'D-': 60,
+        'F': 50
+    };
 
     if (!isOpen) return null;
 
     const handleSave = async () => {
         setIsSubmitting(true);
         try {
-            await api.updateHomework(homework.id, {
-                status: 'REVIEWED',
-                mentorFeedback: feedback,
-                grade: grade
-            });
+            // Convert letter grade to numeric, or use as-is if already numeric
+            let numericGrade: number;
+
+            if (gradeToNumeric[grade]) {
+                // Letter grade - convert
+                numericGrade = gradeToNumeric[grade];
+            } else {
+                // Assume numeric input
+                numericGrade = parseFloat(grade);
+
+                // Validate numeric range
+                if (isNaN(numericGrade) || numericGrade < 0 || numericGrade > 100) {
+                    alert('Please enter a valid grade (A+, A, B, C, D, or 0-100)');
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
+            await api.gradeHomework(homework.id, numericGrade, feedback);
             onRefresh();
             onClose();
-        } catch (error) {
-            alert("Error saving feedback.");
+        } catch (error: any) {
+            alert(error.message || "Error saving feedback.");
         } finally {
             setIsSubmitting(false);
         }
@@ -42,7 +65,7 @@ export const MentorHomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework
                 <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                     <div>
                         <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Review Assignment</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Student ID: {homework.menteeId}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Student ID: {homework.booking?.menteeId || 'N/A'}</p>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2"><X size={24} /></button>
                 </div>
@@ -56,17 +79,17 @@ export const MentorHomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework
 
                     <div className="space-y-4">
                         <h3 className="font-black text-xs uppercase tracking-widest text-slate-400">Student's Submission</h3>
-                        {homework.status === 'PENDING' ? (
+                        {!homework.submittedAt ? (
                             <div className="p-10 text-center border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 italic">
                                 Waiting for student to upload...
                             </div>
                         ) : (
                             <div className="p-6 bg-blue-50 border border-blue-100 rounded-2xl">
-                                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">{homework.studentNote || 'No text content provided.'}</p>
-                                {homework.studentSubmission && (
+                                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">{homework.submissionNote || 'No text content provided.'}</p>
+                                {homework.submissionUrl && (
                                     <div className="mt-4 flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-200 w-fit">
                                         <FileText className="text-blue-600" size={18} />
-                                        <span className="text-xs font-bold text-blue-700">{homework.studentSubmission}</span>
+                                        <span className="text-xs font-bold text-blue-700">{homework.submissionUrl}</span>
                                         <button className="p-1 hover:bg-slate-50 rounded"><Download size={14}/></button>
                                     </div>
                                 )}
@@ -74,7 +97,7 @@ export const MentorHomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework
                         )}
                     </div>
 
-                    {homework.status !== 'PENDING' && (
+                    {homework.submittedAt && (
                         <div className="space-y-6 pt-6 border-t border-slate-100">
                             <div>
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Your Feedback</label>
@@ -111,7 +134,7 @@ export const MentorHomeworkModal: React.FC<Props> = ({ isOpen, onClose, homework
                     )}
                 </div>
 
-                {homework.status !== 'PENDING' && (
+                {homework.submittedAt && (
                     <div className="p-8 border-t border-slate-100 bg-slate-50 flex justify-end gap-4">
                         <button onClick={onClose} className="px-6 py-3 text-slate-400 font-black uppercase text-xs">Close</button>
                         <button 

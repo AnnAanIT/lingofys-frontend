@@ -24,14 +24,15 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ currentVideo, onUpload
 
         setUploading(true);
         try {
-            // Mock upload returns a temp URL, but we just want to simulate the filename for the bio
-            await api.uploadFile(file); 
-            // Simulate filename assignment
-            const mockFilename = `video_${Date.now()}_${file.name}`;
-            setVideoName(mockFilename);
-            onUpload(mockFilename);
-        } catch (error) {
-            alert("Video upload failed");
+            // Upload file to Supabase and get back the URL
+            const url = await api.uploadFile(file, 'media'); // Use media category for video files
+            console.log('Video uploaded successfully, URL:', url);
+            // Save the real URL to database
+            setVideoName(url);
+            onUpload(url);
+        } catch (error: any) {
+            console.error('Video upload error:', error);
+            alert(`Video upload failed: ${error.message || 'Unknown error'}`);
         } finally {
             setUploading(false);
         }

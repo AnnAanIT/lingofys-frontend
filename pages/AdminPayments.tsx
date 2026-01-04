@@ -1,14 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { AdminLayout, StatusBadge, AddPaymentModal } from '../components/AdminComponents';
+import { AdminLayout, StatusBadge } from '../components/AdminComponents';
 import { Transaction, User, UserRole } from '../types';
-import { Plus, Filter, RefreshCw, Calendar, Paperclip } from 'lucide-react';
+import { Filter, RefreshCw, Calendar, Paperclip } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPayments() {
+  const { error: showError } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
 
   // Filters
   const [filterType, setFilterType] = useState<string>('ALL');
@@ -16,32 +17,20 @@ export default function AdminPayments() {
   const [endDate, setEndDate] = useState('');
 
   const fetchTx = async () => {
-    const txs = await api.getAllTransactions();
-    const usrs = await api.getUsers();
-    setTransactions(txs);
-    setUsers(usrs);
+    try {
+      const txs = await api.getAllTransactions();
+      const usrs = await api.getUsers();
+      setTransactions(txs);
+      setUsers(usrs);
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+      showError('Load Failed', 'Failed to load transactions. Please try again.');
+    }
   };
 
   useEffect(() => {
     fetchTx();
   }, []);
-
-  const handleCreatePayment = async (data: any) => {
-      await api.createMockTransaction({
-          userId: data.targetId,
-          amount: data.amount,
-          type: data.type,
-          description: `Admin Transaction: ${data.type.replace('_', ' ')}`,
-          date: new Date().toISOString(),
-          status: 'success', // Auto success for admin manual entry
-          method: data.method,
-          reason: data.reason,
-          evidenceFile: data.evidenceFile,
-          payoutId: data.payoutId // Pass link ID
-      });
-      await api.logAction('PAYMENT_CREATE', `Admin created ${data.type} of $${data.amount} for ${data.targetId}`, 'u3');
-      fetchTx();
-  };
 
   // Helper to determine precise type for filtering
   const getTransactionCategory = (t: Transaction): string => {
@@ -56,12 +45,8 @@ export default function AdminPayments() {
   };
 
   const filteredTransactions = transactions.filter(t => {
-      // Exclude Payout Requests and Approvals as requested
-      if (t.type === 'PAYOUT') return false;
-      if (t.description?.startsWith('Payout Approval')) return false;
-
       const category = getTransactionCategory(t);
-      // Normalized filter logic
+      // Normalized filter logic - include all transaction types
       const matchesType = filterType === 'ALL' || category === filterType || t.type === filterType;
       
       let matchesDate = true;
@@ -83,14 +68,9 @@ export default function AdminPayments() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
-            <div className="flex gap-2">
-                <button onClick={fetchTx} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600">
-                    <RefreshCw size={20} />
-                </button>
-                <button onClick={() => setIsAddPaymentOpen(true)} className="px-4 py-2 bg-slate-900 text-white rounded-lg flex items-center text-sm font-bold shadow-sm hover:bg-slate-800">
-                    <Plus size={16} className="mr-2" /> Add Transaction
-                </button>
-            </div>
+            <button onClick={fetchTx} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600">
+                <RefreshCw size={20} />
+            </button>
         </div>
 
         {/* Filters Bar */}
@@ -105,11 +85,13 @@ export default function AdminPayments() {
                         className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none bg-white"
                     >
                         <option value="ALL">All Transactions</option>
-                        <option value="credit_topup">Mentee Credit Top-Up</option>
+                        <option value="credit_topup">Credit Top-Up</option>
                         <option value="mentor_payout">Mentor Payout</option>
                         <option value="provider_payout">Provider Payout</option>
-                        <option value="refund_credit">Refund Credit</option>
+                        <option value="REFUND">Refund</option>
                         <option value="SUBSCRIPTION">Subscription</option>
+                        <option value="BOOKING_PAYMENT">Booking Payment</option>
+                        <option value="COMMISSION">Commission</option>
                     </select>
                 </div>
             </div>
@@ -196,12 +178,6 @@ export default function AdminPayments() {
           </table>
         </div>
       </div>
-
-      <AddPaymentModal 
-        isOpen={isAddPaymentOpen}
-        onClose={() => setIsAddPaymentOpen(false)}
-        onSave={handleCreatePayment}
-      />
     </AdminLayout>
   );
 }

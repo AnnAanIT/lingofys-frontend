@@ -5,8 +5,10 @@ import { AdminLayout, ConfirmDialog } from '../components/AdminComponents';
 import { SubscriptionPlanModal } from '../components/Admin/SubscriptionPlanModal';
 import { SubscriptionPlan } from '../types';
 import { Award, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminSubscriptionPlans() {
+    const { error: showError } = useToast();
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
@@ -28,16 +30,16 @@ export default function AdminSubscriptionPlans() {
         try {
             if (editingPlan) {
                 await api.updateSubscriptionPlan(plan.id, plan);
-                await api.logAction('PLAN_UPDATE', `Updated plan ${plan.name}`, 'admin');
+                await api.logAction('PLAN_UPDATE', 'admin', `Updated plan ${plan.name}`);
             } else {
                 await api.addSubscriptionPlan(plan);
-                await api.logAction('PLAN_CREATE', `Created plan ${plan.name}`, 'admin');
+                await api.logAction('PLAN_CREATE', 'admin', `Created plan ${plan.name}`);
             }
             setIsModalOpen(false);
             setEditingPlan(null);
             loadData();
         } catch (error: any) {
-            alert("Error: " + error.message);
+            showError('Operation Failed', error.message);
         }
     };
 
@@ -45,11 +47,11 @@ export default function AdminSubscriptionPlans() {
         if (!deletingPlan) return;
         try {
             await api.deleteSubscriptionPlan(deletingPlan.id);
-            await api.logAction('PLAN_DELETE', `Deleted plan ${deletingPlan.name}`, 'admin');
+            await api.logAction('PLAN_DELETE', 'admin', `Deleted plan ${deletingPlan.name}`);
             setDeletingPlan(null);
             loadData();
         } catch (error: any) {
-            alert("Error: " + error.message);
+            showError('Delete Failed', error.message);
         }
     };
 

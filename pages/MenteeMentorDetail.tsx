@@ -7,13 +7,15 @@ import { Mentor, Subscription, UserRole, Booking } from '../types';
 import { BookingModal } from '../components/FindMentor/BookingModal';
 import { WeeklyCalendar } from '../components/Calendar';
 import { createAbsoluteDate, getTimezoneByCountry } from '../lib/timeUtils';
-import { ArrowLeft, Star, MapPin, BookOpen, Globe, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, BookOpen, Globe, ShieldCheck, FileVideo } from 'lucide-react';
 import { translations } from '../lib/i18n';
+import { useToast } from '../components/ui/Toast';
 
 export default function MenteeMentorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, refreshUser, language } = useApp();
+  const { error: showError } = useToast();
   const t = translations[language].mentee;
 
   const [mentor, setMentor] = useState<Mentor | null>(null);
@@ -36,15 +38,35 @@ export default function MenteeMentorDetail() {
     if (id) {
         Promise.all([
             api.getMentorById(id),
-            api.getBookings(id, UserRole.MENTOR)
+            api.getMentorUpcomingBookings(id)  // Fixed: Get MENTOR's bookings, not mentee's bookings
         ]).then(([m, b]) => {
             setMentor(m || null);
-            setMentorBookings(b);
-            
+            setMentorBookings(b || []);  // ✅ FIX: Default to empty array if undefined
+
             // Calculate localized rate for display
             if (m) {
-                api.getMentorLocalizedRate(m.id, user?.country || 'US').then(setLocalizedRate);
+                api.getMentorLocalizedRate(m.id, user?.country || 'US')
+                    .then(rate => {
+                        // ✅ FIX: Ensure rate is a number, extract from object if needed
+                        if (typeof rate === 'number') {
+                            setLocalizedRate(rate);
+                        } else if (rate && typeof rate === 'object' && 'finalPrice' in rate) {
+                            setLocalizedRate((rate as any).finalPrice);
+                        } else {
+                            setLocalizedRate(null);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to get localized rate:', err);
+                        setLocalizedRate(null);
+                    });
             }
+            setLoading(false);
+        }).catch(err => {
+            // ✅ FIX: Handle API errors (401, 404, etc.)
+            console.error('Failed to load mentor details:', err);
+            setMentor(null);
+            setMentorBookings([]);
             setLoading(false);
         });
     }
@@ -52,21 +74,37 @@ export default function MenteeMentorDetail() {
 
   useEffect(() => {
       if (user && id) {
-          api.getUserSubscriptions(user.id).then(subs => {
-              const sub = subs.find(s => s.mentorId === id && s.status === 'ACTIVE');
-              setActiveSubscription(sub || null);
-          });
+          api.getUserSubscriptions(user.id)
+              .then(subs => {
+                  const sub = subs.find(s => s.mentorId === id && s.status === 'ACTIVE');
+                  setActiveSubscription(sub || null);
+              })
+              .catch(err => {
+                  // ✅ FIX: Handle subscription fetch errors
+                  console.error('Failed to load subscriptions:', err);
+                  setActiveSubscription(null);
+              });
       }
   }, [user, id]);
 
-  // ✅ FIX: Use MENTOR timezone for calendar display to match event generation
-  const displayTz = mentor?.timezone || getTimezoneByCountry(mentor?.country || 'US');
+  // ✅ FIXED: Dynamic timezone based on logged-in user role
+  // - Mentee sees times in THEIR timezone (easier to book)
+  // - Mentor sees times in THEIR OWN timezone (when viewing their profile)
+  const displayTz = user?.role === 'MENTEE'
+      ? (user.timezone || getTimezoneByCountry(user.country || 'VN'))
+      : (mentor?.timezone || getTimezoneByCountry(mentor?.country || 'US'));
 
   const generateEvents = () => {
       const events: any[] = [];
       const today = new Date();
 
       if (!mentor) return [];
+
+      // ✅ FIX: Check if availability exists and is an array
+      if (!mentor.availability || !Array.isArray(mentor.availability) || mentor.availability.length === 0) {
+          // Silently return empty array (no need to log warning every render)
+          return [];
+      }
 
       // Múi giờ của Mentor để hiểu các slot "Mon 18:00"
       const mentorTz = mentor.timezone || getTimezoneByCountry(mentor.country || 'US');
@@ -132,7 +170,7 @@ export default function MenteeMentorDetail() {
           const details = await api.calculatePriceDetail(mentor.id, user.country || 'VN');
           setPriceDetails(details);
       } catch (e) {
-          alert(t.pricingCalculationError);
+          showError(t.pricingCalculationError, 'Failed to calculate pricing details');
           setSelectedDate(null);
       }
   };
@@ -146,15 +184,15 @@ export default function MenteeMentorDetail() {
         console.log('  mentee:', user.id, user.name);
         console.log('  mentor:', mentor.id, mentor.name);
         console.log('  startTime:', selectedDate.toISOString());
+        console.log('  cost:', priceDetails.finalPrice);
 
-        const newBooking = await api.createOneTimeBooking(
-            user.id,
-            mentor.id,
-            selectedDate.toISOString(),
-            60,
-            priceDetails.finalPrice,
-            useSubscription
-        );
+        const newBooking = await api.createOneTimeBooking({
+            mentorId: mentor.id,
+            startTime: selectedDate.toISOString(),
+            duration: 60,
+            cost: priceDetails.finalPrice,
+            useSubscription: useSubscription
+        });
 
         console.log('✅ Booking created:', newBooking);
         console.log('  bookingId:', newBooking.id);
@@ -170,7 +208,7 @@ export default function MenteeMentorDetail() {
         navigate(`/mentee/booking-success/${newBooking.id}`);
     } catch (error: any) {
         console.error('❌ Booking failed:', error);
-        alert("Booking failed: " + error.message);
+        showError('Booking Failed', error.message);
     } finally {
         setIsProcessing(false);
     }
@@ -212,7 +250,7 @@ export default function MenteeMentorDetail() {
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.yourRate}</span>
                     <div className="text-right">
                         <span className="text-3xl font-black text-white">
-                            {localizedRate !== null ? localizedRate : '...'}
+                            {localizedRate !== null && typeof localizedRate === 'number' ? localizedRate.toFixed(0) : '...'}
                         </span>
                         <span className="text-xs font-bold text-slate-400 ml-1">{t.creditsPerHour}</span>
                     </div>
@@ -227,11 +265,31 @@ export default function MenteeMentorDetail() {
         </div>
 
         <div className="lg:col-span-2 space-y-6">
+            {/* Video Introduction */}
+            {mentor.videoIntro && (
+              <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                  <FileVideo size={22} className="text-brand-500" /> Introduction Video
+                </h3>
+                <div className="relative rounded-xl overflow-hidden bg-slate-100">
+                  <video 
+                    src={mentor.videoIntro} 
+                    controls 
+                    className="w-full"
+                    style={{ maxHeight: '400px' }}
+                    preload="metadata"
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
                 <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
                     <BookOpen size={22} className="text-brand-500" /> {t.aboutMe}
                 </h3>
-                <p className="text-slate-600 leading-relaxed font-medium">{mentor.bio}</p>
+                <p className="text-slate-600 leading-relaxed font-medium">{mentor.aboutMe || mentor.headline}</p>
             </div>
 
             <div id="calendar-view" className="h-[650px] flex flex-col scroll-mt-6 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm overflow-hidden">
@@ -240,7 +298,7 @@ export default function MenteeMentorDetail() {
                         <Globe size={20} className="text-brand-600" /> {t.mentorSchedule}
                     </h3>
                     <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold border border-green-100 uppercase tracking-wide">
-                        Mentor's Time ({displayTz})
+                        {user?.role === 'MENTEE' ? `Your Time (${displayTz})` : `Mentor's Time (${displayTz})`}
                     </div>
                 </div>
                 <div className="flex-1 min-h-0">

@@ -34,12 +34,13 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, 
                 <p className="text-sm text-slate-500 mb-6">Enter a new password for <strong>{userName}</strong>.</p>
                 
                 <form onSubmit={handleSubmit}>
-                    <input 
-                        type="password" 
-                        required 
+                    <input
+                        type="password"
+                        required
                         placeholder="New Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="new-password"
                         className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none mb-4"
                     />
                     <div className="flex gap-3">

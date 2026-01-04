@@ -11,7 +11,7 @@ interface PayoutApproveModalProps {
 }
 
 export const PayoutApproveModal: React.FC<PayoutApproveModalProps> = ({ isOpen, onClose, payout, onConfirm }) => {
-    const [method, setMethod] = useState(payout.method || 'Bank Transfer');
+    const [method, setMethod] = useState(payout.method || 'Bank');
     const [adminNote, setAdminNote] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,10 +59,10 @@ export const PayoutApproveModal: React.FC<PayoutApproveModalProps> = ({ isOpen, 
                             onChange={(e) => setMethod(e.target.value)} 
                             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         >
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="PayPal">PayPal</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Paypay">Paypay</option>
                             <option value="Wise">Wise</option>
-                            <option value="Other">Other</option>
+                            <option value="Momo">Momo</option>
                         </select>
                     </div>
 

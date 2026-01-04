@@ -18,14 +18,14 @@ export const NotificationBell: React.FC = () => {
 
     const fetchCounts = async () => {
         if (!user) return;
-        const count = await api.getUnreadNotificationCount(user.id, user.role);
+        const count = await api.getUnreadNotificationCount(user.id);
         setUnreadCount(count);
     };
 
     const fetchNotifications = async () => {
         if (!user) return;
         setLoading(true);
-        const data = await api.getNotifications(user.id, user.role);
+        const data = await api.getNotifications(user.id);
         // Sort by date desc
         data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setNotifications(data);
@@ -35,7 +35,7 @@ export const NotificationBell: React.FC = () => {
     useEffect(() => {
         if (user) {
             fetchCounts();
-            const interval = setInterval(fetchCounts, 10000); // Poll every 10s
+            const interval = setInterval(fetchCounts, 30000); // Reduced from 10s to 30s to prevent 429 errors
             return () => clearInterval(interval);
         }
     }, [user]);

@@ -20,8 +20,8 @@ export default function AdminHomework() {
     loadData();
   }, []);
 
-  const filteredHomework = homeworkList.filter(h => 
-    filterMentorId === 'ALL' || h.mentorId === filterMentorId
+  const filteredHomework = homeworkList.filter(h =>
+    filterMentorId === 'ALL' || h.booking?.mentorId === filterMentorId
   );
 
   return (
@@ -67,7 +67,7 @@ export default function AdminHomework() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredHomework.map(h => {
-                const mentor = mentors.find(m => m.id === h.mentorId);
+                const mentor = mentors.find(m => m.id === h.booking?.mentorId);
                 return (
                 <tr key={h.id} className="hover:bg-slate-50">
                   <td className="px-6 py-4">
@@ -75,14 +75,14 @@ export default function AdminHomework() {
                       <div className="text-xs text-slate-500 truncate max-w-[200px]">{h.description}</div>
                   </td>
                   <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{mentor ? mentor.name : h.mentorId}</div>
-                      <div className="text-xs text-slate-500 font-mono">{h.mentorId}</div>
+                      <div className="font-medium text-slate-900">{mentor ? mentor.name : h.booking?.mentorId || '-'}</div>
+                      <div className="text-xs text-slate-500 font-mono">{h.booking?.mentorId || '-'}</div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs text-slate-600">{h.menteeId}</td>
+                  <td className="px-6 py-4 font-mono text-xs text-slate-600">{h.booking?.menteeId || '-'}</td>
                   <td className="px-6 py-4 text-slate-500">{h.dueDate ? new Date(h.dueDate).toLocaleDateString() : '-'}</td>
-                  <td className="px-6 py-4"><StatusBadge status={h.status} /></td>
+                  <td className="px-6 py-4"><StatusBadge status={h.submittedAt ? (h.gradedAt ? 'REVIEWED' : 'SUBMITTED') : 'PENDING'} /></td>
                   <td className="px-6 py-4">
-                      {h.studentSubmission ? (
+                      {h.submissionUrl ? (
                           <span className="flex items-center text-blue-600 text-xs font-medium cursor-pointer hover:underline">
                               <FileText size={14} className="mr-1" /> View File
                           </span>
@@ -91,7 +91,7 @@ export default function AdminHomework() {
                       )}
                   </td>
                   <td className="px-6 py-4">
-                      {h.grade ? (
+                      {h.grade !== undefined && h.grade !== null ? (
                           <span className="font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">{h.grade}</span>
                       ) : '-'}
                   </td>

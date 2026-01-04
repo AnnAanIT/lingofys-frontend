@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../services/api';
 import { Message, UserRole, Conversation } from '../../types';
 import { Send, Lock, User as UserIcon, ShieldCheck, CheckCheck, Loader2, Sparkles } from 'lucide-react';
+import { BRAND } from '../../constants/brand';
 
 interface ChatWindowProps {
     currentUserRole: UserRole;
@@ -26,13 +27,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const canReply = !isAdmin || (conversation.assignedAdminId === currentUserId || conversation.assignedAdminId === null);
 
     const loadMessages = async () => {
-        const msgs = await api.getMessages(conversation.id);
-        setMessages(msgs);
-        setLoading(false);
+        try {
+            const msgs = await api.getMessages(conversation.id);
+            setMessages(msgs || []);
+            setLoading(false);
+        } catch (error) {
+            console.error('Failed to load messages:', error);
+            setMessages([]);
+            setLoading(false);
+        }
     };
 
     const markRead = async () => {
-        await api.markAsRead(conversation.id, currentUserRole);
+        try {
+            await api.markAsRead(conversation.id);
+        } catch (error) {
+            console.error('Failed to mark as read:', error);
+        }
     };
 
     useEffect(() => {
@@ -42,7 +53,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         const interval = setInterval(() => {
             loadMessages();
             markRead();
-        }, 5000); 
+        }, 15000); // Reduced from 5s to 15s to prevent 429 errors
         return () => clearInterval(interval);
     }, [conversation.id]);
 
@@ -60,18 +71,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         setInput(''); 
 
         try {
-            await api.sendMessage({
-                conversationId: conversation.id,
-                fromId: currentUserId,
-                fromRole: currentUserRole,
-                toRole: recipientRole,
-                toId: isAdmin ? conversation.participantId : null,
-                content: content
-            });
+            // Backend API expects receiverId and content (senderId comes from auth token)
+            const receiverId = isAdmin ? conversation.participantId : 'admin';
+            await api.sendMessage(receiverId, content);
             await loadMessages();
             if (onMessageSent) onMessageSent();
         } catch (error: any) {
-            alert(error); 
+            alert(error);
         }
     };
 
@@ -172,7 +178,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </form>
                 )}
                 <p className="text-[9px] text-center text-slate-400 mt-2 font-medium">
-                    {recipientRole === 'ADMIN' ? 'Mentorship.io Official Support Channel' : 'Response time: Usually < 5 mins'}
+                    {recipientRole === 'ADMIN' ? BRAND.supportChannelName : 'Response time: Usually < 5 mins'}
                 </p>
             </div>
         </div>

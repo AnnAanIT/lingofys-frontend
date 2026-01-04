@@ -5,7 +5,7 @@ import { Language } from '../types';
 const en = {
   nav: {
     dashboard: 'Dashboard',
-    findMentor: 'Find Mentor',
+    findMentor: 'Find Teacher',
     bookings: 'My Bookings',
     subscriptions: 'Subscriptions',
     homework: 'Homework',
@@ -25,7 +25,7 @@ const en = {
     date: 'Date',
     time: 'Time',
     status: 'Status',
-    mentor: 'Mentor',
+    mentor: 'Teacher',
     student: 'Student',
     next: 'Next',
     submit: 'Submit',
@@ -54,7 +54,7 @@ const en = {
     resetConfirm: 'Are you sure you want to clear all data and re-initialize mock accounts?',
     chooseRole: 'I want to register as...',
     menteeRole: 'Student',
-    mentorRole: 'Teaching Mentor',
+    mentorRole: 'Teacher',
     providerRole: 'Affiliate Provider',
     completeRegister: 'Complete Registration'
   },
@@ -86,7 +86,7 @@ const en = {
     creditsLabel: 'Credits',
     creditsDescription: '* Credits are used for 1:1 sessions.',
     
-    findMentorTitle: 'Find a Mentor',
+    findMentorTitle: 'Find a Teacher',
     findMentorSubtitle: 'Browse and book sessions with top English experts.',
     searchPlaceholder: 'Search name or tag...',
     filters: 'Filters',
@@ -97,7 +97,7 @@ const en = {
     buySubscription: 'Buy Subscription',
     bookNewLesson: 'Book New Lesson',
     noBookingsTitle: 'No bookings yet',
-    noBookingsDesc: 'Start your journey by finding a mentor.',
+    noBookingsDesc: 'Start your journey by finding a teacher.',
     scheduled: 'Scheduled',
     completed: 'Completed',
     cancelled: 'Cancelled',
@@ -112,10 +112,10 @@ const en = {
     reportSubmitted: 'Report submitted. Our team will review it shortly.',
     allLevels: 'All Levels',
     allTopics: 'All Topics',
-    mentorsAvailable: '{count} mentors available',
+    mentorsAvailable: '{count} teachers available',
     recommended: 'Recommended',
-    noMentorsFound: 'No mentors found',
-    noMentorsDesc: 'We couldn\'t find any mentors matching your current filters.',
+    noMentorsFound: 'No teachers found',
+    noMentorsDesc: 'We couldn\'t find any teachers matching your current filters.',
     bookingCancelledSuccess: 'Booking cancelled successfully. Sessions or credits have been returned.',
     rescheduledSuccess: 'Rescheduled successfully.',
     loadingLessonDetails: 'Loading lesson details...',
@@ -133,16 +133,16 @@ const en = {
     leaveReview: 'Leave a Review',
     pricingCalculationError: 'Unable to calculate localized pricing.',
     loadingProfile: 'Loading profile...',
-    mentorNotFound: 'Mentor not found.',
+    mentorNotFound: 'Teacher not found.',
     yourRate: 'Your Rate',
     creditsPerHour: 'Credits/hr',
     bookNow: 'Book Now',
     aboutMe: 'About Me',
-    mentorSchedule: 'Mentor Schedule',
+    mentorSchedule: 'Teacher Schedule',
     timezoneConversion: 'Times converted to your local zone ({tz})',
     activeSubscription: 'Active Subscription',
     planLabel: 'Plan',
-    mentorLabel: 'Mentor: ',
+    mentorLabel: 'Teacher: ',
     expiresLabel: 'Expires: ',
     activeStatus: 'ACTIVE',
     subscriptionFailed: 'Failed to subscribe: ',
@@ -165,12 +165,12 @@ const en = {
     benefitTitle2: 'Better Rates',
     benefitDesc2: 'Save up to 20% compared to booking single lessons with credits.',
     benefitTitle3: 'Guaranteed Slots',
-    benefitDesc3: 'Secure your favorite mentor\'s prime time slots 4 weeks in advance.',
+    benefitDesc3: 'Secure your favorite teacher\'s prime time slots 4 weeks in advance.',
     faqTitle: 'Frequently Asked Questions',
     faq1Question: 'Can I reschedule a lesson?',
     faq1Answer: 'Yes, depending on your plan. The Starter plan allows 1 reschedule per month. Cancellation must be done 24h in advance.',
-    faq2Question: 'What happens if my mentor cancels?',
-    faq2Answer: 'If a mentor cancels, the session credit is returned to your quota, and you can rebook anytime.',
+    faq2Question: 'What happens if my teacher cancels?',
+    faq2Answer: 'If a teacher cancels, the session credit is returned to your quota, and you can rebook anytime.',
     faq3Question: 'Do credits roll over?',
     faq3Answer: 'No, subscription sessions must be used within the 4-week cycle to encourage consistent practice.',
     activePlan: 'You have an active {plan} subscription',
@@ -184,11 +184,11 @@ const en = {
     
     subscriptionDetail: {
       backToList: 'Back to Plans',
-      stepMentor: 'Choose Mentor',
+      stepMentor: 'Choose Teacher',
       stepSchedule: 'Set Schedule',
       stepConfirm: 'Confirm',
       mentorTitle: 'Your Learning Guide',
-      mentorSubtitle: 'Choose a mentor to accompany you for the next 4 weeks.',
+      mentorSubtitle: 'Choose a teacher to accompany you for the next 4 weeks.',
       scheduleTitle: 'Set Your Weekly Routine',
       scheduleSubtitle: 'Choose recurring slots that fit your weekly schedule.',
       projectedSchedule: 'Projected Schedule',
@@ -199,7 +199,7 @@ const en = {
       summarySubtitle: 'Please review your plan details.',
       planLabel: 'Learning Plan',
       sessionsSuffix: 'Lessons / 4 weeks',
-      mentorLabel: 'Partner Mentor',
+      mentorLabel: 'Partner Teacher',
       roadmapLabel: 'Next 4 Weeks Roadmap',
       totalPrice: 'Total Price',
       walletBalance: 'Current Wallet',
@@ -212,7 +212,7 @@ const en = {
     calendar: {
       title: 'Choose {count} fixed slots per week',
       selectedCount: 'Selected: {current} / {max}',
-      note: '* Green slots indicate mentor availability. Choose recurring weekly times.'
+      note: '* Green slots indicate teacher availability. Choose recurring weekly times.'
     },
 
     activeSubscriptionTitle: 'Active Subscription',
@@ -258,12 +258,12 @@ const en = {
     }
   },
   mentor: {
-    welcome: 'Hello Mentor',
+    welcome: 'Hello Teacher',
     upcomingLessons: 'upcoming lessons',
     availableCredits: 'Available Credits',
     manageSchedule: 'Manage Schedule',
     openMoreSlots: 'Open more time slots for students to book.',
-    mentorTip: 'Mentor Tip',
+    mentorTip: 'Teacher Tip',
     mentorTipDesc: 'Open your schedule at least 2 weeks in advance so students can easily plan their timetable.',
     refreshCalendar: 'Refresh calendar',
     available: 'Available',
@@ -294,8 +294,8 @@ const en = {
   },
   notifications: {
     commissionEarned: 'Commission Earned!',
-    commissionMessage: (amount: number, menteeName: string, topupAmount: number) =>
-      `You earned ${amount} Cr commission from ${menteeName}'s ${topupAmount} Cr top-up.`,
+    commissionMessage: (amount: number, studentName: string, topupAmount: number) =>
+      `You earned ${amount} Cr commission from ${studentName}'s ${topupAmount} Cr top-up.`,
     accountActivated: 'Account Activated',
     accountActivatedMessage: 'Your account has been activated. You can now use all platform features.',
     accountSuspended: 'Account Suspended',
@@ -307,17 +307,17 @@ const en = {
     accountRejectedMessage: (reason?: string) =>
       `Your account application was rejected${reason ? `: ${reason}` : '.'}`,
     newBooking: 'New Booking!',
-    newBookingMessage: (menteeName: string, startTime: string) =>
-      `${menteeName} booked a lesson at ${new Date(startTime).toLocaleString()}`,
+    newBookingMessage: (studentName: string, startTime: string) =>
+      `${studentName} booked a lesson at ${new Date(startTime).toLocaleString()}`,
     lessonCompleted: 'Lesson Completed',
-    lessonCompletedMessage: (mentorName: string) =>
-      `Your lesson with ${mentorName} has been completed. Please leave a review!`,
+    lessonCompletedMessage: (teacherName: string) =>
+      `Your lesson with ${teacherName} has been completed. Please leave a review!`,
     bookingCancelled: 'Booking Cancelled',
-    bookingCancelledMessage: (mentorName: string) =>
-      `Your booking with ${mentorName} has been cancelled. Credits have been refunded.`,
+    bookingCancelledMessage: (teacherName: string) =>
+      `Your booking with ${teacherName} has been cancelled. Credits have been refunded.`,
     bookingRescheduled: 'Booking Rescheduled',
-    bookingRescheduledMessage: (mentorName: string) =>
-      `Your lesson with ${mentorName} has been rescheduled.`,
+    bookingRescheduledMessage: (teacherName: string) =>
+      `Your lesson with ${teacherName} has been rescheduled.`,
     payoutApproved: 'Payout Approved',
     payoutApprovedMessage: (amount: number) =>
       `Your payout of ${amount} Cr has been approved and will be processed soon.`,

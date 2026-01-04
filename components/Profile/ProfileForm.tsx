@@ -4,24 +4,27 @@ import { User, Mentor, Provider, UserRole } from '../../types';
 import { api } from '../../services/api';
 import { security } from '../../utils/security';
 import { Save } from 'lucide-react';
+import { CountrySelector } from '../Admin/CountrySelector';
+import { getTimezoneByCountry } from '../../lib/timeUtils';
+import { useToast } from '../ui/Toast';
 
 interface ProfileFormProps {
     user: User | Mentor | Provider;
     onSave: () => void;
+    // Optional: custom update method for AdminUserDetail (updates specific user by ID)
+    // If not provided, defaults to updateUserProfile (updates current logged-in user)
+    updateMethod?: (data: Partial<User>) => Promise<void>;
 }
 
-export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave }) => {
+export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMethod }) => {
+    const { success, error } = useToast();
     const [formData, setFormData] = useState({
         name: user.name,
         email: user.email,
-        phone: user.phone || '',
         country: user.country || '',
-        // Only for mentees
-        ...(user.role === 'MENTEE' && { language: (user as User).language || 'en' }),
-        // Provider specific
-        payoutDetails: (user as Provider).payoutDetails || '',
-        // Mentor specific
-        bio: (user as Mentor).bio || ''
+        // Payment info for Provider and Mentor
+        paymentMethod: (user as any).paymentMethod || 'Bank',
+        paymentDetails: (user as any).paymentDetails || ''
     });
     const [saving, setSaving] = useState(false);
 
@@ -39,20 +42,27 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave }) => {
         setSaving(true);
         try {
             // ✅ Additional sanitization before sending to API
-            const sanitizedData = {
-                ...formData,
+            const timezone = getTimezoneByCountry(formData.country);
+            const sanitizedData: any = {
                 name: security.sanitizeInput(formData.name),
-                phone: security.sanitizeInput(formData.phone),
+                email: formData.email, // Don't sanitize email
                 country: security.sanitizeInput(formData.country),
-                bio: formData.bio ? security.sanitizeInput(formData.bio) : '',
-                payoutDetails: formData.payoutDetails ? security.sanitizeInput(formData.payoutDetails) : ''
+                timezone: timezone, // Auto-set timezone based on country
+                paymentMethod: formData.paymentMethod ? security.sanitizeInput(formData.paymentMethod) : '',
+                paymentDetails: formData.paymentDetails ? security.sanitizeInput(formData.paymentDetails) : ''
             };
 
-            await api.updateUserProfile(user.id, sanitizedData);
-            onSave();
-            alert("Profile updated successfully!");
-        } catch (error) {
-            alert("Failed to update profile.");
+            // Use custom update method if provided (AdminUserDetail), otherwise updateUserProfile (AdminProfile)
+            if (updateMethod) {
+                await updateMethod(sanitizedData);
+            } else {
+                await api.updateUserProfile(sanitizedData);
+            }
+            success("Profile Updated", "Your changes have been saved successfully");
+            onSave(); // Trigger reload
+        } catch (err: any) {
+            console.error('Profile update error:', err);
+            error("Update Failed", err.message || "Failed to update profile");
         } finally {
             setSaving(false);
         }
@@ -82,26 +92,25 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave }) => {
                         readOnly
                     />
                 </div>
+            </div>
+            
+            {/* Country Selector - Hidden for Provider */}
+            {user.role !== 'PROVIDER' && (
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Phone</label>
-                    <input 
-                        type="text" 
-                        name="phone" 
-                        value={formData.phone} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
-                    <input 
-                        type="text" 
-                        name="country" 
+                    <CountrySelector 
                         value={formData.country} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
+                        onChange={(countryCode) => {
+                            // Auto-update timezone when country changes
+                            const timezone = getTimezoneByCountry(countryCode);
+                            setFormData({ ...formData, country: countryCode });
+                            console.log(`🌍 Country changed to ${countryCode}, timezone auto-set to ${timezone}`);
+                        }} 
+                        label="Country"
                     />
                 </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {user.role === 'MENTEE' && (
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Language</label>
@@ -123,32 +132,36 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave }) => {
 
             {user.role === 'PROVIDER' && (
                 <div className="pt-4 md:pt-4 border-t border-slate-100">
-                    <h3 className="font-bold text-slate-900 mb-4">Payout Information</h3>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Payment Details (PayPal/Bank)</label>
-                        <input 
-                            type="text" 
-                            name="payoutDetails" 
-                            value={formData.payoutDetails} 
-                            onChange={handleChange} 
-                            className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {user.role === 'MENTOR' && (
-                <div className="pt-4 md:pt-4 border-t border-slate-100">
-                    <h3 className="font-bold text-slate-900 mb-4">Quick Bio</h3>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Short Headline (1-2 sentences)</label>
-                        <input 
-                            type="text" 
-                            name="bio" 
-                            value={formData.bio} 
-                            onChange={handleChange} 
-                            className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
-                        />
+                    <h3 className="font-bold text-slate-900 mb-4">Payment Information</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Payment Method</label>
+                            <select 
+                                name="paymentMethod" 
+                                value={formData.paymentMethod} 
+                                onChange={handleChange} 
+                                className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
+                            >
+                                <option value="Bank">Bank</option>
+                                <option value="Paypay">Paypay</option>
+                                <option value="Wise">Wise</option>
+                                <option value="Momo">Momo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Payment Details 
+                                <span className="text-xs text-slate-500 ml-2">(Paypay email, Bank account, Momo number, etc.)</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="paymentDetails" 
+                                value={formData.paymentDetails} 
+                                onChange={handleChange} 
+                                placeholder="e.g., your-email@paypay.com"
+                                className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
+                            />
+                        </div>
                     </div>
                 </div>
             )}

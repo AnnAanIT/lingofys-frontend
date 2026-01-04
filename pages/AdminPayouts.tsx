@@ -8,9 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { PayoutApproveModal } from '../components/Admin/PayoutApproveModal';
 import { PayoutRejectModal } from '../components/Admin/PayoutRejectModal';
 import { PayoutPayModal } from '../components/Admin/PayoutPayModal'; // Reuse or Create this
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminPayouts() {
   const navigate = useNavigate();
+  const { success, error: showError } = useToast();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
@@ -27,10 +29,15 @@ export default function AdminPayouts() {
   const [isPayModalOpen, setIsPayModalOpen] = useState(false); // For marking as PAID
 
   const fetchPayouts = async () => {
-    const data = await api.getAllPayouts();
-    // Sort by requestedAt desc
-    data.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
-    setPayouts(data);
+    try {
+      const data = await api.getAllPayouts();
+      // Sort by requestedAt desc
+      data.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+      setPayouts(data);
+    } catch (err: any) {
+      console.error('Failed to fetch payouts:', err);
+      showError('Load Failed', 'Failed to load payouts. Please try again.');
+    }
   };
 
   useEffect(() => {
@@ -43,46 +50,54 @@ export default function AdminPayouts() {
   }, []);
 
   const handleApprove = async (data: { method: string; adminNote: string }) => {
-      if (!selectedPayout) return;
-      await api.approvePayout(currentUser, selectedPayout.id, data.adminNote);
-      fetchPayouts();
-      setIsApproveModalOpen(false);
-      setSelectedPayout(null);
+      if (!selectedPayout || !currentUser) return;
+      try {
+        await api.approvePayout(selectedPayout.id, currentUser.id, data.adminNote);
+        await fetchPayouts();
+        setIsApproveModalOpen(false);
+        setSelectedPayout(null);
+        success('Payout Approved', 'Payout has been approved successfully');
+      } catch (err: any) {
+        console.error('Failed to approve payout:', err);
+        showError('Approval Failed', 'Failed to approve payout. Please try again.');
+      }
   };
 
   const handleReject = async (data: { reason: string; adminNote: string }) => {
-      if (!selectedPayout) return;
-      await api.rejectPayout(currentUser, selectedPayout.id, data.reason);
-      fetchPayouts();
-      setIsRejectModalOpen(false);
-      setSelectedPayout(null);
+      if (!selectedPayout || !currentUser) return;
+      try {
+        await api.rejectPayout(selectedPayout.id, currentUser.id, data.reason);
+        await fetchPayouts();
+        setIsRejectModalOpen(false);
+        setSelectedPayout(null);
+        success('Payout Rejected', 'Payout has been rejected');
+      } catch (err: any) {
+        console.error('Failed to reject payout:', err);
+        showError('Rejection Failed', 'Failed to reject payout. Please try again.');
+      }
   };
 
   const handlePay = async (data: { method: string; evidenceFile: string; adminNote: string }) => {
       if (!selectedPayout) return;
-      // This maps to `completePayment` which calls `mentorPayoutEngine.markPayoutPaid`
-      // We need to fetch the transaction ID first if we were using the old flow, 
-      // but here we are in Payouts management. 
-      // api.completePayment requires TransactionID. 
-      // Let's assume for this specific Admin Action on Payouts, we find the linked pending transaction or use a direct payout completion method if exposed.
-      // Ideally, `api.completePayment` handles the logic. We need the transaction ID.
-      // Since `approvePayout` creates a Payout with 'APPROVED_PENDING_PAYMENT', let's find the transaction.
-      // OR, we update `api` to expose `markPayoutPaid` directly.
-      // Since I updated `api.completePayment` to use the engine, let's try to find the transaction.
-      const txs = await api.getAllTransactions();
-      const tx = txs.find(t => t.relatedEntityId === selectedPayout.id && t.type === 'PAYOUT');
-      
-      if (tx) {
-          await api.completePayment(tx.id, data.evidenceFile, data.adminNote);
-      } else {
-          // If no transaction found (e.g. legacy data), we might need a direct engine call exposed or handle error.
-          // For now, assume engine created it on request/approval.
-          alert("Error: Associated transaction not found.");
+      try {
+        // This maps to `completePayment` which calls `mentorPayoutEngine.markPayoutPaid`
+        // We need to fetch the transaction ID first if we were using the old flow,
+        // but here we are in Payouts management.
+        // api.completePayment requires TransactionID.
+        // Let's assume for this specific Admin Action on Payouts, we find the linked pending transaction or use a direct payout completion method if exposed.
+        // Ideally, `api.completePayment` handles the logic. We need the transaction ID.
+        // Since `approvePayout` creates a Payout with 'APPROVED_PENDING_PAYMENT', let's find the transaction.
+        // Use markPayoutPaid endpoint directly instead of finding transaction
+        await api.markPayoutPaid(selectedPayout.id, data.evidenceFile);
+
+        await fetchPayouts();
+        setIsPayModalOpen(false);
+        setSelectedPayout(null);
+        success('Payout Paid', 'Payout has been marked as paid successfully');
+      } catch (error) {
+        console.error('Failed to mark payout as paid:', error);
+        showError('Payment Failed', 'Failed to mark payout as paid. Please try again.');
       }
-      
-      fetchPayouts();
-      setIsPayModalOpen(false);
-      setSelectedPayout(null);
   };
 
   const filteredPayouts = payouts.filter(p => {

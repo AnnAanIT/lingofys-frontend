@@ -1,0 +1,266 @@
+﻿{
+  "brand": {
+    "name": "Lingofys",
+    "tagline": "Làm Chủ Ngôn Ngữ Qua Học 1:1 Với Giáo Viên Chuyên Nghiệp"
+  },
+  "nav": {
+    "howItWorks": "Cách Thức Hoạt Động",
+    "mentors": "Giáo Viên",
+    "pricing": "Bảng Giá",
+    "login": "Đăng Nhập",
+    "getStarted": "Bắt Đầu"
+  },
+  "hero": {
+    "title": "Học {{language}} 1:1 với",
+    "titleHighlight": "Giáo Viên Chuyên Nghiệp",
+    "description": "Kết nối với giáo viên được xác minh cho các buổi học 1:1 trực tuyến cá nhân hóa. Học tiếng Anh, tiếng Nhật hoặc tiếng Trung theo tốc độ của bạn.",
+    "ctaPrimary": "Bắt Đầu Học",
+    "ctaSecondary": "Trở Thành Giáo Viên",
+    "badges": {
+      "globalNetwork": "Mạng Lưới Toàn Cầu",
+      "verifiedTeachers": "Giáo Viên Đã Xác Minh"
+    }
+  },
+  "languages": {
+    "english": "Tiếng Anh",
+    "japanese": "Tiếng Nhật",
+    "chinese": "Tiếng Trung",
+    "all": "Tất Cả Ngôn Ngữ"
+  },
+  "howItWorks": {
+    "title": "Cách Thức Hoạt Động",
+    "subtitle": "Làm chủ ngôn ngữ mới chỉ với ba bước đơn giản.",
+    "step1": {
+      "title": "1. Chọn Giáo Viên",
+      "description": "Duyệt hồ sơ, xem video giới thiệu và lọc theo chuyên môn."
+    },
+    "step2": {
+      "title": "2. Đặt Lịch",
+      "description": "Chọn khung giờ phù hợp với lịch trình bận rộn của bạn."
+    },
+    "step3": {
+      "title": "3. Bắt Đầu Học",
+      "description": "Kết nối qua video call chất lượng cao và công cụ tương tác."
+    }
+  },
+  "mentorShowcase": {
+    "title": "Gặp Gỡ Giáo Viên Hàng Đầu",
+    "subtitle": "Học từ những nhà giáo dục xuất sắc nhất trên thế giới.",
+    "viewAll": "Xem Tất Cả Giáo Viên",
+    "roles": {
+      "businessEnglish": "Tiếng Anh Thương Mại",
+      "ieltsPrep": "Luyện Thi IELTS",
+      "dailyConversation": "Giao Tiếp Hàng Ngày",
+      "grammarExpert": "Chuyên Gia Ngữ Pháp"
+    }
+  },
+  "pricing": {
+    "title": "Bảng Giá Đơn Giản, Minh Bạch",
+    "subtitle": "Chọn gói phù hợp với phong cách học của bạn. Không có phí ẩn.",
+    "payAsYouGo": {
+      "title": "Trả Theo Buổi",
+      "subtitle": "Linh hoạt tối đa cho người học bận rộn.",
+      "price": "$10",
+      "unit": "/ tín chỉ",
+      "features": {
+        "noExpiration": "Không giới hạn thời gian",
+        "anyMentor": "Đặt bất kỳ giáo viên",
+        "cancellation": "Chính sách hủy 24h"
+      },
+      "cta": "Mua Tín Chỉ"
+    },
+    "subscription": {
+      "title": "Gói Tháng",
+      "subtitle": "Nhất quán cho kết quả nhanh hơn.",
+      "price": "$8",
+      "unit": "/ buổi học",
+      "badge": "PHỔ BIẾN",
+      "features": {
+        "save20": "Tiết kiệm 20% so với tín chỉ",
+        "fixedSlots": "Khung giờ cố định hàng tuần",
+        "prioritySupport": "Hỗ trợ ưu tiên"
+      },
+      "cta": "Xem Gói"
+    }
+  },
+  "affiliate": {
+    "title": "Trở Thành Đối Tác",
+    "description": "Tham gia Chương trình Đối tác và kiếm 10% hoa hồng suốt đời cho mỗi học viên bạn giới thiệu. Giúp chúng tôi lan tỏa kiến thức đồng thời kiếm thu nhập thụ động.",
+    "cta": "Trở Thành Nhà Cung Cấp"
+  },
+  "reviews": {
+    "title": "Học Viên Nói Gì Về Chúng Tôi",
+    "placeholderText": "Giáo viên ở đây vô cùng kiên nhẫn. Tôi đã từ sợ nói chuyện đến có thể giao tiếp hàng ngày chỉ trong 3 tháng!",
+    "placeholderName": "Tên Học Viên",
+    "placeholderJob": "Kỹ Sư Phần Mềm"
+  },
+  "faq": {
+    "title": "Câu Hỏi Thường Gặp",
+    "items": {
+      "credits": {
+        "question": "Làm sao để book một buổi học?",
+        "answer": "Rất đơn giản! Chọn giáo viên yêu thích, xem lịch trống, chọn khung giờ phù hợp và xác nhận bằng credits. "
+      },
+      "cancellation": {
+        "question": "Tôi có thể hủy buổi học không?",
+        "answer": "Có! Nếu bạn hủy trước 6 giờ so với giờ học, bạn sẽ được hoàn lại toàn bộ tín chỉ. Hủy muộn sẽ không được hoàn để tôn trọng thời gian của giáo viên."
+      },
+      "subscription": {
+        "question": "Gói tháng hoạt động như thế nào?",
+        "answer": "Gói tháng cung cấp số buổi học cố định mỗi tháng với giá ưu đãi. Bạn chọn khung giờ cố định hàng tuần (vd: thứ Hai lúc 8 giờ tối) để xây dựng thói quen nhất quán."
+      },
+      "becomeMentor": {
+        "question": "Làm thế nào để trở thành giáo viên?",
+        "answer": "Đăng ký là Giáo viên, điền hồ sơ và tải lên video giới thiệu ngắn. Đội ngũ của chúng tôi sẽ xem xét đơn của bạn trong vòng 48 giờ."
+      }
+    }
+  },
+  "footer": {
+    "description": "Trao quyền cho người học ngôn ngữ trên khắp châu Á thông qua kết nối và công nghệ.",
+    "platform": {
+      "title": "Nền Tảng",
+      "browse": "Duyệt Giáo Viên",
+      "pricing": "Bảng Giá",
+      "login": "Đăng Nhập"
+    },
+    "company": {
+      "title": "Công Ty",
+      "about": "Về Chúng Tôi",
+      "careers": "Tuyển Dụng",
+      "contact": "Liên Hệ"
+    },
+    "legal": {
+      "title": "Pháp Lý",
+      "terms": "Điều Khoản Dịch Vụ",
+      "privacy": "Chính Sách Bảo Mật"
+    }
+  },
+  "seo": {
+    "landing": {
+      "title": "Lingofys - Học Tiếng Anh, Nhật & Trung Trực Tuyến",
+      "description": "Thành thạo tiếng Anh, Nhật, hoặc Trung qua các buổi học 1:1 trực tuyến với giáo viên chuyên nghiệp đã được xác minh. Lịch học linh hoạt, giá cả phải chăng, học tập cá nhân hóa. Bắt đầu hành trình ngôn ngữ của bạn ngay hôm nay!"
+    },
+    "find-mentor": {
+      "title": "Tìm Giáo Viên Ngôn Ngữ Hoàn Hảo Của Bạn",
+      "description": "Duyệt qua các giáo viên tiếng Anh, Nhật và Trung đã được xác minh. Lọc theo chuyên môn, thời gian rảnh và giá cả. Đặt buổi học đầu tiên ngay hôm nay!"
+    },
+    "become-mentor": {
+      "title": "Trở Thành Giáo Viên Ngôn Ngữ - Dạy Trực Tuyến",
+      "description": "Tham gia Lingofys với tư cách giáo viên ngôn ngữ. Kiếm tiền từ việc dạy tiếng Anh, Nhật hoặc Trung trực tuyến. Giờ làm việc linh hoạt, học viên toàn cầu."
+    },
+    "keywords": {
+      "english": "học tiếng anh online",
+      "japanese": "học tiếng nhật online",
+      "chinese": "học tiếng trung online"
+    }
+  },
+  "readme": {
+    "backToLogin": "Quay lại Đăng nhập",
+    "title": "Chào mừng đến Lingofys",
+    "subtitle": "Nền tảng kết nối học viên và giáo viên ngôn ngữ trực tuyến 1-1 (Tiếng Anh, Trung, Nhật)",
+    "intro": {
+      "title": "Học ngôn ngữ 1-1 với giáo viên chuyên nghiệp",
+      "description": "Lingofys kết nối bạn với các giáo viên ngôn ngữ có kinh nghiệm từ Nhật Bản, Trung Quốc, Philippines và nhiều nơi khác. Học Tiếng Anh, Tiếng Trung, Tiếng Nhật linh hoạt theo lịch trình của bạn với thanh toán minh bạch và trải nghiệm chất lượng cao."
+    },
+    "howItWorks": {
+      "title": "Cách thức hoạt động",
+      "step1": {
+        "title": "Đăng ký tài khoản",
+        "description": "Tạo tài khoản miễn phí với vai trò Học viên (để học ngôn ngữ) hoặc Giáo viên (để dạy ngôn ngữ)."
+      },
+      "step2": {
+        "title": "Tìm kiếm & Đặt lịch",
+        "description": "Duyệt danh sách giáo viên, xem hồ sơ và đánh giá. Chọn thời gian phù hợp và đặt buổi học chỉ trong vài cú nhấp chuột."
+      },
+      "step3": {
+        "title": "Học & Đánh giá",
+        "description": "Tham gia buổi học trực tuyến qua video call. Sau buổi học, đánh giá giáo viên để giúp cộng đồng học tập tốt hơn."
+      }
+    },
+    "forStudents": {
+      "title": "Dành cho Học viên",
+      "globalTeachers": {
+        "title": "Giáo viên đa quốc gia",
+        "description": "Học với giáo viên bản ngữ từ Nhật Bản, Trung Quốc, Philippines và nhiều quốc gia khác trên thế giới."
+      },
+      "flexibleSchedule": {
+        "title": "Lịch học linh hoạt",
+        "description": "Đặt lịch theo thời gian phù hợp với bạn. Có thể hủy hoặc dời lịch trong giới hạn cho phép."
+      },
+      "transparentPayment": {
+        "title": "Thanh toán minh bạch",
+        "description": "Nạp tiền vào ví Credit, thanh toán theo buổi học. Giá cả rõ ràng, không phí ẩn."
+      },
+      "oneOnOne": {
+        "title": "Học 1-1 trực tuyến",
+        "description": "Mỗi buổi học là một cuộc gặp riêng tư giữa bạn và giáo viên, tập trung hoàn toàn vào nhu cầu của bạn."
+      },
+      "protection": {
+        "title": "Bảo vệ quyền lợi",
+        "description": "Hệ thống ký quỹ đảm bảo tiền của bạn được bảo vệ cho đến khi buổi học hoàn tất."
+      },
+      "reviews": {
+        "title": "Đánh giá & Xếp hạng",
+        "description": "Xem đánh giá từ học viên khác để chọn giáo viên phù hợp nhất với bạn."
+      }
+    },
+    "forTeachers": {
+      "title": "Dành cho Giáo viên",
+      "scheduleManagement": {
+        "title": "Quản lý lịch dạy",
+        "description": "Thiết lập khung giờ rảnh và để học viên đặt lịch. Bạn quyết định khi nào dạy."
+      },
+      "transparentIncome": {
+        "title": "Thu nhập minh bạch",
+        "description": "Nhận Credit sau mỗi buổi học hoàn thành. Rút tiền về tài khoản ngân hàng bất cứ khi nào."
+      },
+      "globalReach": {
+        "title": "Tiếp cận học viên toàn cầu",
+        "description": "Học viên từ khắp nơi trên thế giới có thể tìm thấy và đặt lịch với bạn."
+      },
+      "support": {
+        "title": "Hỗ trợ & Bảo vệ",
+        "description": "Đội ngũ hỗ trợ sẵn sàng giúp bạn giải quyết mọi vấn đề phát sinh."
+      }
+    },
+    "payment": {
+      "title": "Cách thanh toán",
+      "systemTitle": "Hệ thống Credit",
+      "systemDescription": "Lingofys sử dụng đơn vị tiền tệ nội bộ gọi là Credit. Bạn nạp tiền USD vào ví và sử dụng Credit để thanh toán cho các buổi học.",
+      "step1": {
+        "label": "Bước 1",
+        "title": "Nạp tiền",
+        "description": "Nạp USD vào ví và nhận Credit tương ứng theo tỷ giá hiện tại."
+      },
+      "step2": {
+        "label": "Bước 2",
+        "title": "Đặt lịch học",
+        "description": "Credit được giữ tạm khi bạn đặt lịch, đảm bảo giao dịch an toàn."
+      },
+      "step3": {
+        "label": "Bước 3",
+        "title": "Hoàn tất",
+        "description": "Sau buổi học, Credit được chuyển cho giáo viên. Giáo viên có thể rút về USD."
+      },
+      "protection": {
+        "title": "Bảo vệ giao dịch",
+        "description": "Hệ thống ký quỹ (escrow) đảm bảo tiền của học viên được bảo vệ cho đến khi buổi học hoàn tất, và giáo viên được trả công đầy đủ sau khi hoàn thành công việc."
+      }
+    },
+    "cta": {
+      "title": "Sẵn sàng bắt đầu?",
+      "description": "Tham gia cộng đồng Lingofys ngay hôm nay. Cho dù bạn muốn học ngôn ngữ mới hay chia sẻ kiến thức của mình, chúng tôi luôn chào đón bạn!",
+      "studentButton": "Đăng ký làm Học viên",
+      "teacherButton": "Đăng ký làm Giáo viên"
+    },
+    "support": {
+      "title": "Cần hỗ trợ?",
+      "description": "Nếu bạn có bất kỳ câu hỏi nào hoặc cần hỗ trợ, đừng ngần ngại liên hệ với chúng tôi:",
+      "email": "Email:",
+      "emailValue": "ad.lingofys@gmail.com",
+      "hours": "Giờ làm việc:",
+      "hoursValue": "Thứ 2 - Chủ nhật, 9:00 - 22:00 (GMT+7)"
+    }
+  }
+}
+

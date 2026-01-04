@@ -5,16 +5,18 @@ import { useApp } from '../App';
 import { Payout } from '../types';
 import { DollarSign, Clock, CheckCircle, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { EarningStatusBadge } from '../components/Mentor/EarningStatusBadge';
+import { useToast } from '../components/ui/Toast';
 
 export default function MentorPayout() {
     const { user, refreshUser } = useApp();
+    const { success, error: showError } = useToast();
     const [balanceDetails, setBalanceDetails] = useState({ payable: 0, paid: 0, pending: 0 });
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Request State
     const [requestAmount, setRequestAmount] = useState('');
-    const [requestMethod, setRequestMethod] = useState('Bank Transfer');
+    const [requestMethod, setRequestMethod] = useState('Bank');
     const [isRequesting, setIsRequesting] = useState(false);
 
     useEffect(() => {
@@ -39,13 +41,13 @@ export default function MentorPayout() {
         
         setIsRequesting(true);
         try {
-            await api.requestPayout(user, user.id, Number(requestAmount), requestMethod);
+            await api.requestPayout(user.id, Number(requestAmount), requestMethod, '');
             await refreshUser();
             await loadData();
             setRequestAmount('');
-            alert("Payout request submitted successfully!");
+            success('Payout Requested', 'Your payout request has been submitted successfully');
         } catch(err: any) {
-            alert(err);
+            showError('Request Failed', err.message || String(err));
         } finally {
             setIsRequesting(false);
         }
@@ -75,8 +77,8 @@ export default function MentorPayout() {
                         <div className="flex items-center gap-2 text-green-100 mb-2 font-medium">
                             <DollarSign size={20} /> Available for Payout
                         </div>
-                        <div className="text-4xl font-extrabold tracking-tight">${balanceDetails.payable.toFixed(2)}</div>
-                        <p className="text-sm mt-2 text-green-100">Ready to withdraw</p>
+                        <div className="text-4xl font-extrabold tracking-tight">{balanceDetails.payable} Cr</div>
+                        <p className="text-sm mt-2 text-green-100">= ${balanceDetails.payable.toFixed(2)} USD (1:1 rate, no fees)</p>
                     </div>
                 </div>
 
@@ -85,7 +87,8 @@ export default function MentorPayout() {
                         <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
                             <Clock size={20} className="text-yellow-500" /> Pending Processing
                         </div>
-                        <div className="text-3xl font-bold text-slate-900">${balanceDetails.pending.toFixed(2)}</div>
+                        <div className="text-3xl font-bold text-slate-900">{balanceDetails.pending} Cr</div>
+                        <p className="text-xs text-slate-400 mt-1">= ${balanceDetails.pending.toFixed(2)} USD</p>
                     </div>
                     <div className="text-xs text-slate-400 mt-4">Includes requested & held funds</div>
                 </div>
@@ -95,7 +98,8 @@ export default function MentorPayout() {
                         <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
                             <TrendingUp size={20} className="text-blue-500" /> Total Paid
                         </div>
-                        <div className="text-3xl font-bold text-slate-900">${balanceDetails.paid.toFixed(2)}</div>
+                        <div className="text-3xl font-bold text-slate-900">{balanceDetails.paid} Cr</div>
+                        <p className="text-xs text-slate-400 mt-1">= ${balanceDetails.paid.toFixed(2)} USD</p>
                     </div>
                     <div className="text-xs text-slate-400 mt-4">Lifetime earnings withdrawn</div>
                 </div>
@@ -110,24 +114,34 @@ export default function MentorPayout() {
                         {!canRequest && (
                             <div className="bg-orange-50 border border-orange-100 text-orange-800 p-3 rounded-xl text-sm mb-4 flex items-start gap-2">
                                 <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-                                <span>Minimum withdrawal is ${minPayout}. Keep earning!</span>
+                                <span>Minimum withdrawal is {minPayout} credits (${minPayout.toFixed(2)} USD). Keep earning!</span>
                             </div>
                         )}
 
                         <form onSubmit={handleRequest} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">Amount ($)</label>
-                                <input 
-                                    type="number" 
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Credits to Withdraw</label>
+                                <input
+                                    type="number"
                                     min={minPayout}
                                     max={balanceDetails.payable}
-                                    step="0.01"
+                                    step="1"
                                     value={requestAmount}
                                     onChange={(e) => setRequestAmount(e.target.value)}
                                     disabled={!canRequest}
                                     className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none disabled:bg-slate-50"
-                                    placeholder="0.00"
+                                    placeholder="50"
                                 />
+                                {requestAmount && Number(requestAmount) >= minPayout ? (
+                                    <p className="text-xs text-slate-600 mt-2">
+                                        <span className="font-bold">{requestAmount} credits</span> = ${Number(requestAmount).toFixed(2)} USD
+                                        <span className="text-green-600 font-medium"> (1:1 rate, no fees!)</span>
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-orange-600 mt-2 font-medium">
+                                        Minimum withdrawal: {minPayout} credits (${minPayout.toFixed(2)} USD)
+                                    </p>
+                                )}
                             </div>
                             
                             <div>
@@ -138,9 +152,10 @@ export default function MentorPayout() {
                                     disabled={!canRequest}
                                     className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none disabled:bg-slate-50"
                                 >
-                                    <option value="Bank Transfer">Bank Transfer</option>
-                                    <option value="PayPal">PayPal</option>
+                                    <option value="Bank">Bank</option>
+                                    <option value="Paypay">Paypay</option>
                                     <option value="Wise">Wise</option>
+                                    <option value="Momo">Momo</option>
                                 </select>
                             </div>
 
@@ -192,7 +207,10 @@ export default function MentorPayout() {
                                                     {p.status === 'APPROVED_PENDING_PAYMENT' ? 'PROCESSING' : p.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-slate-900">${p.amount.toFixed(2)}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="font-bold text-slate-900">{p.amount} Cr</div>
+                                                <div className="text-xs text-slate-400">≈ ${(p.amount * 0.9).toFixed(2)} USD</div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

@@ -21,6 +21,7 @@ export default function MenteeFindMentor() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('ALL');
   const [selectedSpecialty, setSelectedSpecialty] = useState('ALL');
+  const [selectedLanguage, setSelectedLanguage] = useState('ALL');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,6 +42,15 @@ export default function MenteeFindMentor() {
     [mentors]
   );
 
+  // Extract all unique teaching languages for filter
+  const allLanguages = useMemo(() => {
+    console.log('🔍 [Language Filter Debug] All mentors:', mentors);
+    console.log('🔍 [Language Filter Debug] teachingLanguages:', mentors.map(m => ({ name: m.name, teachingLanguages: m.teachingLanguages })));
+    const langs = Array.from(new Set(mentors.flatMap(m => m.teachingLanguages || [])));
+    console.log('🔍 [Language Filter Debug] Extracted languages:', langs);
+    return langs;
+  }, [mentors]);
+
   // Optimized Filter logic using useMemo
   const filteredMentors = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
@@ -51,10 +61,11 @@ export default function MenteeFindMentor() {
         
         const matchesGroup = selectedGroup === 'ALL' || (m.mentorGroupId || 'basic') === selectedGroup;
         const matchesSpecialty = selectedSpecialty === 'ALL' || m.specialties.includes(selectedSpecialty);
+        const matchesLanguage = selectedLanguage === 'ALL' || (m.teachingLanguages || []).includes(selectedLanguage);
 
-        return matchesSearch && matchesGroup && matchesSpecialty;
+        return matchesSearch && matchesGroup && matchesSpecialty && matchesLanguage;
     });
-  }, [mentors, searchTerm, selectedGroup, selectedSpecialty]);
+  }, [mentors, searchTerm, selectedGroup, selectedSpecialty, selectedLanguage]);
 
   return (
     <div className="space-y-8 animate-fade-in max-w-7xl mx-auto min-h-screen pb-20">
@@ -100,6 +111,47 @@ export default function MenteeFindMentor() {
               </div>
           </div>
 
+          {/* Language Filter Tags */}
+          {allLanguages.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-4xl mx-auto">
+                  <button
+                      onClick={() => setSelectedLanguage('ALL')}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                          selectedLanguage === 'ALL'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-600'
+                      }`}
+                  >
+                      {t.allLanguages || 'All Languages'}
+                  </button>
+                  {allLanguages.map(lang => {
+                      // Language flag mapping
+                      const flagMap: Record<string, string> = {
+                          'English': '🇬🇧',
+                          'Chinese': '🇨🇳',
+                          'Japanese': '🇯🇵',
+                          'Korean': '🇰🇷'
+                      };
+                      const flag = flagMap[lang] || '🌐';
+                      
+                      return (
+                          <button 
+                              key={lang}
+                              onClick={() => setSelectedLanguage(selectedLanguage === lang ? 'ALL' : lang)}
+                              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                                  selectedLanguage === lang 
+                                  ? 'bg-purple-600 text-white border-purple-600' 
+                                  : 'bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-600'
+                              }`}
+                          >
+                              {flag} {lang}
+                          </button>
+                      );
+                  })}
+              </div>
+          )}
+
+          {/* Specialty Filter Tags */}
           <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-4xl mx-auto">
               <button
                   onClick={() => setSelectedSpecialty('ALL')}

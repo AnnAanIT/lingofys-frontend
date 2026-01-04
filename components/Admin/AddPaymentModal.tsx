@@ -15,7 +15,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClos
     const [formData, setFormData] = useState({
         targetId: '',
         amount: '',
-        method: 'PayPal',
+        method: 'Bank',
         reason: '',
         evidenceFile: '',
         note: '',
@@ -54,7 +54,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClos
                 amount: payout.amount.toString(),
                 note: `Fulfillment for Payout #${payout.id} - ${payout.note || ''}`,
                 payoutId: payout.id,
-                method: payout.method || 'PayPal'
+                method: payout.method || 'Bank'
             }));
         }
     };
@@ -65,7 +65,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClos
         e.preventDefault();
         onSave({ ...formData, type, amount: Number(formData.amount) });
         onClose();
-        setFormData({ targetId: '', amount: '', method: 'PayPal', reason: '', evidenceFile: '', note: '', payoutId: '' });
+        setFormData({ targetId: '', amount: '', method: 'Bank', reason: '', evidenceFile: '', note: '', payoutId: '' });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -141,9 +141,10 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ isOpen, onClos
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Method</label>
                         <select name="method" value={formData.method} onChange={handleChange} className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
-                            <option value="PayPal">PayPal</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Paypay">Paypay</option>
                             <option value="Wise">Wise</option>
+                            <option value="Momo">Momo</option>
                         </select>
                     </div>
 

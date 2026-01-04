@@ -12,24 +12,78 @@ interface CancelModalProps {
     onConfirm: () => void;
     booking: Booking;
     quota?: number;
+    cancelStats?: { cancellationCount: number; remaining: number; canCancel: boolean } | null;
     isProcessing: boolean;
 }
 
-export const CancelBookingModal: React.FC<CancelModalProps> = ({ isOpen, onClose, onConfirm, booking, quota, isProcessing }) => {
+export const CancelBookingModal: React.FC<CancelModalProps> = ({ isOpen, onClose, onConfirm, booking, quota, cancelStats, isProcessing }) => {
     if (!isOpen) return null;
-    const isSub = booking.type === 'subscription';
+    
+    const isSub = booking.type === 'SUBSCRIPTION';
+    const startTime = new Date(booking.startTime);
+    const now = new Date();
+    const millisUntil = startTime.getTime() - now.getTime();
+    const hoursUntil = millisUntil / (1000 * 60 * 60);
+    const minutesUntil = Math.floor(millisUntil / (1000 * 60));
+    const canCancel2h = hoursUntil >= 2;
+    
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-slide-up relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X size={20} /></button>
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4 mx-auto text-red-600"><AlertTriangle size={24} /></div>
-                <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Cancel Lesson?</h3>
-                <div className="text-sm text-slate-500 text-center mb-6">
-                    {isSub ? <p>You have <strong>{quota}</strong> cancellations remaining.</p> : <p>If you cancel less than 6 hours before, no credits will be refunded.</p>}
+                <div className={`w-12 h-12 ${canCancel2h ? 'bg-orange-100' : 'bg-red-100'} rounded-full flex items-center justify-center mb-4 mx-auto ${canCancel2h ? 'text-orange-600' : 'text-red-600'}`}>
+                    <AlertTriangle size={24} />
                 </div>
+                <h3 className="text-lg font-bold text-slate-900 text-center mb-2">Cancel Lesson?</h3>
+                
+                <div className="text-sm text-slate-500 space-y-2 mb-6">
+                    {/* 2-HOUR RULE WARNING */}
+                    {!canCancel2h && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                            <p className="text-red-700 font-semibold">❌ Cannot Cancel</p>
+                            <p className="text-red-600 text-xs mt-1">
+                                Need 2 hours notice. Lesson starts in {Math.floor(hoursUntil)}h {minutesUntil % 60}m
+                            </p>
+                        </div>
+                    )}
+                    
+                    {canCancel2h && (
+                        <>
+                            {/* TIME WARNING */}
+                            <div className={`${hoursUntil < 6 ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-green-50 border-green-200 text-green-700'} border rounded-lg p-3 text-center`}>
+                                <p className="font-semibold">⏰ {Math.floor(hoursUntil)}h {minutesUntil % 60}m until lesson</p>
+                                {hoursUntil < 6 && <p className="text-xs mt-1">Last-minute cancellation</p>}
+                            </div>
+                            
+                            {/* QUOTA INFO */}
+                            {isSub && quota !== undefined && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                    <p className="text-blue-700 font-semibold">📊 Package Cancels: {quota} left</p>
+                                    <p className="text-blue-600 text-xs mt-1">You'll receive 1 session back</p>
+                                </div>
+                            )}
+                            
+                            {!isSub && cancelStats && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                    <p className="text-blue-700 font-semibold">📊 Monthly Cancels: {cancelStats.remaining}/3 left</p>
+                                    <p className="text-blue-600 text-xs mt-1">You'll receive 100% credits back</p>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+                
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50">Keep</button>
-                    <button onClick={onConfirm} disabled={isProcessing} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 disabled:opacity-50">{isProcessing ? 'Processing...' : 'Confirm Cancel'}</button>
+                    <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50">
+                        Keep
+                    </button>
+                    <button 
+                        onClick={onConfirm} 
+                        disabled={isProcessing || !canCancel2h} 
+                        className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isProcessing ? 'Processing...' : 'Confirm Cancel'}
+                    </button>
                 </div>
             </div>
         </div>
@@ -61,7 +115,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ isOpen, onClos
                 try {
                     const [mentor, mentorBookings] = await Promise.all([
                         api.getMentorById(booking.mentorId),
-                        api.getBookings(booking.mentorId, 'MENTOR' as any)
+                        api.getBookings()
                     ]);
                     
                     if (!mentor) throw new Error("Mentor data unavailable");
@@ -119,7 +173,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ isOpen, onClos
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Reschedule Lesson</h3>
                 <p className="text-sm text-slate-500 mb-4">Choose a new time with <strong>{booking.mentorName}</strong>.</p>
                 
-                {booking.type === 'subscription' && (
+                {booking.type === 'SUBSCRIPTION' && (
                     <div className="bg-blue-50 text-blue-700 p-3 rounded-lg text-xs font-bold mb-4 flex justify-between">
                         <span>Reschedules remaining:</span>
                         <span>{quota}</span>
@@ -171,7 +225,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ isOpen, onClos
                 <div className="border-t border-slate-100 pt-4">
                     <button 
                         onClick={handleConfirm}
-                        disabled={!selectedSlot || isProcessing || (booking.type === 'subscription' && quota === 0)}
+                        disabled={!selectedSlot || isProcessing || (booking.type === 'SUBSCRIPTION' && quota === 0)}
                         className="w-full py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         {isProcessing ? 'Processing...' : 'Confirm Reschedule'}

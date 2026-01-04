@@ -8,9 +8,11 @@ import { ChatWindow } from '../components/Messages/ChatWindow';
 import { NewChatModal } from '../components/Admin/NewChatModal';
 import { UserRole, Conversation, User } from '../types';
 import { MessageSquare, UserPlus, Filter, Loader2, Inbox, PlusCircle, Users, GraduationCap, Building2 } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminMessages() {
     const { user } = useApp();
+    const { success, error: showError, warning } = useToast();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ export default function AdminMessages() {
     const loadConversations = async () => {
         if (!user) return;
         try {
-            const convos = await api.getConversations(user.id, UserRole.ADMIN);
+            const convos = await api.getConversations(user.id);
             // Sort by last message date
             setConversations(convos.sort((a,b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()));
         } catch (e) {
@@ -33,17 +35,36 @@ export default function AdminMessages() {
 
     useEffect(() => {
         loadConversations();
-        const interval = setInterval(loadConversations, 10000); 
+        const interval = setInterval(loadConversations, 30000); // Reduced from 10s to 30s to prevent 429 errors
         return () => clearInterval(interval);
     }, [user]);
 
     const handleAssign = async (convId: string) => {
         if(!user) return;
+
         try {
-            await api.assignConversation(convId, user.id);
+            // Call API to assign conversation to current admin
+            await api.assignConversation(convId);
+
+            // Reload conversations to reflect the change
             await loadConversations();
-        } catch(e) {
-            alert(e);
+
+            // Success message
+            success('Assigned', 'Conversation has been assigned to you successfully');
+        } catch (error: any) {
+            // Handle errors
+            const errorMessage = error.message || error.toString();
+
+            if (errorMessage.includes('already assigned')) {
+                warning('Already Assigned', 'This conversation was just taken by another admin.');
+            } else if (errorMessage.includes('Only admins')) {
+                showError('Permission Denied', 'Only admin users can assign conversations.');
+            } else {
+                showError('Assignment Failed', errorMessage);
+            }
+
+            // Reload conversations in case state changed
+            await loadConversations();
         }
     };
 

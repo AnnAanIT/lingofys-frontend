@@ -35,36 +35,33 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({ value, onChang
 
     return (
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-bold text-slate-700 flex items-center">
-                    <Globe size={16} className="mr-2 text-brand-600" />
-                    {label}
-                </label>
-                {selectedCountry && (
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${
+            <label className="text-sm font-bold text-slate-700 flex items-center mb-2">
+                <Globe size={16} className="mr-2 text-brand-600" />
+                {label}
+            </label>
+            <select
+                value={selectedCountry?.id || ''}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
+            >
+                <option value="">Select country...</option>
+                {countries.map(country => (
+                    <option key={country.id} value={country.id}>
+                        {country.name} (x{country.multiplier})
+                    </option>
+                ))}
+            </select>
+            {selectedCountry && (
+                <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Geographic Multiplier:</span>
+                    <span className={`font-bold px-2 py-1 rounded ${
                         selectedCountry.multiplier > 1 ? 'bg-orange-100 text-orange-700' : 
                         selectedCountry.multiplier < 1 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
                     }`}>
                         x{selectedCountry.multiplier}
                     </span>
-                )}
-            </div>
-            
-            <select 
-                value={selectedCountry?.id || ''}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full p-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-            >
-                <option value="">Select Country</option>
-                {countries.map(c => (
-                    <option key={c.id} value={c.id}>
-                        {c.name} ({c.id})
-                    </option>
-                ))}
-            </select>
-            <p className="text-xs text-slate-400 mt-2">
-                Affects booking price multiplier.
-            </p>
+                </div>
+            )}
         </div>
     );
 };

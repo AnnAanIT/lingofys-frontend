@@ -8,7 +8,6 @@ import { UserSubscriptionsList } from '../components/Admin/UserSubscriptionsList
 import { ProfileForm } from '../components/Profile/ProfileForm';
 import { MentorBioEditor } from '../components/MentorBioEditor';
 import { AvatarUploader } from '../components/Profile/AvatarUploader';
-import { CreditAdjustmentModal } from '../components/Admin/CreditAdjustmentModal';
 import { CountrySelector } from '../components/Admin/CountrySelector';
 import { MentorGroupSelector } from '../components/Admin/MentorGroupSelector';
 import { ProviderLevelSelector } from '../components/Admin/ProviderLevelSelector';
@@ -18,10 +17,12 @@ import { User, CreditHistoryEntry, Subscription, SubscriptionPlan, UserRole, Men
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, Edit3, DollarSign, Clock, Save, Settings, BookOpen, AlertCircle, Shield } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { getTimezoneByCountry } from '../lib/timeUtils';
+import { useToast } from '../components/ui/Toast';
 
 export default function AdminUserDetail() {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const { success, error: showError } = useToast();
     const [user, setUser] = useState<User | null>(null);
     const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -32,7 +33,6 @@ export default function AdminUserDetail() {
     
     // Financial State
     const [pendingBalance, setPendingBalance] = useState(0);
-    const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
     const [providerCommissions, setProviderCommissions] = useState<ProviderCommission[]>([]);
 
     // Configuration Draft State (Explicit Save requirement)
@@ -46,19 +46,37 @@ export default function AdminUserDetail() {
     const [groups, setGroups] = useState<PricingGroup[]>([]);
     const [settings, setSettings] = useState<SystemSettings | null>(null);
 
+    // BUG FIX #4: Admin action state
+    const [showBanModal, setShowBanModal] = useState(false);
+    const [banReason, setBanReason] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
     const loadData = async () => {
         if (!userId) return;
-        const u = await api.getUserById(userId);
-        if (!u) { setLoading(false); return; }
+        
+        try {
+            // Always fetch fresh user data
+            const u = await api.getUserById(userId);
+            if (!u) { setLoading(false); return; }
+            console.log('🔍 DEBUG loadData - User data received:', { userId, credits: u.credits, role: u.role, country: u.country, user: u });
 
-        const [h, p, b, cData, gData, sysData] = await Promise.all([
+            const [h, p, cData, gData, sysData] = await Promise.all([
             api.getUserCreditHistory(userId),
             api.getSubscriptionPlans(),
-            api.getBookings(userId, u.role === UserRole.MENTOR ? UserRole.MENTOR : UserRole.MENTEE),
             api.getPricingCountries(),
             api.getPricingGroups(),
             api.getSystemSettings()
         ]);
+        
+        // BUG FIX #1: Load user's booking history
+        let b: any[] = [];
+        try {
+            const bookingData = await api.getAdminUserBookings(userId);
+            b = bookingData.bookings || [];
+        } catch (e) {
+            console.error('Error loading bookings:', e);
+            b = [];
+        }
 
         setCreditHistory(h);
         setPlans(p);
@@ -67,31 +85,44 @@ export default function AdminUserDetail() {
         setGroups(gData);
         setSettings(sysData);
 
+        // getUserById now returns flattened mentor data for MENTOR role
+        setUser(u);
+        
         if (u.role === UserRole.MENTOR) {
-            const m = await api.getMentorById(userId);
-            setUser(m || u);
-            setDraftGroup(m?.mentorGroupId || '');
+            setDraftGroup((u as any).mentorGroupId || '');
             const pending = b.filter(bk => bk.status === BookingStatus.SCHEDULED).reduce((acc, bk) => acc + bk.totalCost, 0);
             setPendingBalance(pending);
-            const subData = await api.getMentorSubscriptions(userId);
-            setSubscriptions(subData);
+            setSubscriptions([]); // Temporarily empty until proper admin endpoint exists
         } else if (u.role === UserRole.PROVIDER) {
             const prov = await api.getProviderProfile(userId);
-            setUser(prov || u);
-            setDraftLevel((prov as Provider)?.levelId || '');
+            // Merge provider-specific fields if found
+            if (prov) {
+                const mergedProvider = { 
+                    ...u,
+                    providerProfile: prov.providerProfile,
+                    levelId: prov.providerProfile?.levelId,
+                };
+                setUser(mergedProvider);
+                setDraftLevel(prov.providerProfile?.levelId || '');
+            }
             const commissions = await api.getProviderCommissions(userId);
             setProviderCommissions(commissions);
-            const pending = commissions.filter(c => c.status === 'PENDING').reduce((acc, c) => acc + c.commissionAmountUsd, 0);
+            const pending = commissions.filter(c => c.status === 'PENDING').reduce((acc, c) => acc + c.commissionCredits, 0);
             setPendingBalance(pending);
+            setSubscriptions([]); // Temporarily empty until proper admin endpoint exists
         } else {
-            setUser(u);
-            const s = await api.getUserSubscriptions(userId);
-            setSubscriptions(s);
+            // MENTEE role
+            setSubscriptions([]); // Temporarily empty until proper admin endpoint exists
         }
         
         setDraftCountry(u.country || '');
         setIsConfigChanged(false);
-        setLoading(false);
+        } catch (err: any) {
+            console.error('Failed to load user detail:', err);
+            showError('Load Failed', err.message || 'Failed to load user data. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => { loadData(); }, [userId]);
@@ -105,35 +136,71 @@ export default function AdminUserDetail() {
         if (!user) return;
         setLoading(true);
         try {
-            // Automatically derive timezone from the new country selection
-            const updates: any = { 
-                country: draftCountry,
-                timezone: getTimezoneByCountry(draftCountry)
-            };
-            
+            const updates: any = {};
+
+            // Only update country and timezone for MENTEE (used in pricing calculation)
+            if (user.role === UserRole.MENTEE) {
+                updates.country = draftCountry;
+                updates.timezone = getTimezoneByCountry(draftCountry);
+            }
+
             if (user.role === UserRole.MENTOR) {
                 updates.mentorGroupId = draftGroup;
-                // Auto-calculate new hourly rate based on tier
-                const groupObj = groups.find(g => g.id === draftGroup);
-                if (groupObj && settings) {
-                    updates.hourlyRate = Number((settings.baseLessonCreditPrice * groupObj.multiplier).toFixed(2));
-                }
+                // Rate calculated dynamically via pricing.service.ts
+                // Admin sets tier (mentorGroupId), system calculates final price
             }
-            
+
             if (user.role === UserRole.PROVIDER) {
                 updates.levelId = draftLevel;
             }
 
             // Sync update to all relevant tables
-            await api.updateUserConfig(user.id, updates);
-            await api.logAction('USER_CONFIG_UPDATE', `Admin updated configuration and synced timezone for ${user.name}`, 'admin');
-            
-            alert("Configuration saved! Timezone has been automatically updated to match the new country.");
+            // Backend expects { config: {...} } structure
+            await api.updateUserConfig(user.id, { config: updates });
+            await api.logAction('USER_CONFIG_UPDATE', 'admin', `Admin updated configuration for ${user.name}`);
+
+            // Reload data to reflect changes (loadData already handles provider profile reload)
             await loadData();
+            
+            setIsConfigChanged(false);
+            success('Configuration Saved', 'User configuration has been updated successfully');
         } catch (e) {
-            alert("Error: " + e);
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            showError('Save Failed', errorMsg);
+            console.error('Config save error:', e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // BUG FIX #4: Ban/unban handlers
+    const handleBanUser = async () => {
+        if (!user) return;
+        setIsProcessing(true);
+        try {
+            await api.banUser(user.id, banReason || 'Admin ban');
+            success('User Banned', `${user.name} has been banned successfully`);
+            setBanReason('');
+            setShowBanModal(false);
+            await loadData();
+        } catch (e: any) {
+            showError('Ban Failed', e.message || String(e));
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleUnbanUser = async () => {
+        if (!user) return;
+        setIsProcessing(true);
+        try {
+            await api.unbanUser(user.id);
+            success('User Unbanned', `${user.name} has been unbanned successfully`);
+            await loadData();
+        } catch (e: any) {
+            showError('Unban Failed', e.message || String(e));
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -142,10 +209,15 @@ export default function AdminUserDetail() {
 
     return (
         <AdminLayout>
-            <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-10">
-                <div className="flex items-center justify-between">
+            <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-10">
+                {/* Header Section with improved spacing */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center space-x-4">
-                        <button onClick={() => navigate('/admin/users')} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
+                        <button 
+                            onClick={() => navigate('/admin/users')} 
+                            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
+                            title="Back to User List"
+                        >
                             <ArrowLeft size={20} />
                         </button>
                         <div>
@@ -153,32 +225,100 @@ export default function AdminUserDetail() {
                             <p className="text-slate-500 text-sm">Account ID: <span className="font-mono">{user.id}</span></p>
                         </div>
                     </div>
-                    {isConfigChanged && (
-                        <button 
-                            onClick={handleSaveConfig}
-                            className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700 animate-bounce"
-                        >
-                            <Save size={20} /> Save Configuration
-                        </button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Quick Actions */}
+                        {user.status === 'BANNED' ? (
+                            <button 
+                                onClick={handleUnbanUser}
+                                disabled={isProcessing}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+                            >
+                                <Shield size={16} /> Unban User
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => setShowBanModal(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 rounded-lg font-semibold hover:bg-orange-100 transition-colors"
+                            >
+                                <AlertCircle size={16} /> Ban User
+                            </button>
+                        )}
+                        {isConfigChanged && (
+                            <button 
+                                onClick={handleSaveConfig}
+                                className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700 animate-bounce"
+                            >
+                                <Save size={20} /> Save Configuration
+                            </button>
+                        )}
+                    </div>
                 </div>
 
+                {/* BUG FIX #4: Ban modal */}
+                {showBanModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <AlertCircle size={20} className="text-red-600" /> Ban User
+                            </h2>
+                            <p className="text-slate-600 mb-4">Are you sure you want to ban {user.name}? This will prevent them from accessing their account.</p>
+                            <div className="mb-4">
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Reason (optional)</label>
+                                <textarea
+                                    value={banReason}
+                                    onChange={(e) => setBanReason(e.target.value)}
+                                    placeholder="e.g., Violation of terms of service..."
+                                    className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowBanModal(false)}
+                                    disabled={isProcessing}
+                                    className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleBanUser}
+                                    disabled={isProcessing}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
+                                >
+                                    {isProcessing ? 'Banning...' : 'Ban'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Profile Section with improved layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row">
+                    <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col md:flex-row">
                         <div className="p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 bg-slate-50/50 min-w-[200px]">
-                            <AvatarUploader currentAvatar={user.avatar} onUpload={async (url) => { await api.updateUserConfig(user.id, {avatar: url}); loadData(); }} size="lg" />
+                            <AvatarUploader currentAvatar={user.avatar} onUpload={async (url) => { await api.updateUser(user.id, {avatar: url}); loadData(); }} size="lg" />
                             <div className="mt-4 text-center">
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                     user.role === 'MENTOR' ? 'bg-purple-100 text-purple-700' :
                                     user.role === 'PROVIDER' ? 'bg-orange-100 text-orange-700' :
                                     'bg-blue-100 text-blue-700'
-                                }`}>{user.role}</span>
+                                }`}>{user.role === 'MENTOR' ? 'TEACHER' : user.role === 'MENTEE' ? 'STUDENT' : user.role}</span>
                             </div>
                         </div>
                         <div className="p-6 flex-1 relative">
-                            <button onClick={() => setIsEditingProfile(!isEditingProfile)} className={`absolute top-6 right-6 transition-colors ${isEditingProfile ? 'text-brand-600' : 'text-slate-400 hover:text-brand-600'}`}>
-                                <Edit3 size={18} />
-                            </button>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                    Basic Information
+                                    {isEditingProfile && <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full normal-case">Editing</span>}
+                                </h3>
+                                <button 
+                                    onClick={() => setIsEditingProfile(!isEditingProfile)} 
+                                    className={`transition-all p-2 rounded-lg ${isEditingProfile ? 'bg-brand-100 text-brand-600 hover:bg-brand-200' : 'text-slate-400 hover:text-brand-600 hover:bg-slate-100'}`}
+                                    title={isEditingProfile ? "Cancel editing" : "Edit profile"}
+                                >
+                                    <Edit3 size={18} />
+                                </button>
+                            </div>
                             {!isEditingProfile ? (
                                 <>
                                     <div className="flex items-center gap-2 mb-1">
@@ -187,10 +327,6 @@ export default function AdminUserDetail() {
                                     </div>
                                     <p className="text-slate-500 mb-6 flex items-center text-sm"><Mail size={14} className="mr-1.5"/> {user.email}</p>
                                     <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                                        <div>
-                                            <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Phone</span>
-                                            <div className="font-medium text-slate-700 flex items-center"><Phone size={14} className="mr-2 opacity-50"/> {user.phone || 'N/A'}</div>
-                                        </div>
                                         <div>
                                             <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Location</span>
                                             <div className="font-medium text-slate-700 flex items-center"><MapPin size={14} className="mr-2 opacity-50"/> {user.country || 'Unknown'}</div>
@@ -206,34 +342,37 @@ export default function AdminUserDetail() {
                                     </div>
                                 </>
                             ) : (
-                                <ProfileForm user={user} onSave={() => { setIsEditingProfile(false); loadData(); }} />
+                                <ProfileForm 
+                                    user={user} 
+                                    onSave={() => { setIsEditingProfile(false); loadData(); }}
+                                    updateMethod={async (data) => { await api.updateUser(user.id, data); }}
+                                />
                             )}
                         </div>
                     </div>
 
                     <div className="h-full">
-                        {user.role === UserRole.MENTEE ? (
-                            <UserCreditCard userId={user.id} credit={user.credits} onUpdate={loadData} />
-                        ) : (
-                            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full flex flex-col justify-center relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-6 opacity-5"><DollarSign size={100} /></div>
-                                <div className="relative z-10">
-                                    <h3 className="text-slate-500 font-medium text-xs mb-2 uppercase tracking-wide">Wallet Balance</h3>
-                                    <div className="text-4xl font-extrabold text-slate-900 mb-6">${user.balance}</div>
-                                    <div className="flex items-center justify-between text-sm mb-6 p-3 bg-slate-50 rounded-lg">
-                                        <span className="text-slate-500">Pending {user.role === 'MENTOR' ? 'Earnings' : 'Commission'}</span>
-                                        <span className="font-bold text-slate-700">${pendingBalance.toFixed(2)}</span>
-                                    </div>
-                                    <button onClick={() => setIsAdjustmentModalOpen(true)} className="w-full flex items-center justify-center px-4 py-2.5 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 transition-colors">
-                                        <DollarSign size={16} className="mr-2" /> Adjust Balance
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        {/* Show UserCreditCard with Adjust button for all roles */}
+                        <UserCreditCard userId={user.id} credit={user.credits} onUpdate={loadData} />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Mentor Profile Section - Only for MENTOR role */}
+                {user.role === UserRole.MENTOR && (
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                        <div className="p-6">
+                            <MentorBioEditor 
+                                mentor={user as Mentor} 
+                                onSave={loadData}
+                                mode="view"
+                                showBackButton={false}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Configuration Section with improved styling */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
                     <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                         <h3 className="font-bold text-slate-800 flex items-center"><Settings size={18} className="mr-2 text-slate-400" /> Configuration & Pricing</h3>
                         {isConfigChanged && (
@@ -245,22 +384,22 @@ export default function AdminUserDetail() {
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                             <div className="space-y-6">
-                                <CountrySelector value={draftCountry} onChange={onCountryDraft} label="Billing Country" />
-                                {user.role === UserRole.MENTOR && <MentorGroupSelector value={draftGroup} onChange={onGroupDraft} />}
-                                {user.role === UserRole.PROVIDER && <ProviderLevelSelector value={draftLevel} onChange={onLevelDraft} />}
-                                
-                                {isConfigChanged && (
-                                    <div className="pt-4 border-t border-slate-100">
-                                        <button onClick={handleSaveConfig} className="w-full py-3 bg-brand-600 text-white rounded-xl font-bold shadow-lg hover:bg-brand-700">
-                                            Save All Configuration Changes
-                                        </button>
-                                        <button onClick={() => { setDraftCountry(user.country || ''); setDraftGroup((user as Mentor).mentorGroupId || ''); setIsConfigChanged(false); }} className="w-full mt-2 py-2 text-slate-500 text-sm font-medium">Discard Changes</button>
-                                    </div>
+                                {/* Billing Country only for MENTEE (used in pricing calculation) */}
+                                {user.role === UserRole.MENTEE && (
+                                    <CountrySelector value={draftCountry} onChange={onCountryDraft} label="Billing Country" />
                                 )}
+
+                                {/* Mentor Tier Selection */}
+                                {user.role === UserRole.MENTOR && <MentorGroupSelector value={draftGroup} onChange={onGroupDraft} />}
+
+                                {/* Provider Level Selection */}
+                                {user.role === UserRole.PROVIDER && <ProviderLevelSelector value={draftLevel} onChange={onLevelDraft} />}
+
+                                {/* Configuration changes are handled via Edit User modal in AdminUsers page */}
                             </div>
                             <div className="bg-slate-50 rounded-xl">
-                                {user.role !== UserRole.PROVIDER ? (
-                                    <PricingPreview 
+                                {user.role === UserRole.MENTEE && (
+                                    <PricingPreview
                                         basePrice={settings?.baseLessonCreditPrice || 10}
                                         countries={countries}
                                         groups={groups}
@@ -268,11 +407,6 @@ export default function AdminUserDetail() {
                                         selectedGroupId={draftGroup}
                                         topupRatio={settings?.topupConversionRatio || 1.0}
                                     />
-                                ) : (
-                                    <div className="p-12 text-center text-slate-400 bg-slate-100 rounded-2xl">
-                                        <Shield size={32} className="mx-auto mb-2 opacity-50"/>
-                                        <p className="text-sm">Pricing Simulation is not applicable for Providers.</p>
-                                    </div>
                                 )}
                             </div>
                         </div>
@@ -281,11 +415,15 @@ export default function AdminUserDetail() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-8">
+                        {/* Financial & Subscription Section */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-slate-900">
-                                {user.role === UserRole.PROVIDER ? 'Commission History' : 
-                                 user.role === UserRole.MENTEE ? 'Subscription Plans' : 'Associated Subscriptions'}
-                            </h3>
+                            <div className="bg-gradient-to-r from-slate-50 to-white p-4 rounded-lg border border-slate-100">
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <DollarSign size={20} className="text-brand-600" />
+                                    {user.role === UserRole.PROVIDER ? 'Commission History' :
+                                     user.role === UserRole.MENTEE ? 'Subscription Plans' : 'Student Subscriptions'}
+                                </h3>
+                            </div>
                             {user.role === UserRole.PROVIDER ? (
                                 <ProviderCommissionHistoryTable commissions={providerCommissions} />
                             ) : (
@@ -293,17 +431,19 @@ export default function AdminUserDetail() {
                             )}
                         </div>
 
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="font-bold text-slate-900 flex items-center gap-2"><BookOpen size={18} className="text-brand-600"/> Booking History</h3>
-                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{bookings.length} Total</span>
-                            </div>
+                        {/* Booking History Section - Hide for PROVIDER */}
+                        {user.role !== UserRole.PROVIDER && (
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                    <h3 className="font-bold text-slate-900 flex items-center gap-2"><BookOpen size={18} className="text-brand-600"/> Booking History</h3>
+                                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{bookings.length} Total</span>
+                                </div>
                             <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                                 <table className="w-full text-sm text-left">
                                     <thead className="bg-slate-50 text-slate-500 font-medium sticky top-0">
                                         <tr>
                                             <th className="px-6 py-3">Date</th>
-                                            <th className="px-6 py-3">{user.role === 'MENTEE' ? 'Mentor' : 'Student'}</th>
+                                            <th className="px-6 py-3">{user.role === 'MENTEE' ? 'Teacher' : 'Student'}</th>
                                             <th className="px-6 py-3">Status</th>
                                             <th className="px-6 py-3 text-right">Cost</th>
                                         </tr>
@@ -325,15 +465,18 @@ export default function AdminUserDetail() {
                                 </table>
                             </div>
                         </div>
+                        )}
                     </div>
                     
+                    {/* Credit History Section */}
                     <div className="space-y-6">
-                        <h3 className="text-lg font-bold text-slate-900">Credit History</h3>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <DollarSign size={20} className="text-green-600" />
+                            Credit History
+                        </h3>
                         <CreditHistoryTable history={creditHistory} />
                     </div>
                 </div>
-
-                <CreditAdjustmentModal isOpen={isAdjustmentModalOpen} onClose={() => setIsAdjustmentModalOpen(false)} userId={user.id} onSuccess={loadData} resourceName="Balance" />
             </div>
         </AdminLayout>
     );
