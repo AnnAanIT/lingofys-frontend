@@ -51,6 +51,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMe
                 paymentMethod: formData.paymentMethod ? security.sanitizeInput(formData.paymentMethod) : '',
                 paymentDetails: formData.paymentDetails ? security.sanitizeInput(formData.paymentDetails) : ''
             };
+            
+            console.log('💾 [ProfileForm] Saving profile...', { 
+                rawCountry: formData.country, 
+                sanitizedCountry: sanitizedData.country,
+                timezone: sanitizedData.timezone 
+            });
 
             // Use custom update method if provided (AdminUserDetail), otherwise updateUserProfile (AdminProfile)
             if (updateMethod) {
