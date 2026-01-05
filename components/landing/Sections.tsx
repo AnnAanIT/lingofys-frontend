@@ -184,7 +184,7 @@ export const MentorShowcase = () => {
               <Card key={m.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
                 <div className="aspect-square bg-slate-200 relative overflow-hidden">
                   <img 
-                    src={m.avatar || 'https://via.placeholder.com/300'} 
+                    src={m.avatar || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect fill="%23e2e8f0" width="300" height="300"/%3E%3Ctext fill="%2394a3b8" font-family="Arial" font-size="120" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E'} 
                     alt={m.name} 
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
                   />

@@ -47,7 +47,7 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatar, o
         <div className="relative group inline-block">
             <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-white shadow-lg bg-slate-100`}>
                 <img 
-                    src={currentAvatar || 'https://via.placeholder.com/150'} 
+                    src={currentAvatar || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%23e2e8f0" width="150" height="150"/%3E%3Ctext fill="%2394a3b8" font-family="Arial" font-size="48" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3E%3F%3C/text%3E%3C/svg%3E'} 
                     alt="Avatar" 
                     className={`w-full h-full object-cover transition-opacity ${uploading ? 'opacity-50' : 'group-hover:opacity-75'}`}
                 />

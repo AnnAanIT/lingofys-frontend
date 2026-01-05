@@ -9,7 +9,14 @@ import {
 } from '../types';
 
 // ===== BACKEND API CONFIGURATION =====
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3001';
+// ✅ FIXED: No fallback to localhost - fail fast if VITE_API_URL missing
+const API_BASE_URL = import.meta.env.VITE_API_URL as string;
+if (!API_BASE_URL) {
+  throw new Error(
+    '❌ VITE_API_URL is not configured. Please set it in .env file.\n' +
+    'Example: VITE_API_URL=https://api.lingofys.com'
+  );
+}
 
 // Helper: Build full API URL
 const buildUrl = (path: string): string => `${API_BASE_URL}${path}`;
