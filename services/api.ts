@@ -312,6 +312,11 @@ export const api = {
   },
 
   register: async (data: any): Promise<User> => {
+    // ✅ Validate country is provided (required field)
+    if (!data.country) {
+      throw new Error('Country is required for registration');
+    }
+
     const response = await fetch(buildUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -320,7 +325,7 @@ export const api = {
         password: data.password,
         name: data.name,
         role: data.role,
-        country: data.country || 'VN',
+        country: data.country,  // ✅ REQUIRED - no default
         referralCode: data.referralCode || undefined
       })
     });

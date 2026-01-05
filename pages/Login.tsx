@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
 import { UserRole } from '../types';
@@ -9,10 +9,19 @@ import { BRAND } from '../constants/brand';
 import { 
   Users, GraduationCap, Building2, 
   Mail, Lock, User as UserIcon, ArrowRight, CheckCircle, 
-  AlertCircle, Loader2, ChevronLeft, BookOpen
+  AlertCircle, Loader2, ChevronLeft, BookOpen, Globe
 } from 'lucide-react';
 
 type Mode = 'LOGIN' | 'REGISTER' | 'ROLE_SELECT';
+
+interface PricingCountry {
+  id: string;
+  code: string;
+  name: string;
+  multiplier: number;
+  currency: string;
+  timezone: string;
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,18 +31,48 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // ✅ NEW: Country selection state
+  const [countries, setCountries] = useState<PricingCountry[]>([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     role: UserRole.MENTEE as UserRole,
+    country: '',  // ✅ NEW: Required field
     referralCode: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError(null);
+  };
+
+  // ✅ NEW: Fetch countries from API when entering registration mode
+  useEffect(() => {
+    if (mode === 'REGISTER' || mode === 'ROLE_SELECT') {
+      loadCountries();
+    }
+  }, [mode]);
+
+  const loadCountries = async () => {
+    setLoadingCountries(true);
+    try {
+      const data = await api.getPricingCountries();
+      setCountries(data);
+    } catch (err) {
+      console.error('Failed to load countries:', err);
+      // Use fallback countries if API fails
+      setCountries([
+        { id: 'VN', code: 'VN', name: 'Vietnam', multiplier: 0.4, currency: 'VND', timezone: 'Asia/Ho_Chi_Minh' },
+        { id: 'PH', code: 'PH', name: 'Philippines', multiplier: 0.35, currency: 'PHP', timezone: 'Asia/Manila' },
+        { id: 'US', code: 'US', name: 'United States', multiplier: 1.0, currency: 'USD', timezone: 'America/New_York' },
+      ]);
+    } finally {
+      setLoadingCountries(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -66,6 +105,14 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    // ✅ Validate country is selected
+    if (!formData.country) {
+      setError('Please select your country');
+      setLoading(false);
+      return;
+    }
+    
     try {
       await api.register(formData);
 
@@ -270,6 +317,40 @@ export default function Login() {
                       className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all font-medium text-slate-800"
                     />
                   </div>
+                </div>
+
+                {/* ✅ NEW: Country Selector */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                    COUNTRY <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <Globe className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={20} />
+                    {loadingCountries ? (
+                      <div className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-2">
+                        <Loader2 className="animate-spin" size={16} />
+                        <span className="text-sm text-slate-400">Loading countries...</span>
+                      </div>
+                    ) : (
+                      <select
+                        name="country"
+                        required
+                        value={formData.country}
+                        onChange={handleChange}
+                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all font-medium text-slate-800 appearance-none cursor-pointer"
+                      >
+                        <option value="">Select your country...</option>
+                        {countries.map(country => (
+                          <option key={country.code} value={country.code}>
+                            {country.name} (×{country.multiplier})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 ml-1 mt-1">
+                    We use fair pricing based on your region
+                  </p>
                 </div>
 
                 {formData.role === UserRole.MENTEE && (

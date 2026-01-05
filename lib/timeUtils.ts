@@ -25,41 +25,38 @@ export const convertTimezone = (date: Date | string, toTimezone: string): Date =
 };
 
 /**
- * Lấy danh sách các múi giờ khả dụng dựa trên mã quốc gia (ISO) hoặc tên quốc gia
+ * ✅ UPDATED: Get timezone by country code
+ * NOTE: This is now a simplified fallback. 
+ * Primary source should be from API: /api/pricing/countries which includes timezone
+ * Frontend should use timezone from API response instead of this hardcoded mapping
  */
 export const getTimezoneByCountry = (country: string): string => {
   if (!country) return Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  // ✅ Synced with backend COUNTRY_PRICING (15 countries)
   const mapping: Record<string, string> = {
     // ISO Codes
     'VN': 'Asia/Ho_Chi_Minh',
+    'IN': 'Asia/Kolkata',
+    'PH': 'Asia/Manila',
+    'ID': 'Asia/Jakarta',
+    'TH': 'Asia/Bangkok',
+    'CN': 'Asia/Shanghai',
     'JP': 'Asia/Tokyo',
     'KR': 'Asia/Seoul',
-    'CN': 'Asia/Shanghai',
     'US': 'America/New_York',
     'GB': 'Europe/London',
-    'UK': 'Europe/London',
-    'SG': 'Asia/Singapore',
-    'AU': 'Australia/Sydney',
-    'FR': 'Europe/Paris',
     'DE': 'Europe/Berlin',
+    'FR': 'Europe/Paris',
+    'AU': 'Australia/Sydney',
     'CA': 'America/Toronto',
-    // Full Names
-    'Vietnam': 'Asia/Ho_Chi_Minh',
-    'Japan': 'Asia/Tokyo',
-    'South Korea': 'Asia/Seoul',
-    'China': 'Asia/Shanghai',
-    'United States': 'America/New_York',
+    'SG': 'Asia/Singapore',
+    // Aliases
+    'UK': 'Europe/London',
     'USA': 'America/New_York',
-    'United Kingdom': 'Europe/London',
-    'Singapore': 'Asia/Singapore',
-    'Australia': 'Australia/Sydney',
-    'France': 'Europe/Paris',
-    'Germany': 'Europe/Berlin',
-    'Canada': 'America/Toronto'
   };
 
-  return mapping[country] || mapping[country.toUpperCase()] || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return mapping[country] || mapping[country?.toUpperCase()] || Intl.DateTimeFormat().resolvedOptions().timeZone;
 };
 
 // ✅ FIX BUG #11: Valid timezones list for validation

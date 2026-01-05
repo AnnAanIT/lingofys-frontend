@@ -352,8 +352,11 @@ export interface MonthlyRevenueResponse {
 
 export interface PricingCountry {
   id: string; 
+  code: string;  // ✅ Added
   name: string;
-  multiplier: number; 
+  multiplier: number;
+  currency: string;  // ✅ Added
+  timezone: string;  // ✅ Added
 }
 
 export interface PricingGroup {
