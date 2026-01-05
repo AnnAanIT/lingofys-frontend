@@ -9,7 +9,7 @@ import { createAbsoluteDate, getTimezoneByCountry, convertTimezone } from '../li
 interface CancelModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: (reason?: string) => void;  // Pass optional reason
     booking: Booking;
     quota?: number;
     cancelStats?: { cancellationCount: number; remaining: number; canCancel: boolean } | null;
@@ -17,6 +17,8 @@ interface CancelModalProps {
 }
 
 export const CancelBookingModal: React.FC<CancelModalProps> = ({ isOpen, onClose, onConfirm, booking, quota, cancelStats, isProcessing }) => {
+    const [reason, setReason] = useState('');
+    
     if (!isOpen) return null;
     
     const isSub = booking.type === 'SUBSCRIPTION';
@@ -73,12 +75,26 @@ export const CancelBookingModal: React.FC<CancelModalProps> = ({ isOpen, onClose
                     )}
                 </div>
                 
+                {/* OPTIONAL REASON INPUT */}
+                {canCancel2h && (
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Reason (optional)</label>
+                        <textarea
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder="Why are you cancelling? (optional)"
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            rows={2}
+                        />
+                    </div>
+                )}
+                
                 <div className="flex gap-3">
                     <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50">
                         Keep
                     </button>
                     <button 
-                        onClick={onConfirm} 
+                        onClick={() => onConfirm(reason || undefined)} 
                         disabled={isProcessing || !canCancel2h} 
                         className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -94,7 +110,7 @@ export const CancelBookingModal: React.FC<CancelModalProps> = ({ isOpen, onClose
 interface RescheduleModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (newTime: string) => Promise<void>;
+    onConfirm: (newTime: string, reason?: string) => Promise<void>;  // Pass optional reason
     booking: Booking;
     quota?: number;
     isProcessing: boolean;
@@ -105,6 +121,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ isOpen, onClos
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [reason, setReason] = useState('');  // Add reason state
 
     const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -162,7 +179,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ isOpen, onClos
         if (!selectedSlot) return;
         const slot = availableSlots.find(s => s.id === selectedSlot);
         if (slot) {
-            await onConfirm(slot.start.toISOString());
+            await onConfirm(slot.start.toISOString(), reason || undefined);  // Pass reason
         }
     };
 
@@ -222,7 +239,19 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ isOpen, onClos
                     )}
                 </div>
 
-                <div className="border-t border-slate-100 pt-4">
+                <div className="border-t border-slate-100 pt-4 space-y-3">
+                    {/* OPTIONAL REASON INPUT */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Reason (optional)</label>
+                        <textarea
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder="Why are you rescheduling? (optional)"
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            rows={2}
+                        />
+                    </div>
+                    
                     <button 
                         onClick={handleConfirm}
                         disabled={!selectedSlot || isProcessing || (booking.type === 'SUBSCRIPTION' && quota === 0)}

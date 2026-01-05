@@ -62,11 +62,11 @@ export default function MenteeBookingDetail() {
       }
   };
 
-  const handleCancel = async () => {
-      if(!booking) return;
+  const handleCancel = async (reason?: string) => {
+      if (!booking) return;
       setIsProcessing(true);
       try {
-          await api.cancelBooking(booking.id);
+          await api.cancelBooking(booking.id, reason);  // Pass reason to API
           // Cực kỳ quan trọng: Làm mới user state để cập nhật credits/quota
           await refreshUser();
           await loadData();
@@ -88,7 +88,7 @@ export default function MenteeBookingDetail() {
       }
   };
 
-  const handleReschedule = async (newTime: string) => {
+  const handleReschedule = async (newTime: string, reason?: string) => {
       if(!booking) return;
       setIsProcessing(true);
       try {
@@ -96,7 +96,7 @@ export default function MenteeBookingDetail() {
           const newTimeDate = new Date(newTime);
           const newDate = newTimeDate.toISOString().split('T')[0];
           const newStartTime = newTimeDate.toTimeString().split(' ')[0].substring(0, 5);
-          await api.rescheduleBooking(booking.id, newDate, newStartTime);
+          await api.rescheduleBooking(booking.id, newDate, newStartTime, reason);  // Pass reason to API
           await refreshUser();
           await loadData();
           setIsRescheduleOpen(false);

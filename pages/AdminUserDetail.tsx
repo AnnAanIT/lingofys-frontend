@@ -454,6 +454,18 @@ export default function AdminUserDetail() {
                                                 <td className="px-6 py-3 text-slate-600">
                                                     {new Date(b.startTime).toLocaleDateString()}
                                                     <div className="text-xs text-slate-400">{new Date(b.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                                                    {/* Show cancellation reason if cancelled */}
+                                                    {b.status === BookingStatus.CANCELLED && b.cancellationReason && (
+                                                        <div className="text-xs text-orange-600 mt-1 italic" title={b.cancellationReason}>
+                                                            ℹ️ Cancel: {b.cancellationReason.length > 30 ? b.cancellationReason.substring(0, 30) + '...' : b.cancellationReason}
+                                                        </div>
+                                                    )}
+                                                    {/* Show reschedule reason if rescheduled */}
+                                                    {b.status === BookingStatus.RESCHEDULED && b.rescheduleReason && (
+                                                        <div className="text-xs text-blue-600 mt-1 italic" title={b.rescheduleReason}>
+                                                            ℹ️ Reschedule: {b.rescheduleReason.length > 30 ? b.rescheduleReason.substring(0, 30) + '...' : b.rescheduleReason}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-3 font-medium text-slate-900">{user.role === 'MENTEE' ? b.mentorName : b.menteeName}</td>
                                                 <td className="px-6 py-3"><StatusBadge status={b.status} /></td>

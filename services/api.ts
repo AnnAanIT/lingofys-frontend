@@ -738,10 +738,11 @@ export const api = {
     return await response.json();
   },
 
+  // Cancel booking as mentee (2-hour rule, quota tracking)
   cancelBooking: async (id: string, reason?: string): Promise<void> => {
     const response = await authenticatedFetch(buildUrl(`/api/bookings/${id}/cancel`), {
       method: 'PATCH',
-      body: JSON.stringify({ reason })
+      body: JSON.stringify({ reason })  // Optional cancellation reason
     });
 
     if (!response.ok) {
@@ -750,7 +751,7 @@ export const api = {
   },
 
   // NEW: Cancel booking as mentor with 6h rule and limit tracking
-  cancelBookingAsMentor: async (id: string): Promise<{
+  cancelBookingAsMentor: async (id: string, reason?: string): Promise<{
     booking: Booking;
     cancellationStats: {
       wasLateCancellation: boolean;
@@ -760,7 +761,8 @@ export const api = {
     };
   }> => {
     const response = await authenticatedFetch(buildUrl(`/api/bookings/${id}/cancel-as-mentor`), {
-      method: 'POST'
+      method: 'POST',
+      body: JSON.stringify({ reason })  // ✅ NEW: Send optional reason
     });
 
     if (!response.ok) {
@@ -825,10 +827,10 @@ export const api = {
     return await response.json();
   },
 
-  rescheduleBooking: async (id: string, newDate: string, newStartTime: string): Promise<Booking> => {
+  rescheduleBooking: async (id: string, newDate: string, newStartTime: string, reason?: string): Promise<Booking> => {
     const response = await authenticatedFetch(buildUrl(`/api/bookings/${id}/reschedule`), {
       method: 'PATCH',
-      body: JSON.stringify({ newStartTime })  // Backend only uses newStartTime
+      body: JSON.stringify({ newStartTime, reason })  // Backend uses newStartTime and optional reason
     });
 
     if (!response.ok) {

@@ -126,6 +126,11 @@ export interface Booking {
   joinLink?: string;
   rating?: number; // New: Star rating (1-5)
   review?: string; // New: Text review
+  // Cancellation Fields
+  cancelledBy?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;  // Reason for cancellation (mentor or mentee)
+  rescheduleReason?: string;    // Reason for rescheduling (mentee) // Optional reason when mentor cancels
   // Dispute Fields
   disputeReason?: string;
   disputeEvidence?: string;
