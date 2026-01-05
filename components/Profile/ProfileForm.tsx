@@ -22,6 +22,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMe
         name: user.name,
         email: user.email,
         country: user.country || '',
+        timezone: user.timezone || '', // ✅ LESSON 8: Track timezone in state
         // Payment info for Provider and Mentor
         paymentMethod: (user as any).paymentMethod || 'Bank',
         paymentDetails: (user as any).paymentDetails || ''
@@ -41,21 +42,21 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMe
         e.preventDefault();
         setSaving(true);
         try {
-            // ✅ Additional sanitization before sending to API
-            const timezone = getTimezoneByCountry(formData.country);
+            // ✅ LESSON 8: Use timezone from state (already calculated in onChange)
             const sanitizedData: any = {
                 name: security.sanitizeInput(formData.name),
                 email: formData.email, // Don't sanitize email
                 country: security.sanitizeInput(formData.country),
-                timezone: timezone, // Auto-set timezone based on country
+                timezone: formData.timezone || getTimezoneByCountry(formData.country), // Use state first, fallback to calculation
                 paymentMethod: formData.paymentMethod ? security.sanitizeInput(formData.paymentMethod) : '',
                 paymentDetails: formData.paymentDetails ? security.sanitizeInput(formData.paymentDetails) : ''
             };
             
             console.log('💾 [ProfileForm] Saving profile...', { 
-                rawCountry: formData.country, 
+                rawCountry: formData.country,
+                stateTimezone: formData.timezone,
                 sanitizedCountry: sanitizedData.country,
-                timezone: sanitizedData.timezone 
+                finalTimezone: sanitizedData.timezone 
             });
 
             // Use custom update method if provided (AdminUserDetail), otherwise updateUserProfile (AdminProfile)
@@ -106,9 +107,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMe
                     <CountrySelector 
                         value={formData.country} 
                         onChange={(countryCode) => {
-                            // Auto-update timezone when country changes
+                            // ✅ LESSON 8: Update BOTH country AND timezone in state
                             const timezone = getTimezoneByCountry(countryCode);
-                            setFormData({ ...formData, country: countryCode });
+                            setFormData({ ...formData, country: countryCode, timezone: timezone });
                             console.log(`🌍 Country changed to ${countryCode}, timezone auto-set to ${timezone}`);
                         }} 
                         label="Country"
