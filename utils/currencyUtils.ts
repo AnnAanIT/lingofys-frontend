@@ -53,27 +53,27 @@ export const getCurrencyCodeByCountry = (country?: string): string => {
 /**
  * Calculate local price from credits
  * Formula: (credits / conversionRatio) * exchangeRate
- *
- * Example: 40 credits, ratio 0.8, VND exchange rate 25000
- * => (40 / 0.8) * 25000 = 50 * 25000 = 1,250,000 VND
+ * Làm tròn về bội số 1,000 cho VND/JPY/PHP...
  */
+function roundToNearestThousand(amount: number): number {
+  return Math.round(amount / 1000) * 1000;
+}
+
 export const calculateLocalPrice = (
   credits: number,
   conversionRatio: number,
   exchangeRate: number
 ): number => {
-  // ✅ FIX BUG: Validate inputs to prevent division by zero and invalid calculations
   if (conversionRatio <= 0) {
     console.error('Invalid conversionRatio:', conversionRatio);
-    return 0; // Return 0 instead of Infinity to prevent UI breaking
+    return 0;
   }
   if (exchangeRate <= 0) {
     console.error('Invalid exchangeRate:', exchangeRate);
     return 0;
   }
-
   const usdPrice = credits / conversionRatio;
-  return Math.round(usdPrice * exchangeRate);
+  return roundToNearestThousand(usdPrice * exchangeRate);
 };
 
 /**
