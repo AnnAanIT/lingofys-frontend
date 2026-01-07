@@ -48,50 +48,65 @@ export const AdminSidebar: React.FC = () => {
       path: '/admin/dashboard'
     },
     {
-      id: 'operations',
-      label: 'Operations',
-      icon: Briefcase,
-      children: [
-        { label: 'User Management', path: '/admin/users', icon: Users },
-        { label: 'Pending Approvals', path: '/admin/pending-approvals', icon: Clock },
-        { label: 'Bookings', path: '/admin/bookings', icon: BookOpen },
-        { label: 'Messages', path: '/admin/messages', icon: MessageSquare },
-        { label: 'Homework', path: '/admin/homework', icon: FileText },
-      ]
+      id: 'approvals',
+      label: 'Pending Approvals',
+      icon: Clock,
+      path: '/admin/approvals'
     },
     {
-      id: 'finance',
+      id: 'users',
+      label: 'Users',
+      icon: Users,
+      path: '/admin/users'
+    },
+    {
+      id: 'bookings',
+      label: 'Bookings',
+      icon: BookOpen,
+      path: '/admin/bookings'
+    },
+    {
+      id: 'subscriptions',
+      label: 'Subscriptions',
+      icon: Award,
+      path: '/admin/subscriptions'
+    },
+    {
+      id: 'financials',
       label: 'Financials',
       icon: DollarSign,
       children: [
-        { label: 'Revenue Analytics', path: '/admin/revenue', icon: PieChart },
-        { label: 'Credit Audit', path: '/admin/credit-dashboard', icon: Scale },
-        { label: 'Topup Report', path: '/admin/topup-report', icon: TrendingUp },
-        { label: 'Payment Methods', path: '/admin/payment-methods', icon: CreditCard },
-        { label: 'Credit Packages', path: '/admin/credit-packages', icon: Package },
-        { label: 'Transactions', path: '/admin/payments', icon: CreditCard },
-        { label: 'Payout Requests', path: '/admin/payouts', icon: DollarSign },
-        { label: 'Provider Commissions', path: '/admin/provider-commissions', icon: DollarSign },
+        { label: 'Topup Management', path: '/admin/financials/topups', icon: TrendingUp },
+        { label: 'Payout Requests', path: '/admin/financials/payouts', icon: DollarSign },
+        { label: 'Financial Reports', path: '/admin/financials/reports', icon: PieChart },
       ]
     },
     {
-      id: 'config',
-      label: 'Configuration',
+      id: 'settings',
+      label: 'Settings',
       icon: Settings,
       children: [
-        { label: 'Pricing Config', path: '/admin/pricing', icon: Tag },
-        { label: 'Subscription Plans', path: '/admin/plans', icon: Award },
-        { label: 'Provider Levels', path: '/admin/provider-levels', icon: Shield },
+        { label: 'Pricing', path: '/admin/settings/pricing', icon: Tag },
+        { label: 'Payment Methods', path: '/admin/settings/payment-methods', icon: CreditCard },
       ]
     },
     {
-      id: 'system',
-      label: 'System',
+      id: 'support',
+      label: 'Support',
+      icon: MessageSquare,
+      path: '/admin/support'
+    },
+    {
+      id: 'logs',
+      label: 'Logs',
       icon: Activity,
-      children: [
-        { label: 'System Logs', path: '/admin/logs', icon: Activity },
-        { label: 'My Profile', path: '/admin/profile', icon: UserIcon },
-      ]
+      path: '/admin/logs'
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: UserIcon,
+      path: '/admin/profile'
     }
   ];
 
@@ -145,19 +160,25 @@ export const AdminSidebar: React.FC = () => {
           // Render Single Link
           if (!item.children) {
             const active = isActive(item.path);
+            const isPendingApprovals = item.id === 'approvals';
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path!)}
                 title={!sidebarOpen ? item.label : ''}
-                className={`w-full flex items-center ${sidebarOpen ? 'space-x-2.5 px-2.5' : 'justify-center'} py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`w-full flex items-center ${sidebarOpen ? 'space-x-2.5 px-2.5' : 'justify-center'} py-2 rounded-lg text-sm font-medium transition-all duration-200 relative ${
                   active
                     ? 'bg-brand-600 text-white shadow-md'
                     : 'hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <item.icon size={18} className="flex-shrink-0" />
-                {sidebarOpen && <span>{item.label}</span>}
+                {sidebarOpen && <span className="flex-1 text-left">{item.label}</span>}
+                {isPendingApprovals && pendingCount > 0 && sidebarOpen && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {pendingCount}
+                  </span>
+                )}
               </button>
             );
           }
@@ -187,7 +208,6 @@ export const AdminSidebar: React.FC = () => {
                   <div className="border-l border-slate-700 pl-1.5 space-y-0.5">
                     {item.children.map(child => {
                       const childActive = isActive(child.path);
-                      const isPendingApprovals = child.path === '/admin/pending-approvals';
                       return (
                         <button
                           key={child.path}
@@ -200,13 +220,8 @@ export const AdminSidebar: React.FC = () => {
                         >
                           {child.icon && <child.icon size={14} className={childActive ? 'text-brand-500' : 'opacity-70'} />}
                           <span className="flex-1 text-left">{child.label}</span>
-                          {isPendingApprovals && pendingCount > 0 && (
-                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                              {pendingCount}
-                            </span>
-                          )}
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </div>

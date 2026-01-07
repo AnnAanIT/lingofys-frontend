@@ -64,7 +64,7 @@ export default function AdminPayoutDetail() {
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
                 {/* Header */}
                 <div className="flex items-center space-x-4 mb-6">
-                    <button onClick={() => navigate('/admin/payouts')} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
+                    <button onClick={() => navigate('/admin/financials/payouts')} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
                         <ArrowLeft size={20} />
                     </button>
                     <div>

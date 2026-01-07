@@ -57,7 +57,7 @@ export default function AdminPaymentDetail() {
         await api.logAction('PAYMENT_COMPLETE', user!.id, `Admin marked payout #${payout.id} as PAID`);
 
         // Redirect back to payout detail
-        navigate(`/admin/payouts/${payout.id}`);
+        navigate(`/admin/financials/payouts/${payout.id}`);
         setIsSubmitting(false);
     };
 
@@ -74,7 +74,7 @@ export default function AdminPaymentDetail() {
             // Fix: Ensured logAction is called with exactly 3 arguments as per API definition
             await api.logAction('PAYMENT_FAILED', user!.id, `Admin rejected payout #${payout.id}. Reason: ${reason}`);
 
-            navigate(`/admin/payouts/${payout.id}`);
+            navigate(`/admin/financials/payouts/${payout.id}`);
             setIsSubmitting(false);
         }
     };
@@ -122,7 +122,7 @@ export default function AdminPaymentDetail() {
                         </div>
                         <div className="flex justify-between border-b border-slate-50 py-2">
                             <span className="text-slate-500">Related Payout ID</span>
-                            <span className="font-mono text-brand-600 cursor-pointer hover:underline" onClick={() => navigate(`/admin/payouts/${payout?.id}`)}>{payout?.id || 'N/A'}</span>
+                            <span className="font-mono text-brand-600 cursor-pointer hover:underline" onClick={() => navigate(`/admin/financials/payouts/${payout?.id}`)}>{payout?.id || 'N/A'}</span>
                         </div>
                     </div>
                 </div>

@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { TopupTransaction, TopupDailyReport } from '../types';
+import { AdminSidebar } from '../components/AdminComponents';
+
 
 export default function AdminTopupReport() {
   const [report, setReport] = useState<TopupDailyReport | null>(null);
   const [transactions, setTransactions] = useState<TopupTransaction[]>([]);
   const [filters, setFilters] = useState({
     status: '',
-    flaggedAsFraud: '',  // Changed from isFraud
+    flaggedAsFraud: '',
     startDate: '',
     endDate: ''
   });
@@ -107,185 +110,184 @@ export default function AdminTopupReport() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="text-center py-12">
-          <div className="text-gray-500">Loading topup report...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-          {error}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Topup Report & Management</h1>
-        <p className="text-gray-600">View daily summary and manage topup transactions</p>
-      </div>
-
-      {/* Daily Report */}
-      {report && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm text-gray-600 mb-1">Today's Topups</div>
-            <div className="text-3xl font-bold text-blue-600">{report.totalTransactions}</div>
+    <div className="flex min-h-screen bg-slate-100">
+      <AdminSidebar />
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8">
+        {isLoading ? (
+          <div className="max-w-7xl mx-auto p-6">
+            <div className="text-center py-12">
+              <div className="text-gray-500">Loading topup report...</div>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm text-gray-600 mb-1">Total Amount</div>
-            <div className="text-2xl font-bold text-green-600">{formatPrice(report.totalAmount)}</div>
+        ) : error ? (
+          <div className="max-w-7xl mx-auto p-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+              {error}
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm text-gray-600 mb-1">Credits Added</div>
-            <div className="text-3xl font-bold text-purple-600">{report.totalCredits}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-sm text-gray-600 mb-1">Fraud Detected</div>
-            <div className="text-3xl font-bold text-red-600">{report.flaggedCount}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-bold mb-4">Filters</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All</option>
-              <option value="AUTO_APPROVED">Approved</option>
-              <option value="REVERSED">Reversed</option>
-              <option value="FLAGGED">Flagged</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fraud Status</label>
-            <select
-              value={filters.flaggedAsFraud}
-              onChange={(e) => setFilters({ ...filters, flaggedAsFraud: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All</option>
-              <option value="true">Fraud Only</option>
-              <option value="false">Valid Only</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction Code</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Credits</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {transactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDate(transaction.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{transaction.user.name}</div>
-                    <div className="text-xs text-gray-500">{transaction.user.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{transaction.package.name}</div>
-                    {transaction.package.bonusPercent > 0 && (
-                      <div className="text-xs text-green-600">+{transaction.package.bonusPercent}% bonus</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{transaction.paymentMethod.displayName}</div>
-                    <div className="text-xs text-gray-500">{transaction.paymentMethod.type}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                    {transaction.transactionCode}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                    {formatPrice(transaction.priceVND)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                    <span className={`font-bold ${transaction.flaggedAsFraud ? 'text-red-600 line-through' : 'text-green-600'}`}>
-                      +{transaction.creditAmount}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {getStatusBadge(transaction.status, transaction.flaggedAsFraud)}
-                    {transaction.flaggedAsFraud && transaction.fraudReason && (
-                      <div className="text-xs text-red-600 mt-1">{transaction.fraudReason}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {!transaction.flaggedAsFraud && transaction.status === 'AUTO_APPROVED' && (
-                      <button
-                        onClick={() => handleMarkFraud(transaction.id)}
-                        disabled={actionInProgress === transaction.id}
-                        className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:bg-gray-300"
-                      >
-                        Mark Fraud
-                      </button>
-                    )}
-                    {transaction.flaggedAsFraud && (
-                      <button
-                        onClick={() => handleUnflag(transaction.id)}
-                        disabled={actionInProgress === transaction.id}
-                        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-300"
-                      >
-                        Unflag
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        ) : (
+          <>
+            <div className="max-w-7xl mx-auto p-6">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Topup Report & Management</h1>
+                <p className="text-gray-600">View daily summary and manage topup transactions</p>
+              </div>
+              {/* Daily Report */}
+              {report && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-sm text-gray-600 mb-1">Today's Topups</div>
+                    <div className="text-3xl font-bold text-blue-600">{report.totalTransactions}</div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-sm text-gray-600 mb-1">Total Amount</div>
+                    <div className="text-2xl font-bold text-green-600">{formatPrice(report.totalAmount)}</div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-sm text-gray-600 mb-1">Credits Added</div>
+                    <div className="text-3xl font-bold text-purple-600">{report.totalCredits}</div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="text-sm text-gray-600 mb-1">Fraud Detected</div>
+                    <div className="text-3xl font-bold text-red-600">{report.flaggedCount}</div>
+                  </div>
+                </div>
+              )}
+              {/* Filters */}
+              <div className="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 className="text-lg font-bold mb-4">Filters</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={filters.status}
+                      onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">All</option>
+                      <option value="AUTO_APPROVED">Approved</option>
+                      <option value="REVERSED">Reversed</option>
+                      <option value="FLAGGED">Flagged</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fraud Status</label>
+                    <select
+                      value={filters.flaggedAsFraud}
+                      onChange={(e) => setFilters({ ...filters, flaggedAsFraud: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">All</option>
+                      <option value="true">Fraud Only</option>
+                      <option value="false">Valid Only</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Transactions Table */}
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction Code</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Credits</th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {transactions.map((transaction) => (
+                        <tr key={transaction.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(transaction.createdAt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{transaction.user.name}</div>
+                            <div className="text-xs text-gray-500">{transaction.user.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{transaction.package.name}</div>
+                            {transaction.package.bonusPercent > 0 && (
+                              <div className="text-xs text-green-600">+{transaction.package.bonusPercent}% bonus</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{transaction.paymentMethod.displayName}</div>
+                            <div className="text-xs text-gray-500">{transaction.paymentMethod.type}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                            {transaction.transactionCode}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                            {formatPrice(transaction.priceVND)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            <span className={`font-bold ${transaction.flaggedAsFraud ? 'text-red-600 line-through' : 'text-green-600'}`}>
+                              +{transaction.creditAmount}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {getStatusBadge(transaction.status, transaction.flaggedAsFraud)}
+                            {transaction.flaggedAsFraud && transaction.fraudReason && (
+                              <div className="text-xs text-red-600 mt-1">{transaction.fraudReason}</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {!transaction.flaggedAsFraud && transaction.status === 'AUTO_APPROVED' && (
+                              <button
+                                onClick={() => handleMarkFraud(transaction.id)}
+                                disabled={actionInProgress === transaction.id}
+                                className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:bg-gray-300"
+                              >
+                                Mark Fraud
+                              </button>
+                            )}
+                            {transaction.flaggedAsFraud && (
+                              <button
+                                onClick={() => handleUnflag(transaction.id)}
+                                disabled={actionInProgress === transaction.id}
+                                className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-300"
+                              >
+                                Unflag
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }

@@ -238,7 +238,7 @@ export default function AdminPayouts() {
                             </button>
                         )}
                         <button 
-                            onClick={() => navigate(`/admin/payouts/${p.id}`)}
+                            onClick={() => navigate(`/admin/financials/payouts/${p.id}`)}
                             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
                             title="View Details"
                         >

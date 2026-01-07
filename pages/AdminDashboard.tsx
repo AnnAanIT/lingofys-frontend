@@ -98,7 +98,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="h-px bg-slate-800 my-2"></div>
                       <button 
-                        onClick={() => navigate('/admin/revenue')}
+                        onClick={() => navigate('/admin/financials/reports')}
                         className="w-full py-2 md:py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[10px] md:text-xs font-bold transition-all flex items-center justify-center gap-2"
                       >
                           Full Financial Audit <ArrowRight size={12} className="md:size-[14px]" />
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
               <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm md:text-base">
                 <AlertCircle size={18} className="text-orange-500" /> Pending Payout Queue
               </h3>
-              <button onClick={() => navigate('/admin/payouts')} className="text-[10px] md:text-xs text-brand-600 font-bold hover:underline text-left md:text-right">Process All</button>
+              <button onClick={() => navigate('/admin/financials/payouts')} className="text-[10px] md:text-xs text-brand-600 font-bold hover:underline text-left md:text-right">Process All</button>
             </div>
             {pendingPayouts.length === 0 ? (
               <div className="p-8 md:p-12 text-center text-slate-400 flex flex-col items-center">
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                     <button 
-                        onClick={() => navigate(`/admin/payouts/${p.id}`)}
+                        onClick={() => navigate(`/admin/financials/payouts/${p.id}`)}
                         className="px-4 md:px-6 py-2 bg-slate-900 text-white text-[10px] md:text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 shadow-lg shadow-slate-200 w-full sm:w-auto text-center"
                     >
                         Review

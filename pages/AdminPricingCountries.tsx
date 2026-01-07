@@ -58,7 +58,7 @@ export default function AdminPricingCountries() {
     return (
         <AdminLayout>
             <div className="space-y-6 animate-fade-in">
-                <button onClick={() => navigate('/admin/pricing')} className="flex items-center text-slate-500 hover:text-slate-900 transition-colors">
+                <button onClick={() => navigate('/admin/settings/pricing')} className="flex items-center text-slate-500 hover:text-slate-900 transition-colors">
                     <ArrowLeft size={18} className="mr-2" /> Back to Pricing
                 </button>
 

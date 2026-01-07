@@ -78,7 +78,7 @@ export const NotificationBell: React.FC = () => {
         } else if (n.actionType === 'payment' || n.actionType === 'payout' || n.actionType === 'commissions') {
             if (user?.role === UserRole.MENTOR) navigate('/mentor/payout');
             if (user?.role === UserRole.PROVIDER) navigate('/provider/payouts');
-            if (user?.role === UserRole.ADMIN) navigate('/admin/payouts');
+            if (user?.role === UserRole.ADMIN) navigate('/admin/financials/payouts');
         } else if (n.actionType === 'homework') {
             if (user?.role === UserRole.MENTEE) navigate('/mentee/homework');
             if (user?.role === UserRole.MENTOR) navigate('/mentor/homework');

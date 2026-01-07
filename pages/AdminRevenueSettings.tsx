@@ -6,5 +6,5 @@ import { Navigate } from 'react-router-dom';
 // Redirecting to new unified settings page.
 
 export default function AdminRevenueSettings() {
-    return <Navigate to="/admin/pricing" replace />;
+    return <Navigate to="/admin/settings/pricing" replace />;
 }

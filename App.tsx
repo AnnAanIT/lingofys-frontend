@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation, Link, useParams } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { User, UserRole, Language } from './types';
 import { api } from './services/api';
@@ -438,6 +438,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // --- APP COMPONENT ---
+// Helper: Redirect component that preserves route parameters
+const PayoutRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/admin/financials/payouts/${id}`} replace />;
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -620,34 +626,77 @@ export default function App() {
                 <Route path="/provider/payouts" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="payouts" /> : <Navigate to="/" />} />
                 <Route path="/provider/chat" element={user?.role === UserRole.PROVIDER ? <ProviderDashboard tab="chat" /> : <Navigate to="/" />} />
 
-                {/* ADMIN ROUTES */}
+                {/* ADMIN ROUTES - RESTRUCTURED */}
+                {/* Root & Dashboard */}
                 <Route path="/admin" element={user?.role === UserRole.ADMIN ? <Navigate to="/admin/dashboard" /> : <Navigate to="/" />} />
                 <Route path="/admin/dashboard" element={user?.role === UserRole.ADMIN ? <AdminDashboard /> : <Navigate to="/" />} />
-                <Route path="/admin/messages" element={user?.role === UserRole.ADMIN ? <AdminMessages /> : <Navigate to="/" />} />
-                <Route path="/admin/profile" element={user?.role === UserRole.ADMIN ? <AdminProfile /> : <Navigate to="/" />} />
+                
+                {/* Pending Approvals */}
+                <Route path="/admin/approvals" element={user?.role === UserRole.ADMIN ? <AdminPendingApprovals /> : <Navigate to="/" />} />
+                <Route path="/admin/pending-approvals" element={<Navigate to="/admin/approvals" replace />} /> {/* Redirect old route */}
+                
+                {/* Users */}
                 <Route path="/admin/users" element={user?.role === UserRole.ADMIN ? <AdminUsers /> : <Navigate to="/" />} />
                 <Route path="/admin/users/:userId" element={user?.role === UserRole.ADMIN ? <AdminUserDetail /> : <Navigate to="/" />} />
-                <Route path="/admin/pending-approvals" element={user?.role === UserRole.ADMIN ? <AdminPendingApprovals /> : <Navigate to="/" />} />
+                
+                {/* Bookings */}
                 <Route path="/admin/bookings" element={user?.role === UserRole.ADMIN ? <AdminBookings /> : <Navigate to="/" />} />
-                <Route path="/admin/pricing" element={user?.role === UserRole.ADMIN ? <AdminPricing /> : <Navigate to="/" />} />
-                <Route path="/admin/pricing/countries" element={user?.role === UserRole.ADMIN ? <AdminPricingCountries /> : <Navigate to="/" />} />
-                <Route path="/admin/pricing/groups" element={user?.role === UserRole.ADMIN ? <AdminPricingGroups /> : <Navigate to="/" />} />
-                <Route path="/admin/provider-levels" element={user?.role === UserRole.ADMIN ? <AdminProviderLevels /> : <Navigate to="/" />} />
-                <Route path="/admin/provider-commissions" element={user?.role === UserRole.ADMIN ? <AdminProviderCommissions /> : <Navigate to="/" />} />
-                <Route path="/admin/pricing-revenue-audit" element={user?.role === UserRole.ADMIN ? <AdminPricingRevenueAudit /> : <Navigate to="/" />} />
-                <Route path="/admin/plans" element={user?.role === UserRole.ADMIN ? <AdminSubscriptionPlans /> : <Navigate to="/" />} />
-                <Route path="/admin/credit-dashboard" element={user?.role === UserRole.ADMIN ? <AdminCreditDashboard /> : <Navigate to="/" />} />
-                <Route path="/admin/topup-report" element={user?.role === UserRole.ADMIN ? <AdminTopupReport /> : <Navigate to="/" />} />
-                <Route path="/admin/payment-methods" element={user?.role === UserRole.ADMIN ? <AdminPaymentMethods /> : <Navigate to="/" />} />
-                <Route path="/admin/credit-packages" element={user?.role === UserRole.ADMIN ? <AdminCreditPackages /> : <Navigate to="/" />} />
-                <Route path="/admin/revenue" element={user?.role === UserRole.ADMIN ? <AdminRevenue /> : <Navigate to="/" />} /> 
-                <Route path="/admin/payments" element={user?.role === UserRole.ADMIN ? <AdminPayments /> : <Navigate to="/" />} />
-                <Route path="/admin/payments/:id" element={user?.role === UserRole.ADMIN ? <AdminPaymentDetail /> : <Navigate to="/" />} />
-                <Route path="/admin/payouts" element={user?.role === UserRole.ADMIN ? <AdminPayouts /> : <Navigate to="/" />} />
-                <Route path="/admin/payouts/:id" element={user?.role === UserRole.ADMIN ? <AdminPayoutDetail /> : <Navigate to="/" />} />
                 <Route path="/admin/homework" element={user?.role === UserRole.ADMIN ? <AdminHomework /> : <Navigate to="/" />} />
                 <Route path="/admin/feedback" element={user?.role === UserRole.ADMIN ? <AdminFeedback /> : <Navigate to="/" />} />
+                
+                {/* Subscription Plans */}
+                <Route path="/admin/subscriptions" element={user?.role === UserRole.ADMIN ? <AdminSubscriptionPlans /> : <Navigate to="/" />} />
+                <Route path="/admin/plans" element={<Navigate to="/admin/subscriptions" replace />} /> {/* Redirect old route */}
+                
+                {/* FINANCIALS SECTION */}
+                {/* Topup Management */}
+                <Route path="/admin/financials/topups" element={user?.role === UserRole.ADMIN ? <AdminTopupReport /> : <Navigate to="/" />} />
+                <Route path="/admin/topup-report" element={<Navigate to="/admin/financials/topups" replace />} /> {/* Redirect */}
+                <Route path="/admin/payments" element={<Navigate to="/admin/financials/topups" replace />} /> {/* Redirect */}
+                <Route path="/admin/payments/:id" element={user?.role === UserRole.ADMIN ? <AdminPaymentDetail /> : <Navigate to="/" />} />
+                
+                {/* Payout Requests */}
+                <Route path="/admin/financials/payouts" element={user?.role === UserRole.ADMIN ? <AdminPayouts /> : <Navigate to="/" />} />
+                <Route path="/admin/financials/payouts/:id" element={user?.role === UserRole.ADMIN ? <AdminPayoutDetail /> : <Navigate to="/" />} />
+                <Route path="/admin/payouts" element={<Navigate to="/admin/financials/payouts" replace />} /> {/* Redirect */}
+                <Route path="/admin/payouts/:id" element={<PayoutRedirect />} /> {/* Redirect with ID preserved */}
+                
+                {/* Financial Reports */}
+                <Route path="/admin/financials/reports" element={user?.role === UserRole.ADMIN ? <AdminRevenue /> : <Navigate to="/" />} />
+                <Route path="/admin/revenue" element={<Navigate to="/admin/financials/reports" replace />} /> {/* Redirect */}
+                <Route path="/admin/credit-dashboard" element={user?.role === UserRole.ADMIN ? <AdminCreditDashboard /> : <Navigate to="/" />} />
+                <Route path="/admin/pricing-revenue-audit" element={user?.role === UserRole.ADMIN ? <AdminPricingRevenueAudit /> : <Navigate to="/" />} />
+                
+                {/* SETTINGS SECTION */}
+                {/* Pricing System (with tabs for Overview, Credit Packages, Currency, Countries) */}
+                <Route path="/admin/settings/pricing" element={user?.role === UserRole.ADMIN ? <AdminPricing /> : <Navigate to="/" />} />
+                <Route path="/admin/settings/pricing/countries" element={user?.role === UserRole.ADMIN ? <AdminPricingCountries /> : <Navigate to="/" />} />
+                <Route path="/admin/settings/pricing/groups" element={user?.role === UserRole.ADMIN ? <AdminPricingGroups /> : <Navigate to="/" />} />
+                <Route path="/admin/pricing" element={<Navigate to="/admin/settings/pricing" replace />} /> {/* Redirect */}
+                <Route path="/admin/pricing/countries" element={<Navigate to="/admin/settings/pricing/countries" replace />} /> {/* Redirect */}
+                <Route path="/admin/pricing/groups" element={<Navigate to="/admin/settings/pricing/groups" replace />} /> {/* Redirect */}
+                
+                {/* Credit Packages - Now merged into Pricing, but keep route for backward compatibility */}
+                <Route path="/admin/credit-packages" element={<Navigate to="/admin/settings/pricing?tab=packages" replace />} /> {/* Redirect */}
+                <Route path="/admin/settings/credit-packages" element={user?.role === UserRole.ADMIN ? <AdminCreditPackages /> : <Navigate to="/" />} />
+                
+                {/* Payment Methods */}
+                <Route path="/admin/settings/payment-methods" element={user?.role === UserRole.ADMIN ? <AdminPaymentMethods /> : <Navigate to="/" />} />
+                <Route path="/admin/payment-methods" element={<Navigate to="/admin/settings/payment-methods" replace />} /> {/* Redirect */}
+                
+                {/* Provider Settings */}
+                <Route path="/admin/provider-levels" element={user?.role === UserRole.ADMIN ? <AdminProviderLevels /> : <Navigate to="/" />} />
+                <Route path="/admin/provider-commissions" element={user?.role === UserRole.ADMIN ? <AdminProviderCommissions /> : <Navigate to="/" />} />
+                
+                {/* Support & Messages */}
+                <Route path="/admin/support" element={user?.role === UserRole.ADMIN ? <AdminMessages /> : <Navigate to="/" />} />
+                <Route path="/admin/messages" element={<Navigate to="/admin/support" replace />} /> {/* Redirect */}
+                
+                {/* System Logs */}
                 <Route path="/admin/logs" element={user?.role === UserRole.ADMIN ? <AdminLogs /> : <Navigate to="/" />} />
+                
+                {/* Profile */}
+                <Route path="/admin/profile" element={user?.role === UserRole.ADMIN ? <AdminProfile /> : <Navigate to="/" />} />
             </Routes>
             </Layout>
         </HashRouter>
