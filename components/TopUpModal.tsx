@@ -178,7 +178,7 @@ export const TopUpModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, userId
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Select Package</span>
-                            <span className="text-[9px] text-slate-400">Rate: 1 USD = {conversionRatio} Cr</span>
+                            <span className="text-[9px] text-slate-400">Rate: 1 Cr = ${(1 / conversionRatio).toFixed(2)} USD</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {creditPackages.map(credits => {

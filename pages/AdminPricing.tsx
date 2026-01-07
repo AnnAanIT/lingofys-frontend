@@ -168,24 +168,29 @@ export default function AdminPricing() {
                             
                             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Top-up Conversion Ratio</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Credit Price (Mentee Top-up)</label>
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="relative flex-1">
-                                            <span className="absolute left-4 top-3.5 text-slate-400 font-bold">$1 USD = </span>
+                                            <span className="absolute left-4 top-3.5 text-slate-400 font-bold">1 Credit = $</span>
                                             <input 
                                                 type="number" 
                                                 step="0.05"
-                                                min="0.1"
-                                                max="2.0"
-                                                value={topupRatio}
-                                                onChange={(e) => setTopupRatio(Number(e.target.value))}
-                                                className="w-full pl-20 pr-4 py-3 font-mono text-lg font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                                                min="0.5"
+                                                max="10.0"
+                                                value={(1 / topupRatio).toFixed(2)}
+                                                onChange={(e) => {
+                                                    const pricePerCredit = Number(e.target.value);
+                                                    if (pricePerCredit > 0) {
+                                                        setTopupRatio(1 / pricePerCredit);
+                                                    }
+                                                }}
+                                                className="w-full pl-28 pr-4 py-3 font-mono text-lg font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
                                             />
                                         </div>
-                                        <span className="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-3 rounded-xl">Credits</span>
+                                        <span className="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-3 rounded-xl">USD</span>
                                     </div>
                                     <p className="text-xs text-slate-500">
-                                        Lower ratio = More expensive credits = Higher margin.
+                                        Higher price = More expensive credits = Higher margin.
                                     </p>
                                 </div>
 
