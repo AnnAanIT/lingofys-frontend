@@ -25,11 +25,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [users, bookings, payouts, txs, health] = await Promise.all([
+        const [users, bookings, payouts, health] = await Promise.all([
           api.getUsers(),
           api.getAllBookings(),
           api.getAllPayouts(),
-          api.getAllTransactions(),
           api.getSystemFinancialHealth()
       ]);
 
@@ -37,7 +36,7 @@ export default function AdminDashboard() {
         users: users.length,
         mentors: users.filter(u => u.role === 'MENTOR').length,
         bookings: bookings.filter(b => b.status === 'COMPLETED').length,
-        revenue: txs.filter(t => t.type === 'TOPUP').reduce((acc, t) => acc + Number(t.amount), 0)
+        revenue: health.cashIn || 0  // Use cash in from financial health (includes local topups)
       });
 
       setRecentBookings(bookings.sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5));

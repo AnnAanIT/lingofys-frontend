@@ -40,6 +40,8 @@ import MenteeSubscriptionDetail from './pages/MenteeSubscriptionDetail';
 import MenteeActiveSubscription from './pages/MenteeActiveSubscription';
 import MenteeProfile from './pages/MenteeProfile';
 import MenteeFeedback from './pages/MenteeFeedback';
+import MenteeTopup from './pages/MenteeTopup';
+import MenteeTopupHistory from './pages/MenteeTopupHistory';
 
 import MentorDashboard from './pages/MentorDashboard';
 import MentorProfile from './pages/MentorProfile';
@@ -74,6 +76,9 @@ import AdminProviderLevels from './pages/AdminProviderLevels';
 import AdminProviderCommissions from './pages/AdminProviderCommissions';
 import AdminSubscriptionPlans from './pages/AdminSubscriptionPlans';
 import AdminFeedback from './pages/AdminFeedback';
+import AdminTopupReport from './pages/AdminTopupReport';
+import AdminPaymentMethods from './pages/AdminPaymentMethods';
+import AdminCreditPackages from './pages/AdminCreditPackages';
 
 // --- HELPERS ---
 const getCookie = (name: string) => {
@@ -126,6 +131,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           { icon: Star, label: 'Feedback', path: '/mentee/feedback' },
           { icon: MessageSquare, label: translations_t.nav.messages, path: '/mentee/chat' },
           { icon: CreditCard, label: translations_t.nav.wallet, path: '/mentee/wallet' },
+          { icon: Wallet, label: 'Topup Credits', path: '/mentee/topup' },
           { icon: UserIcon, label: translations_t.nav.profile, path: '/mentee/profile' },
         ];
       case UserRole.MENTOR:
@@ -592,6 +598,8 @@ export default function App() {
                 <Route path="/mentee/homework" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="homework" /> : <Navigate to="/" />} />
                 <Route path="/mentee/chat" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="chat" /> : <Navigate to="/" />} />
                 <Route path="/mentee/wallet" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="wallet" /> : <Navigate to="/" />} />
+                <Route path="/mentee/topup" element={user?.role === UserRole.MENTEE ? <MenteeTopup /> : <Navigate to="/" />} />
+                <Route path="/mentee/topup-history" element={user?.role === UserRole.MENTEE ? <MenteeTopupHistory /> : <Navigate to="/" />} />
                 <Route path="/mentee/feedback" element={user?.role === UserRole.MENTEE ? <MenteeFeedback /> : <Navigate to="/" />} />
 
                 {/* MENTOR ROUTES */}
@@ -629,6 +637,9 @@ export default function App() {
                 <Route path="/admin/pricing-revenue-audit" element={user?.role === UserRole.ADMIN ? <AdminPricingRevenueAudit /> : <Navigate to="/" />} />
                 <Route path="/admin/plans" element={user?.role === UserRole.ADMIN ? <AdminSubscriptionPlans /> : <Navigate to="/" />} />
                 <Route path="/admin/credit-dashboard" element={user?.role === UserRole.ADMIN ? <AdminCreditDashboard /> : <Navigate to="/" />} />
+                <Route path="/admin/topup-report" element={user?.role === UserRole.ADMIN ? <AdminTopupReport /> : <Navigate to="/" />} />
+                <Route path="/admin/payment-methods" element={user?.role === UserRole.ADMIN ? <AdminPaymentMethods /> : <Navigate to="/" />} />
+                <Route path="/admin/credit-packages" element={user?.role === UserRole.ADMIN ? <AdminCreditPackages /> : <Navigate to="/" />} />
                 <Route path="/admin/revenue" element={user?.role === UserRole.ADMIN ? <AdminRevenue /> : <Navigate to="/" />} /> 
                 <Route path="/admin/payments" element={user?.role === UserRole.ADMIN ? <AdminPayments /> : <Navigate to="/" />} />
                 <Route path="/admin/payments/:id" element={user?.role === UserRole.ADMIN ? <AdminPaymentDetail /> : <Navigate to="/" />} />

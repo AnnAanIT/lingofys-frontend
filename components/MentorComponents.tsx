@@ -65,6 +65,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
     const [rescheduleDate, setRescheduleDate] = useState('');
     const [evidence, setEvidence] = useState('');
     const [note, setNote] = useState('');
+    const [cancelReason, setCancelReason] = useState('');
 
     if (!isOpen) return null;
 
@@ -255,12 +256,26 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                     </div>
                 </div>
 
+                {/* Cancellation reason (optional) */}
+                <div>
+                    <label className="block text-sm text-slate-500 mb-1">
+                        Reason for cancellation <span className="text-slate-400">(optional)</span>
+                    </label>
+                    <textarea 
+                        className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400" 
+                        rows={3} 
+                        value={cancelReason} 
+                        onChange={e => setCancelReason(e.target.value)} 
+                        placeholder="e.g. Emergency, illness, schedule conflict..."
+                    />
+                </div>
+
                  <div className="flex gap-2 pt-4">
                     <button onClick={() => setView('DETAILS')} className="flex-1 py-2 text-slate-500 hover:bg-slate-50 rounded-lg border border-slate-200">
                         Back
                     </button>
                     <button 
-                        onClick={() => onAction('CANCEL')} 
+                        onClick={() => onAction('CANCEL', { reason: cancelReason })} 
                         className={`flex-1 py-3 text-white rounded-lg font-bold shadow-md ${
                             isLateCancellation 
                                 ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200' 

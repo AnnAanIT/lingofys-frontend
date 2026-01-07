@@ -499,7 +499,8 @@ export default function MentorDashboard({ tab }: Props) {
                         await api.updateBookingStatus(selectedBookingId, BookingStatus.NO_SHOW);
                     } else if (action === 'CANCEL') {
                         try {
-                            const result = await api.cancelBookingAsMentor(selectedBookingId);
+                            const reason = data?.reason; // Get reason from modal data
+                            const result = await api.cancelBookingAsMentor(selectedBookingId, reason);
                             // Show success message with stats
                             if (result.cancellationStats.wasLateCancellation) {
                                 success('Booking Canceled', `You have ${result.cancellationStats.remaining} late cancellations remaining this month.`);

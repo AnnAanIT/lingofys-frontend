@@ -604,19 +604,6 @@ export const api = {
 
   // ===== CREDIT SYSTEM =====
 
-  buyCredits: async (userId: string, amount: number, currency: string = 'USD'): Promise<{ sessionUrl?: string; transaction: Transaction }> => {
-    const response = await authenticatedFetch(buildUrl('/api/topup/create-session'), {
-      method: 'POST',
-      body: JSON.stringify({ amount, currency })  // Fixed: Backend expects 'currency' not 'paymentMethod'
-    });
-
-    if (!response.ok) {
-      await handleApiError(response);
-    }
-
-    return await response.json();
-  },
-
   getUserCreditHistory: async (userId: string): Promise<CreditHistoryEntry[]> => {
     const response = await authenticatedFetch(buildUrl('/api/users/me/credit-history'));
 
@@ -1109,20 +1096,6 @@ export const api = {
     return await response.json();
   },
 
-  getTransactionById: async (id: string): Promise<Transaction | undefined> => {
-    const response = await authenticatedFetch(buildUrl(`/api/topup/transaction/${id}`));
-
-    if (response.status === 404) {
-      return undefined;
-    }
-
-    if (!response.ok) {
-      await handleApiError(response);
-    }
-
-    return await response.json();
-  },
-
   // ===== PROVIDER & REFERRAL SYSTEM =====
 
   getProviders: async (): Promise<Provider[]> => {
@@ -1279,50 +1252,6 @@ export const api = {
 
   getMentorSubscriptionStats: async (): Promise<any> => {
     const response = await authenticatedFetch(buildUrl('/api/subscriptions/mentor/stats'));
-
-    if (!response.ok) {
-      await handleApiError(response);
-    }
-
-    return await response.json();
-  },
-
-  // Added: Missing top-up APIs
-  getTopUpRates: async (): Promise<any> => {
-    const response = await fetch(buildUrl('/api/topup/rates'));  // Public endpoint
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch top-up rates');
-    }
-
-    return await response.json();
-  },
-
-  getTopUpPreview: async (amount: number, currency: string): Promise<any> => {
-    const response = await authenticatedFetch(buildUrl('/api/topup/preview'), {
-      method: 'POST',
-      body: JSON.stringify({ amount, currency })
-    });
-
-    if (!response.ok) {
-      await handleApiError(response);
-    }
-
-    return await response.json();
-  },
-
-  getTopUpHistory: async (): Promise<any[]> => {
-    const response = await authenticatedFetch(buildUrl('/api/topup/history'));
-
-    if (!response.ok) {
-      await handleApiError(response);
-    }
-
-    return await response.json();
-  },
-
-  getTopUpStats: async (): Promise<any> => {
-    const response = await authenticatedFetch(buildUrl('/api/topup/stats'));
 
     if (!response.ok) {
       await handleApiError(response);
@@ -2173,6 +2102,231 @@ export const api = {
       await handleApiError(response);
     }
     return response.json();
+  },
+
+  // ===== LOCAL TOPUP SYSTEM =====
+
+  // Get all active credit packages
+  getLocalTopupPackages: async (): Promise<any[]> => {
+    const response = await fetch(buildUrl('/api/local-topup/packages'));
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // Get all active payment methods
+  getLocalTopupPaymentMethods: async (): Promise<any[]> => {
+    const response = await fetch(buildUrl('/api/local-topup/payment-methods'));
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // Create new topup transaction
+  createLocalTopup: async (data: {
+    packageId: string;
+    paymentMethodId: string;
+    transactionCode: string;
+  }): Promise<any> => {
+    const response = await authenticatedFetch(buildUrl('/api/local-topup/create'), {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // Get current user's topup history
+  getMyTopupHistory: async (limit: number = 20): Promise<any[]> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/local-topup/my-history?limit=${limit}`)
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // Get current user's topup limits
+  getMyTopupLimits: async (): Promise<any> => {
+    const response = await authenticatedFetch(buildUrl('/api/local-topup/my-limits'));
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // ===== ADMIN: LOCAL TOPUP MANAGEMENT =====
+
+  // Get daily topup report
+  getAdminTopupDailyReport: async (date?: string): Promise<any> => {
+    const url = date 
+      ? buildUrl(`/api/admin/local-topup/daily-report?date=${date}`)
+      : buildUrl('/api/admin/local-topup/daily-report');
+    const response = await authenticatedFetch(url);
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // Get all topup transactions with filters
+  getAdminTopupTransactions: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    flaggedOnly?: boolean;
+    userId?: string;
+  }): Promise<any> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.status) query.append('status', params.status);
+    if (params?.flaggedOnly) query.append('flaggedOnly', 'true');
+    if (params?.userId) query.append('userId', params.userId);
+
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/transactions?${query}`)
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  // Mark topup as fraud and reverse credits
+  markTopupAsFraud: async (topupId: string, reason: string): Promise<void> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/${topupId}/mark-fraud`),
+      {
+        method: 'POST',
+        body: JSON.stringify({ reason })
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+  },
+
+  // Unflag topup (if marked by mistake)
+  unflagTopup: async (topupId: string): Promise<void> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/${topupId}/unflag`),
+      {
+        method: 'POST'
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+  },
+
+  // ===== ADMIN: PAYMENT METHOD CRUD =====
+
+  getAdminPaymentMethods: async (): Promise<any[]> => {
+    const response = await authenticatedFetch(
+      buildUrl('/api/admin/local-topup/payment-methods')
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  createPaymentMethod: async (data: any): Promise<any> => {
+    const response = await authenticatedFetch(
+      buildUrl('/api/admin/local-topup/payment-methods'),
+      {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  updatePaymentMethod: async (id: string, data: any): Promise<any> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/payment-methods/${id}`),
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  deletePaymentMethod: async (id: string): Promise<void> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/payment-methods/${id}`),
+      {
+        method: 'DELETE'
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+  },
+
+  // ===== ADMIN: CREDIT PACKAGE CRUD =====
+
+  getAdminCreditPackages: async (): Promise<any[]> => {
+    const response = await authenticatedFetch(
+      buildUrl('/api/admin/local-topup/packages')
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  createCreditPackage: async (data: any): Promise<any> => {
+    const response = await authenticatedFetch(
+      buildUrl('/api/admin/local-topup/packages'),
+      {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  updateCreditPackage: async (id: string, data: any): Promise<any> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/packages/${id}`),
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  deleteCreditPackage: async (id: string): Promise<void> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/local-topup/packages/${id}`),
+      {
+        method: 'DELETE'
+      }
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
   },
 };
 

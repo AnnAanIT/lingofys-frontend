@@ -426,3 +426,82 @@ export interface CACDashboardData {
   byLevel: LevelPerformance[];
   timeSeries: CACTimeSeriesPoint[];
 }
+
+// ===== LOCAL TOPUP SYSTEM =====
+
+export enum PaymentMethodType {
+  MOMO = 'MOMO',
+  BANK = 'BANK',
+  PAYPAL = 'PAYPAL'
+}
+
+export enum TopupStatus {
+  AUTO_APPROVED = 'AUTO_APPROVED',
+  REVERSED = 'REVERSED',
+  FLAGGED = 'FLAGGED'
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: PaymentMethodType;
+  isActive: boolean;
+  displayName: string;          // e.g., "Momo - 0123456789"
+  qrCodeUrl?: string;            // URL to QR code image
+  accountNumber?: string;
+  accountName?: string;
+  bankName?: string;             // For BANK type
+  instructions?: string;         // Instructions for users
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditPackage {
+  id: string;
+  name: string;                  // e.g., "Small", "Medium", "Large"
+  creditAmount: number;          // 10, 20, 30, 50, 100
+  priceVND: number;
+  bonusPercent: number;          // 0, 5, 10, 15, 20
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TopupTransaction {
+  id: string;
+  userId: string;
+  packageId: string;
+  paymentMethodId: string;
+  creditAmount: number;          // Actual credits received (with bonus)
+  priceVND: number;
+  transactionCode: string;       // User's transaction code
+  status: TopupStatus;
+  flaggedAsFraud: boolean;       // Match DB field name
+  fraudReason?: string;          // Match DB field name (not fraudNote)
+  reversedAt?: string;
+  reversedBy?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+  // Populated relations
+  user?: Pick<User, 'id' | 'name' | 'email' | 'status'>;
+  package?: CreditPackage;
+  paymentMethod?: PaymentMethod;
+  reversedByAdmin?: Pick<User, 'id' | 'name' | 'email'>;
+}
+
+export interface TopupLimits {
+  maxTopupsPerDay: number;
+  maxCreditsPerDay: number;
+  maxCreditsPerTransaction: number;
+}
+
+export interface TopupDailyReport {
+  date: string;
+  totalTransactions: number;     // Backend returns this (not summary.totalCount)
+  totalAmount: number;
+  totalCredits: number;
+  flaggedCount: number;
+  transactions: TopupTransaction[];
+}

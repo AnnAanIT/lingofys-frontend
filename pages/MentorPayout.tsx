@@ -18,9 +18,14 @@ export default function MentorPayout() {
     const [requestAmount, setRequestAmount] = useState('');
     const [requestMethod, setRequestMethod] = useState('Bank');
     const [isRequesting, setIsRequesting] = useState(false);
+    
+    // Currency Preview State
+    const [currencies, setCurrencies] = useState<any[]>([]);
+    const [selectedCurrency, setSelectedCurrency] = useState('USD');
 
     useEffect(() => {
         if(user) loadData();
+        loadCurrencies();
     }, [user]);
 
     const loadData = async () => {
@@ -33,6 +38,42 @@ export default function MentorPayout() {
         setBalanceDetails(details);
         setPayouts(payoutHistory.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()));
         setLoading(false);
+    };
+
+    const loadCurrencies = async () => {
+        try {
+            const settings = await api.getSystemSettings();
+            const currenciesData = settings.currencies || [];
+            // Filter only enabled currencies
+            let enabledCurrencies = Array.isArray(currenciesData) 
+                ? currenciesData.filter((c: any) => c.enabled) 
+                : [];
+            
+            // Safeguard: Always have at least USD if admin disabled all currencies
+            if (enabledCurrencies.length === 0) {
+                enabledCurrencies = [{ code: 'USD', name: 'US Dollar', symbol: '$', exchangeRate: 1, enabled: true }];
+            }
+            
+            setCurrencies(enabledCurrencies);
+        } catch (error) {
+            console.error('Failed to load currencies:', error);
+            // Default to USD if fetch fails
+            setCurrencies([{ code: 'USD', name: 'US Dollar', symbol: '$', exchangeRate: 1, enabled: true }]);
+        }
+    };
+
+    const calculateEquivalent = (credits: number, currencyCode: string) => {
+        const usdAmount = credits * 1; // 1 credit = 1 USD
+        const currency = currencies.find(c => c.code === currencyCode);
+        if (!currency) return { amount: usdAmount, symbol: '$', code: 'USD' };
+        
+        const equivalentAmount = usdAmount * (currency.exchangeRate || 1);
+        return {
+            amount: equivalentAmount,
+            symbol: currency.symbol || '$',
+            code: currency.code,
+            name: currency.name
+        };
     };
 
     const handleRequest = async (e: React.FormEvent) => {
@@ -133,10 +174,36 @@ export default function MentorPayout() {
                                     placeholder="50"
                                 />
                                 {requestAmount && Number(requestAmount) >= minPayout ? (
-                                    <p className="text-xs text-slate-600 mt-2">
-                                        <span className="font-bold">{requestAmount} credits</span> = ${Number(requestAmount).toFixed(2)} USD
-                                        <span className="text-green-600 font-medium"> (1:1 rate, no fees!)</span>
-                                    </p>
+                                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <p className="text-xs font-bold text-green-900 mb-2">
+                                            You will receive: ${Number(requestAmount).toFixed(2)} USD
+                                        </p>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <label className="text-xs text-slate-600">Equivalent to:</label>
+                                            <select 
+                                                value={selectedCurrency}
+                                                onChange={(e) => setSelectedCurrency(e.target.value)}
+                                                className="text-xs px-2 py-1 border border-green-300 rounded bg-white focus:ring-1 focus:ring-green-500 outline-none"
+                                            >
+                                                {currencies.map(curr => (
+                                                    <option key={curr.code} value={curr.code}>
+                                                        {curr.code} - {curr.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {selectedCurrency !== 'USD' && (() => {
+                                            const equiv = calculateEquivalent(Number(requestAmount), selectedCurrency);
+                                            return (
+                                                <p className="text-sm font-bold text-green-700">
+                                                    ≈ {equiv.symbol}{equiv.amount.toLocaleString()} {equiv.code}
+                                                </p>
+                                            );
+                                        })()}
+                                        <p className="text-xs text-slate-500 mt-2">
+                                            ℹ️ Actual payout in USD. Your bank will convert to local currency.
+                                        </p>
+                                    </div>
                                 ) : (
                                     <p className="text-xs text-orange-600 mt-2 font-medium">
                                         Minimum withdrawal: {minPayout} credits (${minPayout.toFixed(2)} USD)

@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Users, BookOpen, CreditCard, DollarSign,
   FileText, Activity, LogOut, Check, X, AlertCircle, Clock, PieChart,
   User as UserIcon, Tag, MessageSquare, ShieldCheck, Scale, Shield, Award,
-  ChevronDown, ChevronRight, Layers, Settings, Briefcase, Menu, Bell, Trash2
+  ChevronDown, ChevronRight, Layers, Settings, Briefcase, Menu, Bell, Trash2,
+  TrendingUp, Package
 } from 'lucide-react';
 import { useApp } from '../App';
 import { api } from '../services/api';
@@ -65,6 +66,9 @@ export const AdminSidebar: React.FC = () => {
       children: [
         { label: 'Revenue Analytics', path: '/admin/revenue', icon: PieChart },
         { label: 'Credit Audit', path: '/admin/credit-dashboard', icon: Scale },
+        { label: 'Topup Report', path: '/admin/topup-report', icon: TrendingUp },
+        { label: 'Payment Methods', path: '/admin/payment-methods', icon: CreditCard },
+        { label: 'Credit Packages', path: '/admin/credit-packages', icon: Package },
         { label: 'Transactions', path: '/admin/payments', icon: CreditCard },
         { label: 'Payout Requests', path: '/admin/payouts', icon: DollarSign },
         { label: 'Provider Commissions', path: '/admin/provider-commissions', icon: DollarSign },
