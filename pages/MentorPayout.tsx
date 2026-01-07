@@ -51,7 +51,7 @@ export default function MentorPayout() {
             
             // Safeguard: Always have at least USD if admin disabled all currencies
             if (enabledCurrencies.length === 0) {
-                enabledCurrencies = [{ code: 'USD', name: 'US Dollar', symbol: '$', exchangeRate: 1, enabled: true }];
+                enabledCurrencies = [{ code: 'USD', name: 'US Dollar', symbol: '$', exchangeRate: 1, enabled: true, symbolPosition: 'before', paymentMethods: ['Bank Transfer'] }];
             }
             
             setCurrencies(enabledCurrencies);

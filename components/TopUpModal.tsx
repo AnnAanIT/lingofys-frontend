@@ -134,10 +134,14 @@ export const TopUpModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, userId
     const handlePay = async () => {
         setLoading(true);
         try {
-            const usdAmount = selectedCredits / conversionRatio;
-            const paymentMethod = (selectedCurrency.paymentMethods && selectedCurrency.paymentMethods[0]) || "Stripe";
-            await api.buyCredits(userId, usdAmount, paymentMethod);
-            onSuccess();
+            // TODO: Integrate with local topup API when packages are properly set up
+            // For now, this is a placeholder - actual payment integration needed
+            showError('Payment Integration', 'Payment system is being configured. Please contact support.');
+            // await api.createLocalTopup({
+            //     packageId: 'package-id',
+            //     paymentMethodId: 'method-id',
+            //     transactionCode: 'txn-code'
+            // });
             onClose();
         } catch (e: any) {
             showError('Payment Failed', e.message || 'An error occurred during payment');

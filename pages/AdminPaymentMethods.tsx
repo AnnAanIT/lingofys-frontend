@@ -39,7 +39,7 @@ export default function AdminPaymentMethods() {
     setEditingMethod(method);
     setFormData({
       displayName: method.displayName,
-      type: method.type,
+      type: method.type as "MOMO" | "BANK_TRANSFER" | "ZALOPAY",
       qrCodeUrl: method.qrCodeUrl || '',
       bankName: method.bankName || '',
       accountNumber: method.accountNumber || '',

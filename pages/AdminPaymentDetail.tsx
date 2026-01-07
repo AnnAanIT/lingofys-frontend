@@ -29,7 +29,9 @@ export default function AdminPaymentDetail() {
 
     const loadData = async () => {
         if (!id) return;
-        const t = await api.getTransactionById(id);
+        // TODO: Implement proper transaction detail API
+        // const t = await api.getCreditTransaction(id);
+        const t = null;
         if (t) {
             setTransaction(t);
             if (t.payoutId) {
