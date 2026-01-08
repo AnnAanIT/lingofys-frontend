@@ -378,13 +378,14 @@ export interface CurrencyConfig {
   symbolPosition: 'before' | 'after'; // Display $ before or after amount
   exchangeRate: number; // Rate to USD (e.g., VND: 25000, JPY: 150, USD: 1)
   enabled: boolean; // Can users select this currency?
-  paymentMethods: string[]; // Available payment gateways for this currency
+  paymentMethods?: string[]; // DEPRECATED: Payment methods are now managed separately via PaymentMethod table
 }
 
 export interface SystemSettings {
   baseLessonCreditPrice: number;
   topupConversionRatio: number; // $1 USD = X Credits. (e.g. 0.8 means $1 buys 0.8 credits => 1 Credit costs $1.25)
   // Payout is strictly 1 Credit = $1 USD (100% Face Value)
+  vndToUsdRate?: number; // VND to USD exchange rate (e.g., 0.00004 means 1 VND = 0.00004 USD)
   creditPackages?: number[]; // Admin-configurable credit packages (e.g., [40, 100, 200, 400])
   currencies?: CurrencyConfig[]; // Multi-currency configuration for top-up display
 }

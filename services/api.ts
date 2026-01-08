@@ -2126,7 +2126,8 @@ export const api = {
 
   // Create new topup transaction
   createLocalTopup: async (data: {
-    packageId: string;
+    packageId?: string;
+    creditAmount?: number;
     paymentMethodId: string;
     transactionCode: string;
   }): Promise<any> => {
@@ -2275,6 +2276,23 @@ export const api = {
     if (!response.ok) {
       await handleApiError(response);
     }
+  },
+
+  uploadQRCode: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'qr-code');
+
+    const response = await authenticatedFetchMultipart(buildUrl('/api/upload'), {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return response.json();
   },
 
   // ===== ADMIN: CREDIT PACKAGE CRUD =====

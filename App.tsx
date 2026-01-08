@@ -40,7 +40,6 @@ import MenteeSubscriptionDetail from './pages/MenteeSubscriptionDetail';
 import MenteeActiveSubscription from './pages/MenteeActiveSubscription';
 import MenteeProfile from './pages/MenteeProfile';
 import MenteeFeedback from './pages/MenteeFeedback';
-import MenteeTopup from './pages/MenteeTopup';
 import MenteeTopupHistory from './pages/MenteeTopupHistory';
 
 import MentorDashboard from './pages/MentorDashboard';
@@ -131,7 +130,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           { icon: Star, label: 'Feedback', path: '/mentee/feedback' },
           { icon: MessageSquare, label: translations_t.nav.messages, path: '/mentee/chat' },
           { icon: CreditCard, label: translations_t.nav.wallet, path: '/mentee/wallet' },
-          { icon: Wallet, label: 'Topup Credits', path: '/mentee/topup' },
           { icon: UserIcon, label: translations_t.nav.profile, path: '/mentee/profile' },
         ];
       case UserRole.MENTOR:
@@ -604,7 +602,6 @@ export default function App() {
                 <Route path="/mentee/homework" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="homework" /> : <Navigate to="/" />} />
                 <Route path="/mentee/chat" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="chat" /> : <Navigate to="/" />} />
                 <Route path="/mentee/wallet" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="wallet" /> : <Navigate to="/" />} />
-                <Route path="/mentee/topup" element={user?.role === UserRole.MENTEE ? <MenteeTopup /> : <Navigate to="/" />} />
                 <Route path="/mentee/topup-history" element={user?.role === UserRole.MENTEE ? <MenteeTopupHistory /> : <Navigate to="/" />} />
                 <Route path="/mentee/feedback" element={user?.role === UserRole.MENTEE ? <MenteeFeedback /> : <Navigate to="/" />} />
 

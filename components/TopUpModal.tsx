@@ -1,276 +1,318 @@
-
-import React, { useState, useEffect } from 'react';
-import { X, CreditCard, ShieldCheck, Loader2, Globe } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { useApp } from '../App';
-import { translations } from '../lib/i18n';
-import { CurrencyConfig } from '../types';
-import { formatCurrency, calculateLocalPrice, getUserPreferredCurrency, saveUserPreferredCurrency } from '../utils/currencyUtils';
-import { useToast } from './ui/Toast';
+import type { PaymentMethod, CurrencyConfig } from '../types';
+import { X, Check } from 'lucide-react';
 
-// ✅ FIX VERCEL BUG: Default currencies fallback for SSR/SSG environments
-const DEFAULT_CURRENCIES: CurrencyConfig[] = [
-    {
-        code: 'USD',
-        name: 'US Dollar',
-        symbol: '$',
-        symbolPosition: 'before',
-        exchangeRate: 1,
-        enabled: true,
-        paymentMethods: ['Stripe', 'PayPal']
-    },
-    {
-        code: 'VND',
-        name: 'Vietnamese Dong',
-        symbol: '₫',
-        symbolPosition: 'after',
-        exchangeRate: 25000,
-        enabled: true,
-        paymentMethods: ['VNPay', 'MoMo']
-    },
-    {
-        code: 'JPY',
-        name: 'Japanese Yen',
-        symbol: '¥',
-        symbolPosition: 'before',
-        exchangeRate: 150,
-        enabled: true,
-        paymentMethods: ['Stripe']
-    }
-];
-
-interface Props {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: () => void;
-    userId: string;
+interface TopUpModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  userId: string;
 }
 
-export const TopUpModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, userId }) => {
-    const { language, user } = useApp();
-    const { error: showError } = useToast();
-    const t = translations[language].mentee.walletModal;
-    const commonT = translations[language].common;
-    const [selectedCredits, setSelectedCredits] = useState(40);
-    const [loading, setLoading] = useState(false);
-    const [conversionRatio, setConversionRatio] = useState(0.8);
-    const [creditPackages, setCreditPackages] = useState<number[]>([40, 100, 200, 400]);
-    const [currencies, setCurrencies] = useState<CurrencyConfig[]>([]);
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyConfig | null>(null);
+export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
+  const [packages, setPackages] = useState<number[]>([]);
+  const [conversionRatio, setConversionRatio] = useState(0.8);
+  const [currencies, setCurrencies] = useState<CurrencyConfig[]>([]);
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyConfig | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [selectedCredits, setSelectedCredits] = useState<number>(40);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [transactionCode, setTransactionCode] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    // Fetch system settings when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            api.getSystemSettings().then(settings => {
-                setConversionRatio(settings.topupConversionRatio || 0.8);
+  // Fetch data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Fetch system settings for credit packages, conversion ratio, and currencies
+      api.getSystemSettings().then(settings => {
+        setConversionRatio(settings.topupConversionRatio || 0.8);
+        const pkgs = settings.creditPackages || [40, 100, 200, 400];
+        setPackages(pkgs);
+        if (pkgs.length > 0) setSelectedCredits(pkgs[0]);
 
-                // ✅ FIX BUG: Ensure creditPackages is never empty
-                const packages = settings.creditPackages || [40, 100, 200, 400];
-                setCreditPackages(packages.length > 0 ? packages : [40, 100, 200, 400]);
+        // Set currencies and default to VND
+        const curs = settings.currencies || [];
+        setCurrencies(curs);
+        const defaultCurrency = curs.find(c => c.code === 'VND') || curs[0] || null;
+        setSelectedCurrency(defaultCurrency);
+      }).catch(err => {
+        console.error('Failed to fetch system settings:', err);
+      });
 
-                // ✅ FIX VERCEL BUG: Use DEFAULT_CURRENCIES fallback when settings.currencies is empty
-                const availableCurrencies = (settings.currencies && settings.currencies.length > 0)
-                    ? settings.currencies
-                    : DEFAULT_CURRENCIES;
+      // Fetch payment methods from API
+      api.getLocalTopupPaymentMethods().then(methods => {
+        setPaymentMethods(methods);
+      }).catch(err => {
+        console.error('Failed to fetch payment methods:', err);
+        setError('Failed to load payment methods');
+      });
+    }
+  }, [isOpen]);
 
-                setCurrencies(availableCurrencies);
+  const calculatePrice = (credits: number) => {
+    if (!selectedCurrency) return 0;
+    const priceUSD = credits / conversionRatio;
+    const priceInCurrency = priceUSD * selectedCurrency.exchangeRate;
+    return priceInCurrency;
+  };
 
-                // Set user's preferred currency (always guaranteed to have at least one currency now)
-                const preferredCode = getUserPreferredCurrency(user?.country);
-                const preferred = availableCurrencies.find(c => c.code === preferredCode && c.enabled);
-                setSelectedCurrency(
-                    preferred ||
-                    availableCurrencies.find(c => c.enabled) ||
-                    availableCurrencies[0]
-                );
-            });
-        }
-    }, [isOpen, user?.country]);
+  const formatPrice = (price: number) => {
+    if (!selectedCurrency) return '';
 
-    if (!isOpen) return null;
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
 
-    // Calculate which package has best value (lowest price per credit)
-    const getBestValuePackage = () => {
-        if (creditPackages.length === 0) return null;
-        let bestPackage = creditPackages[0];
-        let bestPricePerCredit = (creditPackages[0] / conversionRatio) / creditPackages[0];
-        
-        creditPackages.forEach(pkg => {
-            const pricePerCredit = (pkg / conversionRatio) / pkg;
-            if (pricePerCredit < bestPricePerCredit) {
-                bestPricePerCredit = pricePerCredit;
-                bestPackage = pkg;
-            }
-        });
-        
-        // Best value is typically the largest package
-        return creditPackages[creditPackages.length - 1];
-    };
+    if (selectedCurrency.symbolPosition === 'before') {
+      return `${selectedCurrency.symbol}${formatted}`;
+    } else {
+      return `${formatted}${selectedCurrency.symbol}`;
+    }
+  };
 
-    const bestValuePackage = getBestValuePackage();
-
-    // Show loading state while currency data is being fetched
-    if (!selectedCurrency) {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-                <div className="bg-white p-8 rounded-2xl shadow-2xl">
-                    <Loader2 className="animate-spin text-brand-600 mx-auto" size={40} />
-                    <p className="text-slate-600 font-bold mt-4 text-sm">Loading...</p>
-                </div>
-            </div>
-        );
+  const handleConfirmTopup = async () => {
+    if (!selectedCredits || !selectedPaymentMethod || !transactionCode.trim()) {
+      setError('Please fill in all required fields');
+      return;
     }
 
-    const localPrice = calculateLocalPrice(selectedCredits, conversionRatio, selectedCurrency.exchangeRate);
+    setIsProcessing(true);
+    setError(null);
 
-    const handleCurrencyChange = (currencyCode: string) => {
-        const currency = currencies.find(c => c.code === currencyCode);
-        if (currency) {
-            setSelectedCurrency(currency);
-            saveUserPreferredCurrency(currencyCode);
-        }
-    };
+    try {
+      await api.createLocalTopup({
+        creditAmount: selectedCredits,
+        paymentMethodId: selectedPaymentMethod.id,
+        transactionCode: transactionCode.trim()
+      });
 
-    const handlePay = async () => {
-        setLoading(true);
-        try {
-            // TODO: Integrate with local topup API when packages are properly set up
-            // For now, this is a placeholder - actual payment integration needed
-            showError('Payment Integration', 'Payment system is being configured. Please contact support.');
-            // await api.createLocalTopup({
-            //     packageId: 'package-id',
-            //     paymentMethodId: 'method-id',
-            //     transactionCode: 'txn-code'
-            // });
-            onClose();
-        } catch (e: any) {
-            showError('Payment Failed', e.message || 'An error occurred during payment');
-        } finally {
-            setLoading(false);
-        }
-    };
+      // Reset form
+      setTransactionCode('');
+      setSelectedPaymentMethod(null);
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 md:p-4 animate-fade-in">
-            <div className="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full md:max-w-md overflow-hidden animate-slide-up max-h-[90vh] overflow-y-auto">
-                <div className="p-4 md:p-6 space-y-3 md:space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg md:text-xl font-black text-slate-900 uppercase">{t.title}</h2>
-                        <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors"><X size={18} /></button>
-                    </div>
+      // Call success callback
+      onSuccess();
 
-                    {/* Currency Selector */}
-                    <div className="bg-slate-50 p-2.5 md:p-3 rounded-xl border border-slate-100">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                            <Globe size={14} className="text-slate-500" />
-                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Currency</span>
-                        </div>
-                        <select
-                            value={selectedCurrency.code}
-                            onChange={(e) => handleCurrencyChange(e.target.value)}
-                            className="w-full p-2 bg-white border-2 border-slate-200 rounded-lg font-bold text-slate-900 focus:border-brand-500 focus:outline-none text-sm"
-                        >
-                            {currencies.filter(c => c.enabled).map(currency => (
-                                <option key={currency.code} value={currency.code}>
-                                    {currency.symbol} {currency.name} ({currency.code})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+      // Close modal
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create topup');
+      setIsProcessing(false);
+    }
+  };
 
-                    {/* Credit Packages */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Select Package</span>
-                            <span className="text-[9px] text-slate-400">Rate: 1 Cr = ${(1 / conversionRatio).toFixed(2)} USD</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {creditPackages.map(credits => {
-                                const price = calculateLocalPrice(credits, conversionRatio, selectedCurrency.exchangeRate);
-                                const priceFormatted = formatCurrency(price, selectedCurrency);
-                                const isBestValue = credits === bestValuePackage;
-                                const isSelected = selectedCredits === credits;
-                                
-                                return (
-                                    <button
-                                        key={credits}
-                                        onClick={() => setSelectedCredits(credits)}
-                                        className={`relative p-2.5 md:p-3 rounded-lg border-2 transition-all overflow-hidden group ${
-                                            isSelected 
-                                                ? 'border-brand-600 bg-brand-50 shadow-lg shadow-brand-100' 
-                                                : 'border-slate-200 bg-white hover:border-brand-300 hover:shadow-md'
-                                        }`}
-                                    >
-                                        {isBestValue && (
-                                            <div className="absolute top-0 right-0 bg-gradient-to-br from-yellow-400 to-orange-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-bl-md uppercase tracking-wider">
-                                                Best
-                                            </div>
-                                        )}
-                                        <div className={`text-xl md:text-2xl font-black mb-0.5 ${
-                                            isSelected ? 'text-brand-600' : 'text-slate-700 group-hover:text-brand-600'
-                                        }`}>
-                                            {credits}
-                                        </div>
-                                        <div className="text-[9px] font-bold text-slate-500 mb-1">Credits</div>
-                                        <div className={`text-xs font-black ${
-                                            isSelected ? 'text-brand-700' : 'text-slate-600 group-hover:text-brand-600'
-                                        }`}>
-                                            {priceFormatted}
-                                        </div>
-                                        <div className="text-[8px] text-slate-400 mt-0.5">
-                                            {(price / credits).toFixed(2)}/cr
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+  const handleClose = () => {
+    setSelectedPaymentMethod(null);
+    setTransactionCode('');
+    setError(null);
+    onClose();
+  };
 
-                    {/* Order Summary */}
-                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-3 md:p-4 rounded-xl border-2 border-slate-200">
-                        <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Summary</div>
-                        
-                        <div className="space-y-2">
-                            {/* Credits */}
-                            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                                <span className="text-xs font-bold text-slate-600">Credits</span>
-                                <div className="text-right">
-                                    <div className="text-xl md:text-2xl font-black text-brand-600">{selectedCredits}</div>
-                                    <div className="text-[9px] text-slate-400">@ {conversionRatio} rate</div>
-                                </div>
-                            </div>
-                            
-                            {/* Total Payment */}
-                            <div className="flex justify-between items-center pt-1">
-                                <span className="text-sm font-bold text-slate-700">Total</span>
-                                <div className="text-xl md:text-2xl font-black text-slate-900">
-                                    {formatCurrency(localPrice, selectedCurrency)}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Security & Payment Info */}
-                        <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-600">
-                                <ShieldCheck size={14} className="flex-shrink-0" /> 
-                                <span>{t.securePayment}</span>
-                            </div>
-                            <div className="text-[9px] text-slate-500">
-                                Via: <span className="font-bold">{(selectedCurrency.paymentMethods || ['Stripe']).join(', ')}</span>
-                            </div>
-                        </div>
-                    </div>
+  if (!isOpen) return null;
 
-                    <button 
-                        onClick={handlePay}
-                        disabled={loading}
-                        className="w-full py-3 md:py-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl font-black uppercase text-xs md:text-sm tracking-widest hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        {loading ? <Loader2 className="animate-spin" size={18} /> : <CreditCard size={18} />}
-                        <span>{loading ? commonT.processing : t.payNow}</span>
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-xl">
+        {/* Header */}
+        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-gray-900">Topup Credits</h3>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-    );
-};
+
+        {/* Content - Single scrollable view */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-6">
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Currency Selector */}
+          {currencies.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+              <select
+                value={selectedCurrency?.code || ''}
+                onChange={(e) => {
+                  const currency = currencies.find(c => c.code === e.target.value);
+                  setSelectedCurrency(currency || null);
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+              >
+                {currencies.filter(c => c.enabled).map(currency => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.name} ({currency.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Section 1: Select Credit Package */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">1. Select Credit Package</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {packages.map(credits => {
+                const price = calculatePrice(credits);
+                const isSelected = selectedCredits === credits;
+
+                return (
+                  <button
+                    key={credits}
+                    onClick={() => setSelectedCredits(credits)}
+                    className={`relative p-4 border-2 rounded-lg transition-all ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full p-1">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold mb-1 ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
+                        {credits}
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2">credits</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {formatPrice(price)}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 2: Select Payment Method */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">2. Select Payment Method</h4>
+            {paymentMethods.length === 0 ? (
+              <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                <p className="text-yellow-800 text-sm">No payment methods available. Please contact admin.</p>
+              </div>
+            ) : (
+              <select
+                value={selectedPaymentMethod?.id || ''}
+                onChange={(e) => {
+                  const method = paymentMethods.find(m => m.id === e.target.value);
+                  setSelectedPaymentMethod(method || null);
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+              >
+                <option value="">Choose payment method...</option>
+                {paymentMethods.map(method => (
+                  <option key={method.id} value={method.id}>
+                    {method.displayName}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Section 3: Payment Details & Transaction Code */}
+          {selectedPaymentMethod && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">3. Complete Payment</h4>
+
+              {/* Payment Summary */}
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Credits</span>
+                  <span className="font-semibold text-gray-900">{selectedCredits} credits</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                  <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                  <span className="text-xl font-bold text-blue-600">
+                    {formatPrice(calculatePrice(selectedCredits))}
+                  </span>
+                </div>
+              </div>
+
+              {/* QR Code */}
+              {selectedPaymentMethod.qrCodeUrl && (
+                <div className="mb-4 p-4 border border-gray-200 rounded-lg text-center bg-white">
+                  <img
+                    src={selectedPaymentMethod.qrCodeUrl}
+                    alt="QR Code"
+                    className="max-w-xs mx-auto rounded"
+                  />
+                </div>
+              )}
+
+              {/* Bank Info */}
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h5 className="font-semibold text-gray-900 mb-3">{selectedPaymentMethod.displayName}</h5>
+                <div className="space-y-2 text-sm">
+                  {selectedPaymentMethod.bankName && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Bank</span>
+                      <span className="font-medium text-gray-900">{selectedPaymentMethod.bankName}</span>
+                    </div>
+                  )}
+                  {selectedPaymentMethod.accountNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Account</span>
+                      <span className="font-mono font-medium text-gray-900">{selectedPaymentMethod.accountNumber}</span>
+                    </div>
+                  )}
+                  {selectedPaymentMethod.accountName && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Name</span>
+                      <span className="font-medium text-gray-900">{selectedPaymentMethod.accountName}</span>
+                    </div>
+                  )}
+                </div>
+                {selectedPaymentMethod.instructions && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{selectedPaymentMethod.instructions}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Transaction Code Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Transaction Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={transactionCode}
+                  onChange={(e) => setTransactionCode(e.target.value)}
+                  placeholder="Enter transaction code from your payment"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  disabled={isProcessing}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the transaction code from your {selectedPaymentMethod.displayName} payment
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+          <button
+            onClick={handleConfirmTopup}
+            disabled={isProcessing || !selectedPaymentMethod || !transactionCode.trim()}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
+          >
+            {isProcessing ? 'Processing...' : 'Confirm Payment'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -17,22 +17,39 @@ export default function AdminTopupReport() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [vndToUsdRate, setVndToUsdRate] = useState<number>(0.00004); // Default fallback
 
   useEffect(() => {
     loadData();
   }, [filters]);
 
+  // Load system settings to get vndToUsdRate
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await api.getSystemSettings();
+        if (settings.vndToUsdRate) {
+          setVndToUsdRate(Number(settings.vndToUsdRate));
+        }
+      } catch (err) {
+        console.error('Failed to load system settings for exchange rate:', err);
+        // Keep using default fallback rate
+      }
+    };
+    loadSettings();
+  }, []);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Convert filters to API parameters
       const apiParams: any = {};
       if (filters.status) apiParams.status = filters.status;
       if (filters.flaggedAsFraud === 'true') apiParams.flaggedOnly = true;
       if (filters.flaggedAsFraud === 'false') apiParams.flaggedOnly = false;
       // Note: Date filters not yet implemented in backend
-      
+
       const [reportData, transactionsData] = await Promise.all([
         api.getAdminTopupDailyReport(),
         api.getAdminTopupTransactions(apiParams)
@@ -75,11 +92,18 @@ export default function AdminTopupReport() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatPrice = (priceVND: number) => {
+    // Convert VND to USD using system settings rate
+    // Note: priceVND in database is already calculated using topupConversionRatio
+    // We just need to convert the VND amount back to USD for display
+    const priceUSD = priceVND * vndToUsdRate;
+
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND'
-    }).format(price);
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(priceUSD);
   };
 
   const formatDate = (dateString: string) => {

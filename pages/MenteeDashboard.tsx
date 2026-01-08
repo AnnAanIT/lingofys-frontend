@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
 import { api } from '../services/api';
 import { Booking, UserRole, Homework, CreditHistoryEntry, BookingStatus, Conversation } from '../types';
 import { Clock, FileText, Wallet, Plus, CheckCircle, ChevronRight, Video, Calendar, ArrowUpRight, ArrowDownLeft, MessageSquare } from 'lucide-react';
 import { translations } from '../lib/i18n';
-import { TopUpModal } from '../components/TopUpModal';
 import { HomeworkModal } from '../components/Mentee/HomeworkModal';
 import { ChatWindow } from '../components/Messages/ChatWindow';
+import { TopUpModal } from '../components/TopUpModal';
 
 interface Props {
   tab: 'home' | 'homework' | 'chat' | 'wallet';
@@ -16,12 +16,13 @@ interface Props {
 
 export default function MenteeDashboard({ tab }: Props) {
   const { user, refreshUser, language } = useApp();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
-  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
   const [chatConvId, setChatConvId] = useState<string>('');  // ✅ FIX: Move state to top level
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
   const t = translations[language].mentee;
   const commonT = translations[language].common;
@@ -323,20 +324,21 @@ export default function MenteeDashboard({ tab }: Props) {
             </div>
         )}
 
-        <TopUpModal 
-            isOpen={isTopUpOpen} 
-            onClose={() => setIsTopUpOpen(false)} 
-            onSuccess={async () => { await refreshUser(); fetchData(); }} 
-            userId={user!.id} 
-        />
         {selectedHomework && (
-            <HomeworkModal 
-                isOpen={!!selectedHomework} 
-                onClose={() => setSelectedHomework(null)} 
-                homework={selectedHomework} 
-                onRefresh={fetchData} 
+            <HomeworkModal
+                isOpen={!!selectedHomework}
+                onClose={() => setSelectedHomework(null)}
+                homework={selectedHomework}
+                onRefresh={fetchData}
             />
         )}
+
+        <TopUpModal
+            isOpen={isTopUpOpen}
+            onClose={() => setIsTopUpOpen(false)}
+            onSuccess={async () => { await refreshUser(); fetchData(); }}
+            userId={user!.id}
+        />
     </div>
   );
 }
