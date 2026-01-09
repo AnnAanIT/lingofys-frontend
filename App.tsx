@@ -8,6 +8,7 @@ import { translations } from './lib/i18n';
 import { ToastProvider } from './components/ui/Toast';
 import { NotificationBell } from './components/Notifications/NotificationBell';
 import { ScrollToTop } from './components/ScrollToTop';
+import { FloatingContact } from './components/FloatingContact';
 import { BRAND } from './constants/brand';
 
 // ✅ Dev Tools - Only in development
@@ -405,14 +406,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             const isActive = location.pathname === link.path || location.pathname.startsWith(link.path + '/');
             const Icon = link.icon;
             const isChatLink = link.path.includes('chat');
-            
+
             return (
-              <Link 
+              <Link
                 key={link.path}
                 to={link.path}
                 className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg text-[10px] font-semibold transition-all flex-1 relative
-                  ${isActive 
-                    ? 'text-brand-600 bg-brand-50' 
+                  ${isActive
+                    ? 'text-brand-600 bg-brand-50'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }
                 `}
@@ -431,6 +432,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           })}
         </div>
       </nav>
+
+      {/* Floating Contact Button - Positioned above mobile nav */}
+      <FloatingContact />
     </div>
   );
 };

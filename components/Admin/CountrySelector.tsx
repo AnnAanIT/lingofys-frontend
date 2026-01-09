@@ -47,21 +47,10 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({ value, onChang
                 <option value="">Select country...</option>
                 {countries.map(country => (
                     <option key={country.id} value={country.id}>
-                        {country.name} (x{country.multiplier})
+                        {country.name}
                     </option>
                 ))}
             </select>
-            {selectedCountry && (
-                <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Geographic Multiplier:</span>
-                    <span className={`font-bold px-2 py-1 rounded ${
-                        selectedCountry.multiplier > 1 ? 'bg-orange-100 text-orange-700' : 
-                        selectedCountry.multiplier < 1 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                        x{selectedCountry.multiplier}
-                    </span>
-                </div>
-            )}
         </div>
     );
 };

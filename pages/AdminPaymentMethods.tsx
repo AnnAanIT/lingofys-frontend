@@ -9,6 +9,7 @@ export default function AdminPaymentMethods() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     displayName: '',
     type: 'BANK_TRANSFER' as 'BANK_TRANSFER' | 'MOMO' | 'ZALOPAY',
@@ -87,6 +88,33 @@ export default function AdminPaymentMethods() {
       await loadMethods();
     } catch (err: any) {
       alert(err.message || 'Failed to delete payment method');
+    }
+  };
+
+  const handleQRCodeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const result = await api.uploadQRCode(file);
+      setFormData({ ...formData, qrCodeUrl: result.url });
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload QR code');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -171,10 +199,14 @@ export default function AdminPaymentMethods() {
                     )}
                     {method.qrCodeUrl && (
                       <div>
-                        <span className="text-gray-600">QR Code:</span>{' '}
-                        <a href={method.qrCodeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          View QR
-                        </a>
+                        <span className="text-gray-600 block mb-2">QR Code:</span>
+                        <img
+                          src={method.qrCodeUrl}
+                          alt="QR Code"
+                          className="w-32 h-32 object-contain border border-gray-200 rounded cursor-pointer hover:border-blue-500"
+                          onClick={() => window.open(method.qrCodeUrl, '_blank')}
+                          title="Click to open full size"
+                        />
                       </div>
                     )}
                     {method.instructions && (
@@ -231,14 +263,56 @@ export default function AdminPaymentMethods() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">QR Code URL</label>
-                        <input
-                          type="url"
-                          value={formData.qrCodeUrl}
-                          onChange={(e) => setFormData({ ...formData, qrCodeUrl: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="https://..."
-                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">QR Code</label>
+
+                        {/* QR Code Preview */}
+                        {formData.qrCodeUrl && (
+                          <div className="mb-3">
+                            <img
+                              src={formData.qrCodeUrl}
+                              alt="QR Code Preview"
+                              className="w-48 h-48 object-contain border border-gray-300 rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        {/* Upload Button */}
+                        <div className="flex gap-2">
+                          <label className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-100 cursor-pointer text-center font-medium">
+                            {isUploading ? 'Uploading...' : formData.qrCodeUrl ? 'Change QR Code' : 'Upload QR Code'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleQRCodeUpload}
+                              disabled={isUploading}
+                              className="hidden"
+                            />
+                          </label>
+
+                          {formData.qrCodeUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, qrCodeUrl: '' })}
+                              className="px-4 py-2 bg-red-50 text-red-600 border border-red-300 rounded-lg hover:bg-red-100"
+                              disabled={isUploading}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Manual URL Input (fallback) */}
+                        <div className="mt-3">
+                          <label className="block text-xs text-gray-500 mb-1">Or enter URL manually:</label>
+                          <input
+                            type="url"
+                            value={formData.qrCodeUrl}
+                            onChange={(e) => setFormData({ ...formData, qrCodeUrl: e.target.value })}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://..."
+                            disabled={isUploading}
+                          />
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>

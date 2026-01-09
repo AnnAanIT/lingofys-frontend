@@ -55,6 +55,12 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
     if (!selectedCurrency) return 0;
     const priceUSD = credits / conversionRatio;
     const priceInCurrency = priceUSD * selectedCurrency.exchangeRate;
+
+    // Round VND to nearest 10,000 for user-friendly pricing (matches backend logic)
+    if (selectedCurrency.code === 'VND') {
+      return Math.round(priceInCurrency / 10000) * 10000;
+    }
+
     return priceInCurrency;
   };
 

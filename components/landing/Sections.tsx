@@ -37,6 +37,31 @@ export const Navbar = () => {
             <button onClick={() => scrollToSection('pricing')} className="text-slate-600 hover:text-brand-600 text-sm font-medium transition-colors">{t('nav.pricing')}</button>
           </div>
           <div className="flex items-center space-x-4">
+            {/* Social Icons */}
+            <div className="hidden md:flex items-center gap-2">
+              <a
+                href="https://www.facebook.com/people/Lingofys/61585671925299/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-blue-600 text-slate-600 hover:text-white transition-colors group"
+                aria-label="Facebook"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+              <a
+                href="https://zalo.me/0988679780"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-blue-50 transition-colors group"
+                aria-label="Zalo"
+              >
+                <div className="w-6 h-6 bg-[#0068FF] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-white font-bold text-[10px]">Zalo</span>
+                </div>
+              </a>
+            </div>
             <LanguageSelector />
             <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>{t('nav.login')}</Button>
             <Button size="sm" onClick={() => navigate('/login')}>{t('nav.getStarted')}</Button>
@@ -491,8 +516,11 @@ export const Footer = () => {
           </ul>
         </div>
       </div>
-      <div className="border-t border-slate-900 pt-8 text-center text-sm">
-        &copy; {new Date().getFullYear()} {BRAND.name}. All rights reserved.
+      <div className="border-t border-slate-900 pt-8">
+        {/* Copyright */}
+        <div className="text-center text-sm">
+          &copy; {new Date().getFullYear()} {BRAND.name}. All rights reserved.
+        </div>
       </div>
     </div>
   </footer>

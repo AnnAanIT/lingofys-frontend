@@ -116,26 +116,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMe
                     />
                 </div>
             )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {user.role === 'MENTEE' && (
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Language</label>
-                    <select 
-                        name="language" 
-                        value={(formData as any).language || 'en'} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-3 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-base"
-                    >
-                        <option value="en">English (English)</option>
-                        <option value="vi">Tiếng Việt (Vietnamese)</option>
-                        <option value="zh">中文 (Chinese)</option>
-                        <option value="ko">한국어 (Korean)</option>
-                        <option value="ja">日本語 (Japanese)</option>
-                    </select>
-                </div>
-                )}
-            </div>
 
             {user.role === 'PROVIDER' && (
                 <div className="pt-4 md:pt-4 border-t border-slate-100">

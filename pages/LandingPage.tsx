@@ -1,8 +1,9 @@
 import React from 'react';
-import { 
-  Navbar, Hero, HowItWorks, MentorShowcase, 
-  PricingPreview, AffiliateSection, Reviews, FAQ, Footer 
+import {
+  Navbar, Hero, HowItWorks, MentorShowcase,
+  PricingPreview, AffiliateSection, Reviews, FAQ, Footer
 } from '../components/landing/Sections';
+import { FloatingContact } from '../components/FloatingContact';
 import SEOHead from '../components/SEOHead';
 import '../i18n/config'; // Initialize i18n
 
@@ -22,6 +23,7 @@ export default function LandingPage() {
           <FAQ />
         </main>
         <Footer />
+        <FloatingContact />
       </div>
     </>
   );
