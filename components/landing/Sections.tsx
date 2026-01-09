@@ -325,11 +325,11 @@ export const PricingPreview = () => {
               <p className="text-slate-500">{mainPlan.description}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-4xl font-extrabold text-slate-900">{mainPlan.price} {t('pricing.subscription.unit') || 'credits'}</div>
+              <div className="text-4xl font-extrabold text-slate-900">{Number(mainPlan.price).toFixed(0)} <span className="text-lg font-normal text-slate-500">credits</span></div>
               <ul className="space-y-3 text-slate-600">
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.sessions} sessions / {mainPlan.durationWeeks} weeks</li>
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.allowedCancel} cancellations allowed</li>
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.allowedReschedule} reschedules allowed</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.sessions} lessons included</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> Valid for {mainPlan.durationWeeks} weeks</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.allowedCancel} free cancellations</li>
               </ul>
             </CardContent>
             <CardFooter>
@@ -347,11 +347,13 @@ export const PricingPreview = () => {
               <p className="text-slate-500">{t('pricing.subscription.subtitle')}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-4xl font-extrabold text-slate-900">{t('pricing.subscription.price')} <span className="text-lg font-normal text-slate-500">{t('pricing.subscription.unit')}</span></div>
+              <div className="text-lg font-medium text-slate-600">
+                Contact us for subscription plan details
+              </div>
               <ul className="space-y-3 text-slate-600">
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.subscription.features.save20')}</li>
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.subscription.features.fixedSlots')}</li>
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.subscription.features.prioritySupport')}</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> Multiple lessons at discounted rates</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> Flexible scheduling options</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> Priority support included</li>
               </ul>
             </CardContent>
             <CardFooter>

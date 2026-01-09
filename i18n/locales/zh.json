@@ -60,12 +60,12 @@
     "payAsYouGo": {
       "title": "按需付费",
       "subtitle": "为忙碌的学习者提供最大的灵活性。",
-      "price": "$10",
-      "unit": "/ 学分",
+      "price": "$4",
+      "unit": "/ 课程",
       "features": {
-        "noExpiration": "无过期日期",
+        "noExpiration": "学分永不过期",
         "anyMentor": "预约任何教师",
-        "cancellation": "24小时取消政策"
+        "cancellation": "提前24小时免费取消"
       },
       "cta": "购买学分"
     },
@@ -73,7 +73,7 @@
       "title": "月度订阅",
       "subtitle": "持续学习以获得更快的结果。",
       "price": "$8",
-      "unit": "/ 课程",
+      "unit": "学分",
       "badge": "热门",
       "features": {
         "save20": "比学分节省20%",

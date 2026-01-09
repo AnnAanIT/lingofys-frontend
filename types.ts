@@ -93,12 +93,14 @@ export interface Mentor extends User {
   headline: string;              // Short tagline (replaces "bio" in API layer)
   bio?: string;                  // Legacy field alias for headline
   aboutMe?: string;              // Full story (replaces "bioLong" in API layer)
-  videoIntro?: string; 
+  videoIntro?: string;
   specialties: string[];
   teachingLanguages: string[];   // NEW: Languages this mentor teaches (e.g., ["English", "Chinese"])
+  meetingLink?: string;          // NEW: Mentor's preferred meeting link
+  meetingPlatform?: string;      // NEW: Meeting platform (zoom/google_meet/jitsi/other)
   mentorGroupId: string;         // Tier: basic, expert, native, vip (affects rate multiplier)
   mentorGroup?: any;             // Populated mentorGroup object from backend
-  availability: AvailabilitySlot[]; 
+  availability: AvailabilitySlot[];
   rating: number;
   reviewCount: number;
   experienceYears: number;
@@ -120,10 +122,13 @@ export interface Booking {
   type: 'CREDIT' | 'SUBSCRIPTION';  // Fixed: Backend returns uppercase
   subscriptionId?: string; 
   notes?: string;
-  evidenceImage?: string; 
+  evidenceImage?: string;
   homeworkId?: string;
   totalCost: number; // Strict Credit Cost
   joinLink?: string;
+  linkSource?: string; // "mentor" | "system_fallback" | "system"
+  mentorJoinedAt?: string; // When mentor clicked "Enter Class"
+  menteeJoinedAt?: string; // When mentee clicked "Enter Class"
   rating?: number; // New: Star rating (1-5)
   review?: string; // New: Text review
   // Cancellation Fields

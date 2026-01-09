@@ -60,12 +60,12 @@
     "payAsYouGo": {
       "title": "Trả Theo Buổi",
       "subtitle": "Linh hoạt tối đa cho người học bận rộn.",
-      "price": "$10",
-      "unit": "/ tín chỉ",
+      "price": "$4",
+      "unit": "/ buổi học",
       "features": {
-        "noExpiration": "Không giới hạn thời gian",
-        "anyMentor": "Đặt bất kỳ giáo viên",
-        "cancellation": "Chính sách hủy 24h"
+        "noExpiration": "Tín chỉ không hết hạn",
+        "anyMentor": "Đặt bất kỳ giáo viên nào",
+        "cancellation": "Hủy miễn phí trước 24h"
       },
       "cta": "Mua Tín Chỉ"
     },
@@ -73,7 +73,7 @@
       "title": "Gói Tháng",
       "subtitle": "Nhất quán cho kết quả nhanh hơn.",
       "price": "$8",
-      "unit": "/ buổi học",
+      "unit": "credits",
       "badge": "PHỔ BIẾN",
       "features": {
         "save20": "Tiết kiệm 20% so với tín chỉ",

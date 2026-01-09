@@ -664,6 +664,18 @@ export const api = {
     return await response.json();
   },
 
+  trackBookingJoin: async (bookingId: string): Promise<{ success: boolean; joinLink: string; message: string }> => {
+    const response = await authenticatedFetch(buildUrl(`/api/bookings/${bookingId}/join`), {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return await response.json();
+  },
+
   getBookingById: async (id: string): Promise<Booking | undefined> => {
     const response = await authenticatedFetch(buildUrl(`/api/bookings/${id}`));
 
@@ -1645,8 +1657,17 @@ export const api = {
     return await response.json();
   },
 
-  getMessages: async (conversationId: string): Promise<Message[]> => {
-    const response = await authenticatedFetch(buildUrl(`/api/messages/conversations/${conversationId}/messages`));
+  getMessages: async (
+    conversationId: string,
+    limit?: number,
+    cursor?: string
+  ): Promise<{ messages: Message[]; hasMore: boolean; nextCursor: string | null }> => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (cursor) params.append('cursor', cursor);
+
+    const url = buildUrl(`/api/messages/conversations/${conversationId}/messages${params.toString() ? `?${params}` : ''}`);
+    const response = await authenticatedFetch(url);
 
     if (!response.ok) {
       await handleApiError(response);

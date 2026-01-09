@@ -60,12 +60,12 @@
     "payAsYouGo": {
       "title": "Pay As You Go",
       "subtitle": "Maximum flexibility for busy learners.",
-      "price": "$10",
-      "unit": "/ credit",
+      "price": "$4",
+      "unit": "/ lesson",
       "features": {
-        "noExpiration": "No expiration date",
+        "noExpiration": "Credits never expire",
         "anyMentor": "Book any teacher",
-        "cancellation": "24h cancellation policy"
+        "cancellation": "Free cancellation 24h before"
       },
       "cta": "Buy Credits"
     },
@@ -73,7 +73,7 @@
       "title": "Monthly Subscription",
       "subtitle": "Consistency for faster results.",
       "price": "$8",
-      "unit": "/ lesson",
+      "unit": "credits",
       "badge": "POPULAR",
       "features": {
         "save20": "Save 20% vs credits",
