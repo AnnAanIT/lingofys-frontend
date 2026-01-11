@@ -1617,32 +1617,56 @@ export const api = {
     return await response.json();
   },
 
-  // ===== NOTIFICATIONS (TODO: Backend routes not implemented yet) =====
+  // ===== NOTIFICATIONS =====
 
-  getNotifications: async (userId: string): Promise<Notification[]> => {
-    // TODO: Backend notification routes need to be created
-    // Temporarily return empty array to prevent 404 errors
-    return [];
+  getNotifications: async (userId: string, limit?: number): Promise<Notification[]> => {
+    const url = limit 
+      ? buildUrl(`/api/notifications?limit=${limit}`)
+      : buildUrl('/api/notifications');
+    
+    const response = await authenticatedFetch(url);
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return await response.json();
   },
 
   getUnreadNotificationCount: async (userId: string): Promise<number> => {
-    // TODO: Backend notification routes need to be created
-    return 0;
+    const response = await authenticatedFetch(buildUrl('/api/notifications/unread-count'));
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    const result = await response.json();
+    return result.count || 0;
   },
 
   markNotificationRead: async (notificationId: string): Promise<void> => {
-    // TODO: Backend notification routes need to be created
-    return;
+    const response = await authenticatedFetch(buildUrl(`/api/notifications/${notificationId}/read`), {
+      method: 'PATCH'
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
   },
 
   markAllNotificationsRead: async (userId: string): Promise<void> => {
-    // TODO: Backend notification routes need to be created
-    return;
+    const response = await authenticatedFetch(buildUrl('/api/notifications/mark-all-read'), {
+      method: 'PATCH'
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
   },
 
   getUnreadCount: async (userId: string): Promise<number> => {
-    // TODO: Backend notification routes need to be created
-    return 0;
+    // Alias for getUnreadNotificationCount
+    return api.getUnreadNotificationCount(userId);
   },
 
   // ===== MESSAGING (TODO: Backend implementation needed) =====

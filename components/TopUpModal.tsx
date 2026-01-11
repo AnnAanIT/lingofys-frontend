@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { PaymentMethod, CurrencyConfig } from '../types';
 import { X, Check } from 'lucide-react';
+import { useApp } from '../App';
+import { translations } from '../lib/i18n';
 
 interface TopUpModalProps {
   isOpen: boolean;
@@ -11,6 +13,9 @@ interface TopUpModalProps {
 }
 
 export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
+  const { language } = useApp();
+  const t = translations[language].mentee.walletModal;
+  
   const [packages, setPackages] = useState<number[]>([]);
   const [conversionRatio, setConversionRatio] = useState(0.8);
   const [currencies, setCurrencies] = useState<CurrencyConfig[]>([]);
@@ -46,10 +51,10 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
         setPaymentMethods(methods);
       }).catch(err => {
         console.error('Failed to fetch payment methods:', err);
-        setError('Failed to load payment methods');
+        setError(t.failedLoadMethods);
       });
     }
-  }, [isOpen]);
+  }, [isOpen, t.failedLoadMethods]); // ✅ FIX: Include translation key to update error message when language changes
 
   const calculatePrice = (credits: number) => {
     if (!selectedCurrency) return 0;
@@ -81,7 +86,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
 
   const handleConfirmTopup = async () => {
     if (!selectedCredits || !selectedPaymentMethod || !transactionCode.trim()) {
-      setError('Please fill in all required fields');
+      setError(t.fillAllFields);
       return;
     }
 
@@ -105,7 +110,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
       // Close modal
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create topup');
+      setError(err.message || t.failedCreateTopup);
       setIsProcessing(false);
     }
   };
@@ -124,7 +129,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-xl">
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-gray-900">Topup Credits</h3>
+          <h3 className="text-xl font-semibold text-gray-900">{t.title}</h3>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -145,7 +150,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
           {/* Currency Selector */}
           {currencies.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.currency}</label>
               <select
                 value={selectedCurrency?.code || ''}
                 onChange={(e) => {
@@ -165,7 +170,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
 
           {/* Section 1: Select Credit Package */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">1. Select Credit Package</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">{t.selectCreditPackage}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {packages.map(credits => {
                 const price = calculatePrice(credits);
@@ -190,7 +195,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
                       <div className={`text-2xl font-bold mb-1 ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
                         {credits}
                       </div>
-                      <div className="text-xs text-gray-500 mb-2">credits</div>
+                      <div className="text-xs text-gray-500 mb-2">{t.credits}</div>
                       <div className="text-sm font-semibold text-gray-900">
                         {formatPrice(price)}
                       </div>
@@ -203,10 +208,10 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
 
           {/* Section 2: Select Payment Method */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">2. Select Payment Method</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">{t.selectPaymentMethod}</h4>
             {paymentMethods.length === 0 ? (
               <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                <p className="text-yellow-800 text-sm">No payment methods available. Please contact admin.</p>
+                <p className="text-yellow-800 text-sm">{t.noPaymentMethods}</p>
               </div>
             ) : (
               <select
@@ -217,7 +222,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
               >
-                <option value="">Choose payment method...</option>
+                <option value="">{t.choosePaymentMethod}</option>
                 {paymentMethods.map(method => (
                   <option key={method.id} value={method.id}>
                     {method.displayName}
@@ -230,16 +235,16 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
           {/* Section 3: Payment Details & Transaction Code */}
           {selectedPaymentMethod && (
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">3. Complete Payment</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">{t.completePayment}</h4>
 
               {/* Payment Summary */}
               <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Credits</span>
-                  <span className="font-semibold text-gray-900">{selectedCredits} credits</span>
+                  <span className="text-sm text-gray-600">{t.credits}</span>
+                  <span className="font-semibold text-gray-900">{selectedCredits} {t.credits}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-300">
-                  <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                  <span className="text-sm font-semibold text-gray-900">{t.totalAmount}</span>
                   <span className="text-xl font-bold text-blue-600">
                     {formatPrice(calculatePrice(selectedCredits))}
                   </span>
@@ -251,7 +256,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
                 <div className="mb-4 p-4 border border-gray-200 rounded-lg text-center bg-white">
                   <img
                     src={selectedPaymentMethod.qrCodeUrl}
-                    alt="QR Code"
+                    alt={t.qrCode}
                     className="max-w-xs mx-auto rounded"
                   />
                 </div>
@@ -263,19 +268,19 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
                 <div className="space-y-2 text-sm">
                   {selectedPaymentMethod.bankName && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Bank</span>
+                      <span className="text-gray-600">{t.bank}</span>
                       <span className="font-medium text-gray-900">{selectedPaymentMethod.bankName}</span>
                     </div>
                   )}
                   {selectedPaymentMethod.accountNumber && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Account</span>
+                      <span className="text-gray-600">{t.account}</span>
                       <span className="font-mono font-medium text-gray-900">{selectedPaymentMethod.accountNumber}</span>
                     </div>
                   )}
                   {selectedPaymentMethod.accountName && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Name</span>
+                      <span className="text-gray-600">{t.name}</span>
                       <span className="font-medium text-gray-900">{selectedPaymentMethod.accountName}</span>
                     </div>
                   )}
@@ -290,18 +295,18 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
               {/* Transaction Code Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Transaction Code <span className="text-red-500">*</span>
+                  {t.transactionCode} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={transactionCode}
                   onChange={(e) => setTransactionCode(e.target.value)}
-                  placeholder="Enter transaction code from your payment"
+                  placeholder={t.transactionCodePlaceholder}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   disabled={isProcessing}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter the transaction code from your {selectedPaymentMethod.displayName} payment
+                  {t.transactionCodeHint.replace('{method}', selectedPaymentMethod.displayName)}
                 </p>
               </div>
             </div>
@@ -315,7 +320,7 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
             disabled={isProcessing || !selectedPaymentMethod || !transactionCode.trim()}
             className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
           >
-            {isProcessing ? 'Processing...' : 'Confirm Payment'}
+            {isProcessing ? t.processing : t.confirmPayment}
           </button>
         </div>
       </div>

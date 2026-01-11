@@ -36,6 +36,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const canReply = !isAdmin || (conversation.assignedAdminId === currentUserId || conversation.assignedAdminId === null);
 
+    // ✅ Helper: Map backend message to frontend Message format
+    const mapBackendMessage = (backendMsg: any): Message => {
+        // Determine fromRole and toRole based on message sender
+        const isFromCurrentUser = backendMsg.fromId === currentUserId;
+        const fromRole = isFromCurrentUser ? currentUserRole : recipientRole;
+        const toRole = isFromCurrentUser ? recipientRole : currentUserRole;
+        
+        return {
+            id: backendMsg.id,
+            conversationId: backendMsg.conversationId || conversation.id,
+            fromRole: backendMsg.fromRole || fromRole,
+            fromId: backendMsg.fromId,
+            toRole: backendMsg.toRole || toRole,
+            toId: backendMsg.toId || (isAdmin ? conversation.participantId : null),
+            content: backendMsg.content,
+            createdAt: backendMsg.createdAt,
+            read: backendMsg.read || false,
+            attachment: backendMsg.attachment
+        };
+    };
+
     const loadMessages = async () => {
         try {
             // Skip loading for temp conversations (will have messages after first send)
@@ -47,7 +68,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
             // ✅ UPDATED: Use pagination API (initial load with 50 messages)
             const result = await api.getMessages(conversation.id, 50);
-            setMessages(result.messages || []);
+            // ✅ Map backend messages to frontend format
+            const mappedMessages = (result.messages || []).map(mapBackendMessage);
+            setMessages(mappedMessages);
             setHasMore(result.hasMore);
             setCursor(result.nextCursor);
             setLoading(false);
@@ -72,8 +95,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             // ✅ Load older messages using cursor
             const result = await api.getMessages(conversation.id, 50, cursor);
 
+            // ✅ Map backend messages to frontend format
+            const mappedMessages = result.messages.map(mapBackendMessage);
+
             // Prepend older messages to the existing messages
-            setMessages(prev => [...result.messages, ...prev]);
+            setMessages(prev => [...mappedMessages, ...prev]);
             setHasMore(result.hasMore);
             setCursor(result.nextCursor);
             setLoadingMore(false);
@@ -101,14 +127,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 // Fetch all messages (backend returns newest 50 by default)
                 const result = await api.getMessages(conversation.id, 50);
 
+                // ✅ Map backend messages to frontend format
+                const mappedMessages = result.messages.map(mapBackendMessage);
+                
                 // Find messages that are newer than our current newest message
-                const newMessages = result.messages.filter(
+                const newMessages = mappedMessages.filter(
                     msg => new Date(msg.createdAt) > new Date(newestMessage.createdAt)
                 );
 
                 // Only update if there are actually new messages
                 if (newMessages.length > 0) {
-                    setMessages(prev => [...prev, ...newMessages]);
+                    setMessages(prev => {
+                        // ✅ PREVENT DUPLICATES: Filter out messages that already exist
+                        const existingIds = new Set(prev.map(msg => msg.id));
+                        const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
+                        
+                        if (uniqueNewMessages.length > 0) {
+                            return [...prev, ...uniqueNewMessages];
+                        }
+                        return prev;
+                    });
 
                     // Don't update cursor/hasMore for older messages - keep infinite scroll working
                     // Only scroll to bottom if user is already near bottom (within 200px)
@@ -186,14 +224,64 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         const content = input;
         setInput('');
 
+        // ✅ OPTIMISTIC UPDATE: Create temporary message to show immediately
+        const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const optimisticMessage: Message = {
+            id: tempMessageId,
+            conversationId: conversation.id,
+            fromRole: currentUserRole,
+            fromId: currentUserId,
+            toRole: recipientRole,
+            toId: isAdmin ? conversation.participantId : null,
+            content: content,
+            createdAt: new Date().toISOString(),
+            read: false
+        };
+
+        // Add optimistic message immediately
+        setMessages(prev => [...prev, optimisticMessage]);
+
         try {
             // Backend API expects receiverId and content (senderId comes from auth token)
             const receiverId = isAdmin ? conversation.participantId : 'admin';
-            await api.sendMessage(receiverId, content);
-            // ✅ FIXED BUG #2: Use refreshNewMessages() to preserve old messages
-            await refreshNewMessages();
+            const sentMessage = await api.sendMessage(receiverId, content);
+            
+            // ✅ Map backend response to frontend Message format
+            const realMessage: Message = {
+                id: sentMessage.id,
+                conversationId: sentMessage.conversationId || conversation.id,
+                fromRole: currentUserRole,
+                fromId: sentMessage.fromId || currentUserId,
+                toRole: recipientRole,
+                toId: isAdmin ? conversation.participantId : null,
+                content: sentMessage.content,
+                createdAt: sentMessage.createdAt,
+                read: sentMessage.read || false
+            };
+
+            // Replace optimistic message with real message
+            setMessages(prev => {
+                // Remove temp message and add real message (avoid duplicates)
+                const filtered = prev.filter(msg => msg.id !== tempMessageId);
+                // Check if real message already exists (from refreshNewMessages)
+                const exists = filtered.some(msg => msg.id === realMessage.id);
+                if (!exists) {
+                    return [...filtered, realMessage];
+                }
+                return filtered;
+            });
+
+            // ✅ Still refresh to get any other new messages (non-blocking)
+            refreshNewMessages().catch(err => {
+                console.error('Failed to refresh new messages after send:', err);
+            });
+
             if (onMessageSent) onMessageSent();
         } catch (error: any) {
+            // ✅ ROLLBACK: Remove optimistic message on error
+            setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
+            // Restore input
+            setInput(content);
             alert(error);
         }
     };

@@ -131,7 +131,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             <div className="ml-7 space-y-1 mt-1">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-500 font-bold">Price</span>
-                                    <span className="font-black text-slate-900">{priceDetails.finalPrice.toFixed(0)} Credits</span>
+                                    <span className="font-black text-slate-900">{Number(priceDetails.finalPrice).toFixed(2)} Credits</span>
                                 </div>
                                 {selectedMethod === 'CREDIT' && (
                                     <>

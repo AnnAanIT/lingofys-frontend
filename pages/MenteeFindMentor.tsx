@@ -9,10 +9,12 @@ import { useApp } from '../App';
 import { translations } from '../lib/i18n';
 
 export default function MenteeFindMentor() {
-  const { language } = useApp();
+  const { language, user } = useApp();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [groups, setGroups] = useState<PricingGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mentorRates, setMentorRates] = useState<Record<string, number>>({}); // ✅ OPTIMIZED: Cache rates
+  const [ratesLoading, setRatesLoading] = useState(false);
   const navigate = useNavigate();
   const t = translations[language].mentee;
   const commonT = translations[language].common;
@@ -35,6 +37,43 @@ export default function MenteeFindMentor() {
     };
     fetchData();
   }, []);
+
+  // ✅ OPTIMIZED: Batch fetch rates for all mentors
+  useEffect(() => {
+    if (mentors.length === 0 || !user?.country) return;
+
+    const fetchRates = async () => {
+        setRatesLoading(true);
+        try {
+            // Fetch rates for all mentors in parallel (batch)
+            const ratePromises = mentors.map(async (mentor) => {
+                try {
+                    const rateData = await api.getMentorLocalizedRate(mentor.id, user.country || 'US');
+                    const rate = typeof rateData === 'object' && rateData !== null
+                        ? (rateData as any).localizedRate
+                        : rateData;
+                    return { mentorId: mentor.id, rate: Number(rate) || 0 };
+                } catch (error) {
+                    console.error(`Failed to fetch rate for mentor ${mentor.id}:`, error);
+                    return { mentorId: mentor.id, rate: 0 };
+                }
+            });
+
+            const results = await Promise.all(ratePromises);
+            const ratesMap: Record<string, number> = {};
+            results.forEach(({ mentorId, rate }) => {
+                ratesMap[mentorId] = rate;
+            });
+            setMentorRates(ratesMap);
+        } catch (error) {
+            console.error('Failed to fetch mentor rates:', error);
+        } finally {
+            setRatesLoading(false);
+        }
+    };
+
+    fetchRates();
+  }, [mentors, user?.country]);
 
   // Extract all unique specialties for filter tags
   const allSpecialties = useMemo(() => 
@@ -197,6 +236,7 @@ export default function MenteeFindMentor() {
                         key={mentor.id} 
                         mentor={mentor} 
                         onSelect={() => navigate(`/mentee/find-mentor/${mentor.id}`)}
+                        displayRate={mentorRates[mentor.id]} // ✅ OPTIMIZED: Pass rate from cache
                     />
                 ))}
             </div>

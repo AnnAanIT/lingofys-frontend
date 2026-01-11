@@ -8,13 +8,20 @@ import { useApp } from '../../App';
 interface MentorCardProps {
     mentor: Mentor;
     onSelect: () => void;
+    displayRate?: number | null; // ✅ OPTIMIZED: Rate passed from parent to avoid individual API calls
 }
 
-export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect }) => {
+export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect, displayRate: propDisplayRate }) => {
     const { user } = useApp();
-    const [displayRate, setDisplayRate] = useState<number | null>(null);
+    const [displayRate, setDisplayRate] = useState<number | null>(propDisplayRate ?? null);
 
+    // ✅ OPTIMIZED: Only fetch if not provided by parent
     useEffect(() => {
+        if (propDisplayRate !== undefined) {
+            setDisplayRate(propDisplayRate);
+            return;
+        }
+
         const fetchRate = async () => {
             try {
                 // Calculate rate dynamically based on current viewer's country
@@ -31,7 +38,7 @@ export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect }) => {
             }
         };
         fetchRate();
-    }, [mentor.id, user?.country]);
+    }, [mentor.id, user?.country, propDisplayRate]);
 
     return (
         <div className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-brand-200 transition-all duration-300 overflow-hidden flex flex-col h-full">
@@ -95,9 +102,9 @@ export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect }) => {
 
             <div className="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between">
                 <div>
-                    <div className="text-xs text-slate-400 uppercase font-bold">Your Rate</div>
+                    <div className="text-xs text-slate-400 uppercase font-bold">Teacher's Rate</div>
                     <div className="font-bold text-slate-900">
-                        {displayRate !== null ? displayRate : '...'} <span className="text-xs font-normal text-slate-500">Credits/hr</span>
+                        {displayRate !== null ? Number(displayRate).toFixed(2) : '...'} <span className="text-xs font-normal text-slate-500">Credits/hr</span>
                     </div>
                 </div>
                 <button 

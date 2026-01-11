@@ -250,7 +250,7 @@ export default function MenteeMentorDetail() {
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.yourRate}</span>
                     <div className="text-right">
                         <span className="text-3xl font-black text-white">
-                            {localizedRate !== null && typeof localizedRate === 'number' ? localizedRate.toFixed(0) : '...'}
+                            {localizedRate !== null && typeof localizedRate === 'number' ? Number(localizedRate).toFixed(2) : '...'}
                         </span>
                         <span className="text-xs font-bold text-slate-400 ml-1">{t.creditsPerHour}</span>
                     </div>
