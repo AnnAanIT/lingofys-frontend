@@ -43,10 +43,21 @@ export const AddAvailabilityModal: React.FC<AddAvailabilityModalProps> = ({
             const cleanDay = day.replace(/[^a-zA-Z]/g, '');
             const normalizedDay = cleanDay.substring(0, 3).charAt(0).toUpperCase() + cleanDay.substring(1, 3).toLowerCase();
 
+            // Calculate duration from startTime and endTime
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            const duration = endMinutes >= startMinutes 
+                ? endMinutes - startMinutes 
+                : (24 * 60) - startMinutes + endMinutes; // Handle midnight crossing
+
             await onSave({
                 day: normalizedDay,
                 startTime,
-                ...(useEndTime ? { endTime, interval } : { duration }),
+                endTime,
+                interval,
+                duration,
                 recurring
             });
             onClose();

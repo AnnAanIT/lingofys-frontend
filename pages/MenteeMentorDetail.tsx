@@ -94,6 +94,9 @@ export default function MenteeMentorDetail() {
       ? (user.timezone || getTimezoneByCountry(user.country || 'VN'))
       : (mentor?.timezone || getTimezoneByCountry(mentor?.country || 'US'));
 
+  // Múi giờ của Mentor để hiểu các slot "Mon 18:00"
+  const mentorTz = mentor?.timezone || getTimezoneByCountry(mentor?.country || 'US');
+
   // Memoize generateEvents to avoid recalculating on every render
   const generateEvents = useMemo(() => {
       const events: any[] = [];
@@ -106,9 +109,6 @@ export default function MenteeMentorDetail() {
           // Silently return empty array (no need to log warning every render)
           return [];
       }
-
-      // Múi giờ của Mentor để hiểu các slot "Mon 18:00"
-      const mentorTz = mentor.timezone || getTimezoneByCountry(mentor.country || 'US');
 
       console.log('🔍 [Availability Debug] Generating events for mentor:', mentor.name);
       console.log('📍 Mentor timezone:', mentorTz);
