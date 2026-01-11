@@ -16,7 +16,9 @@ export const AddAvailabilityModal: React.FC<AddAvailabilityModalProps> = ({
 }) => {
     const [day, setDay] = useState('Mon');
     const [startTime, setStartTime] = useState('09:00');
-    const [duration, setDuration] = useState(60);
+    const [endTime, setEndTime] = useState('17:00');
+    const [useEndTime, setUseEndTime] = useState(true); // Default to use endTime (range-based)
+    const [interval] = useState(30); // Always 30 minutes (system only supports 30p slots)
     const [recurring, setRecurring] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -44,7 +46,7 @@ export const AddAvailabilityModal: React.FC<AddAvailabilityModalProps> = ({
             await onSave({
                 day: normalizedDay,
                 startTime,
-                duration,
+                ...(useEndTime ? { endTime, interval } : { duration }),
                 recurring
             });
             onClose();
@@ -93,31 +95,105 @@ export const AddAvailabilityModal: React.FC<AddAvailabilityModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Quick Presets */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Quick Presets</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => {
+                                    setStartTime('06:00');
+                                    setEndTime('12:00');
+                                    setUseEndTime(true);
+                                }}
+                                className="px-4 py-2 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                Morning<br/><span className="text-xs text-slate-500">6:00 - 12:00</span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => {
+                                    setStartTime('12:00');
+                                    setEndTime('18:00');
+                                    setUseEndTime(true);
+                                }}
+                                className="px-4 py-2 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                Afternoon<br/><span className="text-xs text-slate-500">12:00 - 18:00</span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => {
+                                    setStartTime('18:00');
+                                    setEndTime('23:00');
+                                    setUseEndTime(true);
+                                }}
+                                className="px-4 py-2 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                Evening<br/><span className="text-xs text-slate-500">18:00 - 23:00</span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => {
+                                    setStartTime('06:00');
+                                    setEndTime('23:00');
+                                    setUseEndTime(true);
+                                }}
+                                className="px-4 py-2 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                Full Day<br/><span className="text-xs text-slate-500">6:00 - 23:00</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Custom Range */}
+                    <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Start Time</label>
-                            <div className="relative">
-                                <Clock className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                                <input 
-                                    type="time" 
-                                    value={startTime} 
-                                    disabled={isSaving}
-                                    onChange={(e) => setStartTime(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none disabled:bg-slate-50"
-                                />
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Custom Range</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-slate-500 mb-1">Start Time</label>
+                                    <div className="relative">
+                                        <Clock className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                                        <input 
+                                            type="time" 
+                                            value={startTime} 
+                                            disabled={isSaving}
+                                            onChange={(e) => setStartTime(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none disabled:bg-slate-50"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-500 mb-1">End Time</label>
+                                    <div className="relative">
+                                        <Clock className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                                        <input 
+                                            type="text" 
+                                            value={endTime} 
+                                            disabled={isSaving}
+                                            onChange={(e) => setEndTime(e.target.value)}
+                                            placeholder="17:00 or 23:00"
+                                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none disabled:bg-slate-50"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Duration</label>
-                            <select 
-                                value={duration} 
-                                disabled={isSaving}
-                                onChange={(e) => setDuration(Number(e.target.value))}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none disabled:bg-slate-50"
-                            >
-                                <option value={30}>30 Minutes</option>
-                                <option value={60}>60 Minutes</option>
-                            </select>
+                            <label className="block text-xs text-slate-500 mb-1">Slot Duration</label>
+                            <div className="px-4 py-3 bg-brand-50 border border-brand-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-brand-700">30 Minutes</span>
+                                    <span className="text-xs text-brand-600 font-bold">Default</span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">Slots will be generated every 30 minutes</p>
+                            </div>
                         </div>
                     </div>
 

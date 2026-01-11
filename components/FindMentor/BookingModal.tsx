@@ -49,10 +49,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
 
     const hasValidSubscription = activeSubscription && activeSubscription.remainingSessions > 0;
-    const remainingCredit = user.credits - priceDetails.finalPrice;
+    const totalPrice = priceDetails.finalPrice; // Always 30p slot
+    const requiredSessions = 1; // Always 1 session for 30p
+    const remainingCredit = user.credits - totalPrice;
     const canAffordCredit = remainingCredit >= 0;
+    const hasEnoughSessions = hasValidSubscription && activeSubscription.remainingSessions >= requiredSessions;
 
-    const canBook = selectedMethod === 'SUBSCRIPTION' ? hasValidSubscription : canAffordCredit;
+    const canBook = selectedMethod === 'SUBSCRIPTION' ? hasEnoughSessions : canAffordCredit;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
@@ -79,7 +82,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                 </div>
                                 <div className="flex items-center text-sm text-slate-900 font-black">
                                     <Clock size={14} className="mr-2 text-brand-500" />
-                                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (60 min)
+                                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (30 min)
                                 </div>
                                 <div className="flex items-center text-[10px] text-brand-600 font-bold uppercase tracking-widest pt-1">
                                     <Globe size={10} className="mr-1.5" /> Displayed in {user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -108,7 +111,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                     {selectedMethod === 'SUBSCRIPTION' && <CheckCircle size={22} className="text-brand-600" />}
                                 </div>
                                 <p className="text-xs text-brand-700 ml-7 font-bold">
-                                    Use 1 Session ({activeSubscription.remainingSessions} remaining)
+                                    Use {requiredSessions} Session ({activeSubscription.remainingSessions} remaining)
                                 </p>
                             </div>
                         )}
@@ -131,7 +134,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             <div className="ml-7 space-y-1 mt-1">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-500 font-bold">Price</span>
-                                    <span className="font-black text-slate-900">{Number(priceDetails.finalPrice).toFixed(2)} Credits</span>
+                                    <span className="font-black text-slate-900">{Number(totalPrice).toFixed(2)} Credits</span>
                                 </div>
                                 {selectedMethod === 'CREDIT' && (
                                     <>

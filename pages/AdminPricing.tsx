@@ -363,18 +363,18 @@ export default function AdminPricing() {
                             
                             <div className="p-8 space-y-8">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Base Price (Credits per Lesson)</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Base Price (Credits per 30-minute slot)</label>
                                     <div className="flex items-center gap-4">
                                         <input
                                             type="number"
                                             min="1"
-                                            step="1"
+                                            step="0.1"
                                             value={basePrice}
                                             onFocus={(e) => e.target.select()}
-                                            onChange={(e) => setBasePrice(Number(e.target.value) || 10)}
+                                            onChange={(e) => setBasePrice(Number(e.target.value) || 5)}
                                             className="w-48 p-3 text-lg font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
                                         />
-                                        <span className="text-sm text-slate-400">Credits needed for a standard class</span>
+                                        <span className="text-sm text-slate-400">Credits needed for a 30-minute class</span>
                                     </div>
                                 </div>
 

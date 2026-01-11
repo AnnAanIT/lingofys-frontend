@@ -9,7 +9,7 @@ import { LessonModal, HomeworkCard } from '../components/MentorComponents';
 import { AddAvailabilityModal } from '../components/AddAvailabilityModal';
 import { EditAvailabilityModal } from '../components/EditAvailabilityModal';
 import { MentorHomeworkModal } from '../components/Mentor/MentorHomeworkModal';
-import { createAbsoluteDate, getTimezoneByCountry } from '../lib/timeUtils';
+import { createAbsoluteDate, getTimezoneByCountry, formatInTimezone, convertTimezone } from '../lib/timeUtils';
 import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar as CalendarIcon, MessageSquare, FileText, GraduationCap } from 'lucide-react';
 import { ChatWindow } from '../components/Messages/ChatWindow';
 import { translations } from '../lib/i18n';
@@ -31,6 +31,16 @@ export default function MentorDashboard({ tab }: Props) {
   const [loading, setLoading] = useState(false);
   const [chatConvId, setChatConvId] = useState<string>('');  // ✅ FIX: Move state to top level
 
+  // ✅ Phase 2.1: Data caching with stale-while-revalidate pattern
+  const [dataCache, setDataCache] = useState<{
+    bookings: Booking[];
+    availability: AvailabilitySlot[];
+    balance: { payable: 0, paid: 0, pending: 0 };
+    lastFetch: number;
+  } | null>(null);
+  
+  const CACHE_STALE_TIME = 5 * 60 * 1000; // 5 minutes
+
   // Modals for Bookings
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
@@ -42,9 +52,23 @@ export default function MentorDashboard({ tab }: Props) {
   // Modal for Homework
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (forceRefresh: boolean = false) => {
     if(!user) return;
-    setLoading(true);
+    
+    // ✅ Phase 2.1: Use cache if available and not stale (unless force refresh)
+    const useCache = !forceRefresh && dataCache && (Date.now() - dataCache.lastFetch < CACHE_STALE_TIME);
+    
+    if (useCache) {
+      // Use cached data immediately (stale-while-revalidate pattern)
+      setBookings(dataCache.bookings);
+      setAvailability(dataCache.availability);
+      setBalance(dataCache.balance);
+      // Don't show loading state, but still fetch in background
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    
     try {
         const promises: any[] = [
             api.getBookings(),
@@ -58,26 +82,52 @@ export default function MentorDashboard({ tab }: Props) {
         }
 
         const results = await Promise.all(promises);
-        setBookings(results[0] || []);
-        setAvailability(results[1] || []);
-        setBalance(results[2] || { payable: 0, paid: 0, pending: 0 });
+        const newBookings = results[0] || [];
+        const newAvailability = results[1] || [];
+        const newBalance = results[2] || { payable: 0, paid: 0, pending: 0 };
+        
+        // Update state
+        setBookings(newBookings);
+        setAvailability(newAvailability);
+        setBalance(newBalance);
+
+        // ✅ Phase 2.1: Update cache
+        setDataCache({
+          bookings: newBookings,
+          availability: newAvailability,
+          balance: newBalance,
+          lastFetch: Date.now()
+        });
 
         if (tab === 'homework' && results[3]) {
             setHomeworks(results[3] || []);
         }
     } catch (err) {
         console.error(err);
-        setBookings([]);
-        setAvailability([]);
-        setBalance({ payable: 0, paid: 0, pending: 0 });
-        setHomeworks([]);
+        // Only clear state if we don't have cache to fall back to
+        if (!dataCache) {
+          setBookings([]);
+          setAvailability([]);
+          setBalance({ payable: 0, paid: 0, pending: 0 });
+          setHomeworks([]);
+        }
     } finally {
         setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    // ✅ Phase 2.1: Only fetch if cache is stale or missing
+    if (!dataCache || (Date.now() - dataCache.lastFetch >= CACHE_STALE_TIME)) {
+      fetchData();
+    } else {
+      // Use cached data immediately
+      setBookings(dataCache.bookings);
+      setAvailability(dataCache.availability);
+      setBalance(dataCache.balance);
+      // Revalidate in background
+      fetchData();
+    }
   }, [user, tab]);
 
   // ✅ FIX: Load conversation ID at top level (no hooks inside renderChat)
@@ -110,7 +160,7 @@ export default function MentorDashboard({ tab }: Props) {
             ...slotData
           };
           await api.addAvailability(user.id, [...currentSlots, newSlot]);
-          await fetchData();
+          await fetchData(true); // ✅ Phase 2.1: Force refresh after adding slot
           setIsAddSlotOpen(false);
           success(t.slotRegistered, 'New availability slot has been added to your schedule');
       } catch (err: any) {
@@ -127,7 +177,7 @@ export default function MentorDashboard({ tab }: Props) {
             slot.id === id ? { ...slot, ...updates } : slot
           );
           await api.updateAvailability(user.id, updatedSlots);
-          await fetchData();
+          await fetchData(true); // ✅ Phase 2.1: Force refresh after updating slot
           setSelectedSlot(null);
           success(t.slotUpdated, 'Availability slot has been updated successfully');
       } catch (err: any) {
@@ -135,21 +185,120 @@ export default function MentorDashboard({ tab }: Props) {
       }
   };
 
-  const handleDeleteSlot = async (id: string) => {
+  // ✅ Delete specific 30-minute slot from calendar (with slotStartTime)
+  const handleDeleteSlot = async (slotId: string, slotStartTime: Date) => {
+      if (!user) return;
+      try {
+          // Get current availability, find the range slot
+          const currentSlots = await api.getAvailability(user.id);
+          const rangeSlot = currentSlots.find(slot => slot.id === slotId);
+          
+          // ✅ Fix: Check if slot exists before attempting to delete
+          if (!rangeSlot) {
+              showError(t.errorDeleting, 'Availability slot not found. It may have been deleted already.');
+              return;
+          }
+
+          // Convert slotStartTime (Date) to time string in mentor's timezone
+          // Format as HH:mm (24-hour format)
+          const formatter = new Intl.DateTimeFormat('en-US', {
+              timeZone: mentorTz,
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+          });
+          const parts = formatter.formatToParts(slotStartTime);
+          const hour = parts.find(p => p.type === 'hour')?.value || '00';
+          const minute = parts.find(p => p.type === 'minute')?.value || '00';
+          const slotStartTimeStr = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+          
+          // Convert day name to dayOfWeek number
+          const dayMap: {[key: string]: number} = {
+              'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+          };
+          const dayNum = dayMap[rangeSlot.day];
+          
+          // ✅ Fix: Validate day conversion
+          if (dayNum === undefined) {
+              showError(t.errorDeleting, `Invalid day: ${rangeSlot.day}`);
+              return;
+          }
+
+          // ✅ Fix: Delete specific 30-minute slot, not entire range
+          // Backend will update the range to exclude this specific slot
+          const updatedAvailability = await api.deleteAvailabilitySlot(user.id, dayNum, rangeSlot.startTime, slotStartTimeStr);
+          
+          // ✅ Performance: Only update availability, don't refetch all data
+          if (updatedAvailability && updatedAvailability.length > 0) {
+              setAvailability(updatedAvailability);
+              // Update cache
+              if (dataCache) {
+                  setDataCache({
+                      ...dataCache,
+                      availability: updatedAvailability,
+                      lastFetch: Date.now()
+                  });
+              }
+          } else {
+              // Fallback: Refresh availability only if backend doesn't return updated data
+              const newAvailability = await api.getAvailability(user.id);
+              setAvailability(newAvailability);
+              if (dataCache) {
+                  setDataCache({
+                      ...dataCache,
+                      availability: newAvailability,
+                      lastFetch: Date.now()
+                  });
+              }
+          }
+          
+          setSelectedSlot(null);
+          success(t.slotDeleted, 'Availability slot has been removed from your schedule');
+      } catch (err: any) {
+          showError(t.errorDeleting, err.message || String(err));
+      }
+  };
+
+  // ✅ Delete entire range from EditAvailabilityModal (legacy behavior)
+  const handleDeleteRange = async (slotId: string) => {
       if (!user) return;
       try {
           // Get current availability, find the slot, and use its properties for delete
           const currentSlots = await api.getAvailability(user.id);
-          const slotToDelete = currentSlots.find(slot => slot.id === id);
-          if (slotToDelete) {
-            // Convert day name to dayOfWeek number
-            const dayMap: {[key: string]: number} = {
-              'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
-            };
-            const dayNum = dayMap[slotToDelete.day];
-            await api.deleteAvailability(user.id, dayNum, slotToDelete.startTime);
+          const slotToDelete = currentSlots.find(slot => slot.id === slotId);
+          
+          // ✅ Fix: Check if slot exists before attempting to delete
+          if (!slotToDelete) {
+              showError(t.errorDeleting, 'Availability slot not found. It may have been deleted already.');
+              return;
           }
-          await fetchData();
+
+          // Convert day name to dayOfWeek number
+          const dayMap: {[key: string]: number} = {
+              'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+          };
+          const dayNum = dayMap[slotToDelete.day];
+          
+          // ✅ Fix: Validate day conversion
+          if (dayNum === undefined) {
+              showError(t.errorDeleting, `Invalid day: ${slotToDelete.day}`);
+              return;
+          }
+
+          // Delete entire range (legacy behavior for EditAvailabilityModal)
+          await api.deleteAvailability(user.id, dayNum, slotToDelete.startTime);
+          
+          // ✅ Performance: Refresh availability only
+          const newAvailability = await api.getAvailability(user.id);
+          setAvailability(newAvailability);
+          if (dataCache) {
+              setDataCache({
+                  ...dataCache,
+                  availability: newAvailability,
+                  lastFetch: Date.now()
+              });
+          }
+          
           setSelectedSlot(null);
           success(t.slotDeleted, 'Availability slot has been removed from your schedule');
       } catch (err: any) {
@@ -244,20 +393,35 @@ export default function MentorDashboard({ tab }: Props) {
   const mentorTz = user?.timezone || 'UTC';
 
   // Convert Booking and Availability data to Calendar format
-  const bookingEvents = bookings.map(b => ({
-      id: `booking-${b.id}`,
-      title: b.menteeName,
-      start: new Date(b.startTime),
-      end: new Date(b.endTime),
-      type: b.status === BookingStatus.SCHEDULED ? 'booked' : 'completed' as any
-  }));
+  const bookingEvents = bookings.map(b => {
+      // Map booking status to calendar event type
+      let eventType: 'booked' | 'completed' | 'cancelled' | 'no_show' = 'booked';
+      if (b.status === BookingStatus.COMPLETED) {
+          eventType = 'completed';
+      } else if (b.status === BookingStatus.CANCELLED) {
+          eventType = 'cancelled';
+      } else if (b.status === BookingStatus.NO_SHOW) {
+          eventType = 'no_show';
+      } else if (b.status === BookingStatus.SCHEDULED) {
+          eventType = 'booked';
+      }
+      
+      return {
+          id: `booking-${b.id}`,
+          title: b.menteeName,
+          start: new Date(b.startTime),
+          end: new Date(b.endTime),
+          type: eventType
+      };
+  });
 
-  // Create "Available" events from fixed slots (availability)
-  const generateAvailabilityEvents = () => {
+  // ✅ Phase 1.2: Memoize "Available" events generation
+  const availabilityEvents = React.useMemo(() => {
       const events: any[] = [];
       const today = new Date();
 
-      for(let i=0; i<30; i++) {
+      // ✅ Phase 2.2: Reduce generation scope from 30 days to 7 days (current week)
+      for(let i=0; i<7; i++) {
           const d = new Date(today);
           d.setDate(today.getDate() + i);
           const dayName = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: mentorTz });
@@ -265,32 +429,62 @@ export default function MentorDashboard({ tab }: Props) {
           const slots = availability.filter(slot => slot.day === dayName);
 
           slots.forEach(slot => {
-              const start = createAbsoluteDate(d, slot.startTime, mentorTz);
-              const end = new Date(start.getTime() + slot.duration * 60000);
+              // Handle 24:00 end time
+              let slotEndTime = slot.endTime || (() => {
+                  // Calculate from duration if endTime not available
+                  const [startHour, startMin] = slot.startTime.split(':').map(Number);
+                  const totalMinutes = startHour * 60 + startMin + slot.duration;
+                  const endHour = Math.floor(totalMinutes / 60) % 24;
+                  const endMin = totalMinutes % 60;
+                  return `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+              })();
+              
+              // Calculate total minutes in the slot
+              const [startHour, startMin] = slot.startTime.split(':').map(Number);
+              let [endHour, endMin] = slotEndTime === '24:00' ? [24, 0] : slotEndTime.split(':').map(Number);
+              
+              let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+              if (totalMinutes < 0) {
+                  totalMinutes = (24 * 60) - (startHour * 60 + startMin) + (endHour * 60 + endMin);
+              }
 
-              const isBooked = bookings.some(b => {
-                  if (!['SCHEDULED', 'COMPLETED'].includes(b.status)) return false;
-                  const bTime = new Date(b.startTime).getTime();
-                  return Math.abs(bTime - start.getTime()) < 1000;
-              });
+              // Generate slots from the range using interval (default: 30 minutes)
+              const slotInterval = slot.interval || 30; // Use interval from slot, default to 30
+              // Fix: Use <= to include the last slot that fits within the range
+              // Example: 8:00-9:00 (60 min) should generate: 8:00-8:30, 8:30-9:00
+              for (let offset = 0; offset <= totalMinutes - slotInterval; offset += slotInterval) {
+                  const slotStartMinutes = startHour * 60 + startMin + offset;
+                  const slotStartHour = Math.floor(slotStartMinutes / 60) % 24;
+                  const slotStartMin = slotStartMinutes % 60;
+                  const slotStartTimeStr = `${String(slotStartHour).padStart(2, '0')}:${String(slotStartMin).padStart(2, '0')}`;
+                  
+                  const start = createAbsoluteDate(d, slotStartTimeStr, mentorTz);
+                  const end = new Date(start.getTime() + slotInterval * 60000);
 
-              if (!isBooked) {
-                  events.push({
-                      id: `avail-${slot.id}-${start.getTime()}`,
-                      title: 'Available',
-                      start,
-                      end,
-                      type: 'available',
-                      isRecurring: slot.recurring,
-                      slotId: slot.id
+                  const isBooked = bookings.some(b => {
+                      if (!['SCHEDULED', 'COMPLETED'].includes(b.status)) return false;
+                      const bTime = new Date(b.startTime).getTime();
+                      return Math.abs(bTime - start.getTime()) < 60000;
                   });
+
+                  if (!isBooked) {
+                      events.push({
+                          id: `avail-${slot.id}-${start.getTime()}`,
+                          title: 'Available',
+                          start,
+                          end,
+                          type: 'available',
+                          isRecurring: slot.recurring,
+                          slotId: slot.id
+                      });
+                  }
               }
           });
       }
       return events;
-  };
+  }, [availability, bookings, mentorTz]);
 
-  const allEvents = [...bookingEvents, ...generateAvailabilityEvents()];
+  const allEvents = [...bookingEvents, ...availabilityEvents];
 
   const handleEventClick = (eventId: string) => {
       if (eventId.startsWith('booking-')) {
@@ -349,7 +543,7 @@ export default function MentorDashboard({ tab }: Props) {
             <div className="h-[calc(100vh-160px)] animate-fade-in bg-white p-4 rounded-3xl border border-slate-200 flex flex-col relative">
                 <div className="absolute top-8 right-10 z-30">
                     <button
-                        onClick={fetchData}
+                        onClick={() => fetchData(true)} // ✅ Phase 2.1: Force refresh when user clicks
                         className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-500 transition-all"
                         title={t.refreshCalendar}
                     >
@@ -363,12 +557,15 @@ export default function MentorDashboard({ tab }: Props) {
                         timezone={mentorTz}
                         onEventClick={handleEventClick}
                         onSlotClick={handleSlotClick}
+                        onEventDelete={handleDeleteSlot}
                     />
                 </div>
-                <div className="p-4 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex items-center justify-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="p-4 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 flex-wrap">
                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-blue-100 border-l-2 border-blue-600"></div> {t.available}</div>
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-green-100 border-l-2 border-blue-600"></div> {t.booked}</div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-green-100 border-l-2 border-green-600"></div> {t.booked}</div>
                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-slate-200 border-l-2 border-slate-400"></div> {t.completed}</div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-red-100 border-l-2 border-red-600"></div> Cancelled</div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-orange-100 border-l-2 border-orange-600"></div> No-Show</div>
                 </div>
             </div>
         )}
@@ -488,17 +685,19 @@ export default function MentorDashboard({ tab }: Props) {
                 onAction={async (action, data) => {
                     if(!selectedBookingId) return;
                     
-                    if (action === 'COMPLETE') {
-                        await api.updateBookingStatus(selectedBookingId, BookingStatus.COMPLETED);
-                    } else if (action === 'RESCHEDULE' && data?.newStart) {
-                        // ❌ REMOVED: Mentor không thể reschedule
-                        // Mentor phải cancel và để mentee book lại
-                        warning('Reschedule Not Allowed', 'Mentors cannot reschedule bookings. Please cancel and let the mentee book a new time.');
-                        return; // Don't proceed
-                    } else if (action === 'NO_SHOW') {
-                        await api.updateBookingStatus(selectedBookingId, BookingStatus.NO_SHOW);
-                    } else if (action === 'CANCEL') {
-                        try {
+                    try {
+                        if (action === 'COMPLETE') {
+                            await api.updateBookingStatus(selectedBookingId, BookingStatus.COMPLETED);
+                            success('Lesson Completed', 'The lesson has been marked as completed.');
+                        } else if (action === 'RESCHEDULE' && data?.newStart) {
+                            // ❌ REMOVED: Mentor không thể reschedule
+                            // Mentor phải cancel và để mentee book lại
+                            warning('Reschedule Not Allowed', 'Mentors cannot reschedule bookings. Please cancel and let the mentee book a new time.');
+                            return; // Don't proceed
+                        } else if (action === 'NO_SHOW') {
+                            await api.updateBookingStatus(selectedBookingId, BookingStatus.NO_SHOW);
+                            success('No-Show Reported', 'The no-show has been reported. Admin will review.');
+                        } else if (action === 'CANCEL') {
                             const reason = data?.reason; // Get reason from modal data
                             const result = await api.cancelBookingAsMentor(selectedBookingId, reason);
                             // Show success message with stats
@@ -507,15 +706,15 @@ export default function MentorDashboard({ tab }: Props) {
                             } else {
                                 success('Booking Canceled', 'Free cancellation - no limit count.');
                             }
-                        } catch (error: any) {
-                            // Show error (could be limit reached)
-                            showError('Cancellation Failed', error.message || 'Failed to cancel booking');
-                            return; // Don't close modal or refresh on error
                         }
+                        
+                        await fetchData(true); // ✅ Phase 2.1: Force refresh after action
+                        setSelectedBookingId(null);
+                    } catch (error: any) {
+                        // Show error (could be limit reached, network error, etc.)
+                        showError('Action Failed', error.message || 'Failed to perform action. Please try again.');
+                        // Don't close modal or refresh on error - let user retry
                     }
-                    
-                    await fetchData();
-                    setSelectedBookingId(null);
                 }}
             />
         )}
@@ -536,7 +735,7 @@ export default function MentorDashboard({ tab }: Props) {
                 onClose={() => setSelectedSlot(null)}
                 slot={selectedSlot}
                 onUpdate={handleUpdateSlot}
-                onDelete={handleDeleteSlot}
+                onDelete={handleDeleteRange}
             />
         )}
 
@@ -546,7 +745,7 @@ export default function MentorDashboard({ tab }: Props) {
                 isOpen={!!selectedHomework}
                 onClose={() => setSelectedHomework(null)}
                 homework={selectedHomework}
-                onRefresh={fetchData}
+                onRefresh={() => fetchData(true)} // ✅ Phase 2.1: Force refresh
             />
         )}
     </div>

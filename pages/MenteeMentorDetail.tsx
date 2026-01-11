@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useApp } from '../App';
@@ -94,7 +94,8 @@ export default function MenteeMentorDetail() {
       ? (user.timezone || getTimezoneByCountry(user.country || 'VN'))
       : (mentor?.timezone || getTimezoneByCountry(mentor?.country || 'US'));
 
-  const generateEvents = () => {
+  // Memoize generateEvents to avoid recalculating on every render
+  const generateEvents = useMemo(() => {
       const events: any[] = [];
       const today = new Date();
 
@@ -114,7 +115,7 @@ export default function MenteeMentorDetail() {
       console.log('📅 Mentor availability slots:', mentor.availability);
       console.log('📚 Mentor bookings:', mentorBookings);
 
-      // ✅ FIX: Iterate through ALL availability slots for ALL days
+      // ✅ Generate slots from availability ranges using interval
       mentor.availability.forEach(slot => {
           for(let i=0; i<21; i++) {
               const d = new Date(today);
@@ -128,30 +129,68 @@ export default function MenteeMentorDetail() {
                   continue; // Skip to next day
               }
 
-              // Generate the absolute start time
-              const start = createAbsoluteDate(d, slot.startTime, mentorTz);
-              const end = new Date(start.getTime() + slot.duration * 60000);
-
-              // Check if this slot is already booked
-              const isBooked = mentorBookings.some(b => {
-                  if (!['SCHEDULED', 'COMPLETED'].includes(b.status)) return false;
-                  const bTime = new Date(b.startTime).getTime();
-                  return Math.abs(bTime - start.getTime()) < 1000;
-              });
-
-              if (i < 3) {
-                  console.log(`📆 Day ${i} (${d.toDateString()}): dayInMentorTz="${dayInMentorTz}", slot.day="${slot.day}"`);
-                  console.log(`  ⏰ Slot ${slot.day} ${slot.startTime}: start=${start.toISOString()}, isBooked=${isBooked}`);
+              // Calculate end time from slot
+              let slotEndTime: string;
+              if (slot.endTime) {
+                  slotEndTime = slot.endTime;
+                  if (slot.endTime === '24:00') {
+                      // Handle 24:00 as end of day
+                      slotEndTime = '23:59'; // Use 23:59 for calculation
+                  }
+              } else {
+                  // Calculate from duration if endTime not provided
+                  const [startHour, startMin] = slot.startTime.split(':').map(Number);
+                  const totalMinutes = startHour * 60 + startMin + slot.duration;
+                  const endHour = Math.floor(totalMinutes / 60) % 24;
+                  const endMin = totalMinutes % 60;
+                  slotEndTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
               }
 
-              if (!isBooked) {
-                  events.push({
-                      id: `avail-${start.toISOString()}`,
-                      title: 'Available',
-                      start: start,
-                      end: end,
-                      type: 'available' as const
+              // Parse start and end times
+              const [startHour, startMin] = slot.startTime.split(':').map(Number);
+              const [endHour, endMin] = slotEndTime.split(':').map(Number);
+              
+              // Calculate total minutes in the slot
+              let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+              if (totalMinutes < 0) {
+                  // Slot spans midnight (e.g., 23:30-00:00)
+                  totalMinutes = (24 * 60) - (startHour * 60 + startMin) + (endHour * 60 + endMin);
+              }
+
+              // Generate slots from the range using interval (default: 30 minutes)
+              const slotInterval = slot.interval || 30; // Use interval from slot, default to 30
+              // Fix: Use <= to include the last slot that fits within the range
+              // Example: 8:00-9:00 (60 min) should generate: 8:00-8:30, 8:30-9:00
+              for (let offset = 0; offset <= totalMinutes - slotInterval; offset += slotInterval) {
+                  // Calculate slot start time
+                  const slotStartMinutes = startHour * 60 + startMin + offset;
+                  const slotStartHour = Math.floor(slotStartMinutes / 60) % 24;
+                  const slotStartMin = slotStartMinutes % 60;
+                  
+                  // Format slot start time
+                  const slotStartTimeStr = `${String(slotStartHour).padStart(2, '0')}:${String(slotStartMin).padStart(2, '0')}`;
+                  
+                  // Generate absolute start time
+                  const start = createAbsoluteDate(d, slotStartTimeStr, mentorTz);
+                  const end = new Date(start.getTime() + slotInterval * 60000);
+
+                  // Check if this slot is already booked
+                  const isBooked = mentorBookings.some(b => {
+                      if (!['SCHEDULED', 'COMPLETED'].includes(b.status)) return false;
+                      const bTime = new Date(b.startTime).getTime();
+                      // Check if booking overlaps with this slot (within 1 minute tolerance)
+                      return Math.abs(bTime - start.getTime()) < 60000;
                   });
+
+                  if (!isBooked) {
+                      events.push({
+                          id: `avail-${start.toISOString()}`,
+                          title: 'Available',
+                          start: start,
+                          end: end,
+                          type: 'available' as const
+                      });
+                  }
               }
           }
       });
@@ -160,7 +199,7 @@ export default function MenteeMentorDetail() {
       console.log('Events:', events);
 
       return events;
-  };
+  }, [mentor?.availability, mentorBookings, mentorTz]);
 
   const handleSlotClick = async (date: Date) => {
       if (!user || !mentor) return;
@@ -184,13 +223,32 @@ export default function MenteeMentorDetail() {
         console.log('  mentee:', user.id, user.name);
         console.log('  mentor:', mentor.id, mentor.name);
         console.log('  startTime:', selectedDate.toISOString());
-        console.log('  cost:', priceDetails.finalPrice);
+
+        const slotPrice = priceDetails.finalPrice;
+        const duration = 30; // Always 30 minutes
+
+        // Book 1 slot (30 minutes)
+        console.log('  Creating 30-minute booking:');
+        console.log('    Start:', selectedDate.toISOString(), '-', slotPrice, 'credits');
+
+        // Check subscription sessions if using subscription
+        if (useSubscription) {
+            const activeSub = await api.getActiveSubscription(mentor.id);
+            if (!activeSub || activeSub.remainingSessions < 1) {
+                throw new Error('Not enough subscription sessions remaining. You need 1 session.');
+            }
+        }
+
+        // Check credits if using credit payment
+        if (!useSubscription && user.credits < slotPrice) {
+            throw new Error(`Insufficient credits. You need ${slotPrice.toFixed(2)} credits.`);
+        }
 
         const newBooking = await api.createOneTimeBooking({
             mentorId: mentor.id,
             startTime: selectedDate.toISOString(),
-            duration: 60,
-            cost: priceDetails.finalPrice,
+            duration: duration,
+            cost: slotPrice,
             useSubscription: useSubscription
         });
 
@@ -198,11 +256,6 @@ export default function MenteeMentorDetail() {
         console.log('  bookingId:', newBooking.id);
         console.log('  type:', newBooking.type);
         console.log('  subscriptionId:', newBooking.subscriptionId);
-
-        // Debug: Check localStorage
-        const allBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-        console.log('📦 All bookings in localStorage:', allBookings.length);
-        console.log('  Latest booking:', allBookings[allBookings.length - 1]);
 
         await refreshUser();
         navigate(`/mentee/booking-success/${newBooking.id}`);
@@ -303,7 +356,7 @@ export default function MenteeMentorDetail() {
                 </div>
                 <div className="flex-1 min-h-0">
                     <WeeklyCalendar 
-                        events={generateEvents()} 
+                        events={generateEvents} 
                         viewMode="mentee"
                         onSlotClick={handleSlotClick}
                         timezone={displayTz}

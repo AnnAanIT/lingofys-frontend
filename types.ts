@@ -84,8 +84,10 @@ export interface AvailabilitySlot {
   id: string;
   mentorId: string;
   day: string; 
-  startTime: string; 
-  duration: number; 
+  startTime: string;
+  endTime?: string; // Optional: for range-based availability (e.g., "17:00" or "24:00")
+  interval?: number; // Interval in minutes (30 or 60) for slot generation (default: 30)
+  duration: number; // Duration in minutes (default: 30 for 30-minute slot system)
   recurring: boolean;
 }
 

@@ -516,21 +516,37 @@ export const api = {
     const backendSlots = await response.json();
 
     // Transform backend format to frontend format
+    // Backend transformAvailability already returns day, endTime, interval, duration
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return backendSlots.map((slot: any) => {
-      // Calculate duration from startTime and endTime
-      const [startHour, startMin] = slot.startTime.split(':').map(Number);
-      const [endHour, endMin] = slot.endTime.split(':').map(Number);
-      const duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+      // Backend already calculates duration and handles 24:00 in transformAvailability
+      // But we need to ensure frontend format is consistent
+      const day = slot.day || dayNames[slot.dayOfWeek];
+      
+      // Calculate duration if not provided (for backward compatibility)
+      let duration = slot.duration;
+      if (!duration) {
+        const [startHour, startMin] = slot.startTime.split(':').map(Number);
+        let [endHour, endMin] = slot.endTime === '24:00' ? [24, 0] : slot.endTime.split(':').map(Number);
+        duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+        if (duration < 0) {
+          duration = (24 * 60) + duration; // Handle midnight crossover
+        }
+        if (duration <= 0) {
+          duration = 30; // Default to 30 minutes
+        }
+      }
 
       return {
         id: slot.id,
         mentorId: slot.mentorId,
-        day: dayNames[slot.dayOfWeek],
+        day: day,
         startTime: slot.startTime,
-        duration,
-        recurring: slot.isRecurring
+        endTime: slot.endTime, // Include endTime for frontend
+        interval: slot.interval || 30,
+        duration: duration,
+        recurring: slot.recurring ?? slot.isRecurring ?? true
       };
     });
   },
@@ -575,6 +591,59 @@ export const api = {
     if (!response.ok) {
       await handleApiError(response);
     }
+  },
+
+  // ✅ New: Delete specific 30-minute slot from a range
+  deleteAvailabilitySlot: async (mentorId: string, dayOfWeek: number, rangeStartTime: string, slotStartTime: string): Promise<AvailabilitySlot[]> => {
+    // Convert dayOfWeek number to day name
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayName = dayNames[dayOfWeek];
+
+    // Call DELETE endpoint with query params (rangeStartTime + slotStartTime)
+    const response = await authenticatedFetch(
+      buildUrl(`/api/mentors/${mentorId}/availability/slot?day=${dayName}&rangeStartTime=${rangeStartTime}&slotStartTime=${slotStartTime}`),
+      { method: 'DELETE' }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    // Backend returns updated availability slots (already in frontend format from transformAvailability)
+    const backendSlots = await response.json();
+    
+    // Transform backend format to frontend format (same as getAvailability)
+    // Backend already returns transformed format from transformAvailability, but we need to ensure consistency
+    return backendSlots.map((slot: any) => {
+      // Backend transformAvailability already calculates duration and handles 24:00
+      // But we need to ensure frontend format matches getAvailability
+      const day = slot.day || dayNames[slot.dayOfWeek];
+      
+      // Calculate duration if not provided (for backward compatibility)
+      let duration = slot.duration;
+      if (!duration) {
+        const [startHour, startMin] = slot.startTime.split(':').map(Number);
+        let [endHour, endMin] = slot.endTime === '24:00' ? [24, 0] : slot.endTime.split(':').map(Number);
+        duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+        if (duration < 0) {
+          duration = (24 * 60) + duration; // Handle midnight crossover
+        }
+        if (duration <= 0) {
+          duration = 30; // Default to 30 minutes
+        }
+      }
+
+      return {
+        id: slot.id,
+        mentorId: slot.mentorId,
+        day: day,
+        startTime: slot.startTime,
+        endTime: slot.endTime, // Include endTime for frontend
+        interval: slot.interval || 30,
+        duration: duration,
+        recurring: slot.recurring ?? slot.isRecurring ?? true
+      };
+    });
   },
 
   getMentorLocalizedRate: async (mentorId: string, userCountry?: string) => {
@@ -1798,9 +1867,22 @@ export const api = {
     };
   },
 
-  calculatePriceDetail: async (mentorId: string, userCountry?: string) => {
-    // Use the same implementation as getMentorLocalizedRate
-    return api.getMentorLocalizedRate(mentorId, userCountry);
+  calculatePriceDetail: async (mentorId: string, userCountry?: string, duration: number = 30) => {
+    // Get mentor localized rate (this returns price for 30 minutes by default)
+    const rate = await api.getMentorLocalizedRate(mentorId, userCountry);
+    // Calculate price based on duration (base price is for 30 minutes)
+    // rate.finalPrice is already for 30 minutes, so multiply by duration/30
+    const durationMultiplier = duration / 30;
+    const finalPrice = Number((rate.finalPrice * durationMultiplier).toFixed(2));
+    
+    return {
+      ...rate,
+      duration,
+      finalPrice,
+      basePrice: rate.baseRate,
+      countryMultiplier: rate.finalPrice / rate.baseRate, // Approximate multiplier
+      groupMultiplier: 1.0 // Will be calculated on backend
+    };
   },
 
   updateProviderProfile: async (id: string, data: Partial<Provider>): Promise<Provider> => {

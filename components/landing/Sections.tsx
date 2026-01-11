@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -160,8 +160,38 @@ export const MentorShowcase = () => {
   const { t } = useTranslation();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
+  // Lazy load: Only fetch when section is visible
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          // Disconnect observer after first intersection (only fetch once)
+          observer.disconnect();
+        }
+      },
+      { 
+        threshold: 0.1, // Trigger when 10% of section is visible
+        rootMargin: '50px' // Start loading 50px before section comes into view
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Fetch mentors only when section becomes visible
+  useEffect(() => {
+    if (!isVisible) return;
+
     const fetchMentors = async () => {
       try {
         const allMentors = await api.getMentors();
@@ -178,10 +208,10 @@ export const MentorShowcase = () => {
       }
     };
     fetchMentors();
-  }, []);
+  }, [isVisible]);
 
   return (
-    <section id="mentors" className="py-24 bg-slate-50">
+    <section ref={sectionRef} id="mentors" className="py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
           <div>

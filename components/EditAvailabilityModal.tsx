@@ -13,13 +13,12 @@ interface EditAvailabilityModalProps {
 
 export const EditAvailabilityModal: React.FC<EditAvailabilityModalProps> = ({ isOpen, onClose, slot, onUpdate, onDelete }) => {
     const [startTime, setStartTime] = useState(slot.startTime);
-    const [duration, setDuration] = useState(slot.duration);
     const [recurring, setRecurring] = useState(slot.recurring);
 
     if (!isOpen) return null;
 
     const handleUpdate = () => {
-        onUpdate(slot.id, { startTime, duration, recurring });
+        onUpdate(slot.id, { startTime, duration: 30, recurring }); // Always 30 minutes
         onClose();
     };
 
@@ -56,14 +55,13 @@ export const EditAvailabilityModal: React.FC<EditAvailabilityModalProps> = ({ is
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Duration</label>
-                            <select 
-                                value={duration} 
-                                onChange={(e) => setDuration(Number(e.target.value))}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
-                            >
-                                <option value={30}>30 Min</option>
-                                <option value={60}>60 Min</option>
-                            </select>
+                            <div className="px-3 py-2 bg-brand-50 border border-brand-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-brand-700">30 Minutes</span>
+                                    <span className="text-xs text-brand-600 font-bold">Fixed</span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">System only supports 30-minute slots</p>
+                            </div>
                         </div>
                     </div>
 
