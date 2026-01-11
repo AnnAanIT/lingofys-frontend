@@ -4,6 +4,7 @@ import { useApp } from '../App';
 import { api } from '../services/api';
 import { AvatarUploader } from '../components/Profile/AvatarUploader';
 import { ProfileForm } from '../components/Profile/ProfileForm';
+import { MeetingSettingsCard } from '../components/Profile/MeetingSettingsCard';
 import { useNavigate } from 'react-router-dom';
 import { Video, FileText, ChevronRight } from 'lucide-react';
 import { Mentor } from '../types';
@@ -52,9 +53,14 @@ export default function MentorProfile() {
                 </div>
 
                 {/* Right Column: Basic Info Form */}
-                <div className="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                    <h3 className="text-xl font-bold text-slate-900 mb-6">Basic Information</h3>
-                    <ProfileForm user={user} onSave={refreshUser} />
+                <div className="md:col-span-2 space-y-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                        <h3 className="text-xl font-bold text-slate-900 mb-6">Basic Information</h3>
+                        <ProfileForm user={user} onSave={refreshUser} />
+                    </div>
+
+                    {/* Meeting Settings */}
+                    <MeetingSettingsCard user={user as Mentor} onSave={refreshUser} />
                 </div>
             </div>
         </div>

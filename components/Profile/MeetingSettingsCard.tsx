@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Video, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Mentor } from '../../types';
 import { api } from '../../services/api';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '../ui/Toast';
 
 interface MeetingSettingsCardProps {
     user: Mentor;
@@ -12,7 +12,7 @@ interface MeetingSettingsCardProps {
 export const MeetingSettingsCard: React.FC<MeetingSettingsCardProps> = ({ user, onSave }) => {
     const { success, error: showError } = useToast();
     const [meetingLink, setMeetingLink] = useState(user.meetingLink || '');
-    const [meetingPlatform, setMeetingPlatform] = useState(user.meetingPlatform || 'other');
+    const [meetingPlatform, setMeetingPlatform] = useState(user.meetingPlatform || 'zoom');
     const [saving, setSaving] = useState(false);
     const [validating, setValidating] = useState(false);
 
@@ -28,8 +28,7 @@ export const MeetingSettingsCard: React.FC<MeetingSettingsCardProps> = ({ user, 
         // Check common patterns
         const patterns = {
             zoom: /zoom\.us\/j\/\d+/,
-            google_meet: /meet\.google\.com\/[a-z-]+/,
-            jitsi: /meet\.jit\.si\/[a-zA-Z0-9-]+/
+            google_meet: /meet\.google\.com\/[a-z-]+/
         };
 
         const isValidFormat = Object.values(patterns).some(pattern => pattern.test(link));
@@ -37,7 +36,7 @@ export const MeetingSettingsCard: React.FC<MeetingSettingsCardProps> = ({ user, 
         if (!isValidFormat) {
             return {
                 valid: false,
-                message: 'Link format not recognized. Please use Zoom, Google Meet, or Jitsi format.'
+                message: 'Link format not recognized. Please use Zoom or Google Meet format.'
             };
         }
 
@@ -99,9 +98,7 @@ export const MeetingSettingsCard: React.FC<MeetingSettingsCardProps> = ({ user, 
                     <div className="grid grid-cols-2 gap-3">
                         {[
                             { value: 'zoom', label: 'Zoom' },
-                            { value: 'google_meet', label: 'Google Meet' },
-                            { value: 'jitsi', label: 'Jitsi' },
-                            { value: 'other', label: 'Other' }
+                            { value: 'google_meet', label: 'Google Meet' }
                         ].map(platform => (
                             <label
                                 key={platform.value}
@@ -134,7 +131,7 @@ export const MeetingSettingsCard: React.FC<MeetingSettingsCardProps> = ({ user, 
                         type="url"
                         value={meetingLink}
                         onChange={(e) => setMeetingLink(e.target.value)}
-                        placeholder="https://zoom.us/j/123456789 or https://meet.google.com/abc-defg-hij"
+                        placeholder="https://zoom.us/j/123456789 hoặc https://meet.google.com/abc-defg-hij"
                         className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-brand-500 focus:outline-none transition-colors"
                     />
                     {meetingLink && (

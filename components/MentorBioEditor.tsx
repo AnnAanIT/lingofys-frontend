@@ -31,7 +31,7 @@ export const MentorBioEditor: React.FC<MentorBioEditorProps> = ({ mentor, onSave
         aboutMe: mentor.aboutMe || '',              // Full story (replaces "bioLong")
         teachingLanguages: mentor.teachingLanguages || [],  // NEW: Multi-select
         experienceYears: mentor.experienceYears || 0,
-        specialties: mentor.specialties.join(', '), // Comma separated for editing
+        specialties: (mentor.specialties && Array.isArray(mentor.specialties) ? mentor.specialties : []).join(', '), // Comma separated for editing
         videoIntro: mentor.videoIntro || ''
     });
     const [saving, setSaving] = useState(false);

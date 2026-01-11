@@ -29,7 +29,6 @@ import LandingPage from './pages/LandingPage';
 import Readme from './pages/Readme';
 import PublicMentorBrowse from './pages/PublicMentorBrowse';
 import PublicMentorProfile from './pages/PublicMentorProfile';
-import { UITest } from './pages/UITest';
 import MenteeDashboard from './pages/MenteeDashboard';
 import MenteeFindMentor from './pages/MenteeFindMentor';
 import MenteeMentorDetail from './pages/MenteeMentorDetail';
@@ -588,7 +587,6 @@ export default function App() {
                 <Route path="/readme" element={<Readme />} />
                 <Route path="/find-mentor" element={<PublicMentorBrowse />} />
                 <Route path="/mentors/:id" element={<PublicMentorProfile />} />
-                <Route path="/ui-test" element={<UITest />} />
 
                 {/* MENTEE ROUTES */}
                 <Route path="/mentee" element={user?.role === UserRole.MENTEE ? <MenteeDashboard tab="home" /> : <Navigate to="/" />} />
