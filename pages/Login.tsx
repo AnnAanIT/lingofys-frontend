@@ -342,7 +342,7 @@ export default function Login() {
                         <option value="">Select your country...</option>
                         {countries.map(country => (
                           <option key={country.code} value={country.code}>
-                            {country.name} (×{country.multiplier})
+                            {country.name}
                           </option>
                         ))}
                       </select>
