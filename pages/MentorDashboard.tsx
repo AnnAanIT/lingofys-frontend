@@ -10,7 +10,7 @@ import { AddAvailabilityModal } from '../components/AddAvailabilityModal';
 import { EditAvailabilityModal } from '../components/EditAvailabilityModal';
 import { MentorHomeworkModal } from '../components/Mentor/MentorHomeworkModal';
 import { createAbsoluteDate, getTimezoneByCountry, formatInTimezone, convertTimezone } from '../lib/timeUtils';
-import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar as CalendarIcon, MessageSquare, FileText, GraduationCap } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar as CalendarIcon, MessageSquare, FileText, GraduationCap, ChevronRight } from 'lucide-react';
 import { ChatWindow } from '../components/Messages/ChatWindow';
 import { translations } from '../lib/i18n';
 import { useToast } from '../components/ui/Toast';
@@ -30,6 +30,7 @@ export default function MentorDashboard({ tab }: Props) {
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(false);
   const [chatConvId, setChatConvId] = useState<string>('');  // ✅ FIX: Move state to top level
+  const [todayBookings, setTodayBookings] = useState<Booking[]>([]);
 
   // ✅ Phase 2.1: Data caching with stale-while-revalidate pattern
   const [dataCache, setDataCache] = useState<{
@@ -73,7 +74,8 @@ export default function MentorDashboard({ tab }: Props) {
         const promises: any[] = [
             api.getBookings(),
             api.getAvailability(user.id),
-            api.getMentorBalanceDetails(user.id)
+            api.getMentorBalanceDetails(user.id),
+            api.getUpcomingBookings(10, true) // Get up to 10 today's bookings (to account for past bookings being filtered out)
         ];
 
         // Only fetch homework when on homework tab
@@ -81,15 +83,17 @@ export default function MentorDashboard({ tab }: Props) {
             promises.push(api.getHomework());
         }
 
-        const results = await Promise.all(promises);
+        const results = await Promise.all(promises.map(p => p.catch(() => null)));
         const newBookings = results[0] || [];
         const newAvailability = results[1] || [];
         const newBalance = results[2] || { payable: 0, paid: 0, pending: 0 };
+        const newTodayBookings = results[3] || []; // Fallback to empty array if error
         
         // Update state
         setBookings(newBookings);
         setAvailability(newAvailability);
         setBalance(newBalance);
+        setTodayBookings(newTodayBookings);
 
         // ✅ Phase 2.1: Update cache
         setDataCache({
@@ -98,9 +102,11 @@ export default function MentorDashboard({ tab }: Props) {
           balance: newBalance,
           lastFetch: Date.now()
         });
+        
+        // Note: todayBookings not cached (always fresh for today)
 
-        if (tab === 'homework' && results[3]) {
-            setHomeworks(results[3] || []);
+        if (tab === 'homework' && results.length > 4) {
+            setHomeworks(results[4] || []);
         }
     } catch (err) {
         console.error(err);
@@ -129,6 +135,24 @@ export default function MentorDashboard({ tab }: Props) {
       fetchData();
     }
   }, [user, tab]);
+
+  // Auto-refresh today's bookings every minute to hide past bookings
+  useEffect(() => {
+    if (tab === 'home' && user) {
+      const interval = setInterval(() => {
+        // Only refresh today's bookings, not all data (to avoid unnecessary API calls)
+        api.getUpcomingBookings(10, true)
+          .then(newTodayBookings => {
+            setTodayBookings(newTodayBookings || []);
+          })
+          .catch(() => {
+            // Silently fail, don't disrupt user experience
+          });
+      }, 60000); // Refresh every 1 minute
+
+      return () => clearInterval(interval);
+    }
+  }, [tab, user]);
 
   // ✅ FIX: Load conversation ID at top level (no hooks inside renderChat)
   useEffect(() => {
@@ -519,23 +543,148 @@ export default function MentorDashboard({ tab }: Props) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <button
-                        onClick={() => navigate('/mentor/schedule')}
-                        className="bg-slate-900 p-8 rounded-3xl text-white hover:bg-slate-800 transition-all flex items-center justify-between group"
-                    >
-                        <div className="text-left">
-                            <CalendarIcon size={32} className="mb-4 text-brand-400" />
-                            <h3 className="text-xl font-black uppercase">{t.manageSchedule}</h3>
-                            <p className="text-slate-400 text-sm mt-1">{t.openMoreSlots}</p>
+                {/* Today's Lessons */}
+                {(() => {
+                    const now = new Date();
+                    // Filter out past bookings (bookings that have already started)
+                    const futureBookings = todayBookings.filter(booking => {
+                        const bookingStart = new Date(booking.startTime);
+                        return bookingStart > now; // Only show future bookings
+                    });
+                    
+                    // Limit to 5 bookings for display
+                    const displayBookings = futureBookings.slice(0, 5);
+                    
+                    if (displayBookings.length > 0) {
+                        return (
+                            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                        <Clock className="text-brand-600" size={24} /> {t.todaysLessons || "Today's Lessons"}
+                                        {futureBookings.length > 5 && (
+                                            <span className="text-sm font-normal text-slate-500">({futureBookings.length} total)</span>
+                                        )}
+                                    </h3>
+                                    <button
+                                        onClick={() => navigate('/mentor/schedule')}
+                                        className="text-xs font-black uppercase text-brand-600 hover:underline"
+                                    >
+                                        {t.viewCalendar || 'View Calendar'}
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {displayBookings.map(booking => {
+                                    const bookingTime = new Date(booking.startTime);
+                                    return (
+                                        <div 
+                                            key={booking.id}
+                                            className="bg-slate-50 rounded-xl p-4 border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer"
+                                            onClick={() => setSelectedBookingId(booking.id)}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center border border-brand-100">
+                                                        {booking.menteeAvatar ? (
+                                                            <img src={booking.menteeAvatar} alt={booking.menteeName} className="w-full h-full rounded-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-brand-600 font-bold text-sm">{booking.menteeName.charAt(0)}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-bold text-slate-900 truncate">{booking.menteeName}</div>
+                                                        <div className="text-xs text-slate-500">
+                                                            {bookingTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - {new Date(booking.endTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="flex-shrink-0 text-slate-400" size={18} />
+                                            </div>
+                                        </div>
+                                    );
+                                    })}
+                                </div>
+                                {futureBookings.length > 5 && (
+                                    <div className="mt-4 text-center">
+                                        <button
+                                            onClick={() => navigate('/mentor/schedule')}
+                                            className="text-xs font-black uppercase text-brand-600 hover:underline"
+                                        >
+                                            View all {futureBookings.length} lessons today →
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+                    
+                    // Empty state: no future bookings today
+                    return (
+                        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 text-center">
+                            <CalendarIcon size={48} className="mx-auto mb-4 text-slate-300" />
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">{t.noLessonsToday || "No lessons scheduled for today"}</h3>
+                            <p className="text-slate-500 mb-6">{t.viewCalendarToSeeSchedule || "View your calendar to see your full schedule"}</p>
+                            <button
+                                onClick={() => navigate('/mentor/schedule')}
+                                className="px-6 py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-all"
+                            >
+                                {t.viewCalendar || 'View Calendar'}
+                            </button>
                         </div>
-                        <TrendingUp className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                    <div className="bg-white p-8 rounded-3xl border border-slate-200 flex flex-col justify-center">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t.mentorTip}</h3>
-                        <p className="text-slate-700 italic font-medium">"{t.mentorTipDesc}"</p>
-                    </div>
-                </div>
+                    );
+                })()}
+
+                {/* Stats Cards */}
+                {(() => {
+                    // Calculate completed bookings this week
+                    const now = new Date();
+                    const startOfWeek = new Date(now);
+                    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+                    startOfWeek.setHours(0, 0, 0, 0);
+                    
+                    const completedThisWeek = bookings.filter(b => {
+                        if (b.status !== BookingStatus.COMPLETED) return false;
+                        const bookingDate = new Date(b.startTime);
+                        return bookingDate >= startOfWeek;
+                    }).length;
+
+                    // Ensure balance values are numbers (fallback to 0 if undefined)
+                    const pendingValue = typeof balance.pending === 'number' ? balance.pending : 0;
+                    const payableValue = typeof balance.payable === 'number' ? balance.payable : 0;
+
+                    return (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Pending Earnings */}
+                            <div className="bg-yellow-50 border border-yellow-100 rounded-3xl p-6 hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs font-black text-yellow-600 uppercase tracking-wider">Pending Earnings</div>
+                                    <Wallet className="text-yellow-600" size={20} />
+                                </div>
+                                <div className="text-3xl font-black text-yellow-700">{pendingValue.toFixed(0)} Cr</div>
+                                <div className="text-xs text-yellow-600 mt-1">Awaiting release</div>
+                            </div>
+
+                            {/* Payable */}
+                            <div className="bg-green-50 border border-green-100 rounded-3xl p-6 hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs font-black text-green-600 uppercase tracking-wider">Payable</div>
+                                    <CheckCircle className="text-green-600" size={20} />
+                                </div>
+                                <div className="text-3xl font-black text-green-700">{payableValue.toFixed(0)} Cr</div>
+                                <div className="text-xs text-green-600 mt-1">Ready to withdraw</div>
+                            </div>
+
+                            {/* Completed This Week */}
+                            <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 hover:shadow-md transition-all">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs font-black text-blue-600 uppercase tracking-wider">Completed</div>
+                                    <Clock className="text-blue-600" size={20} />
+                                </div>
+                                <div className="text-3xl font-black text-blue-700">{completedThisWeek}</div>
+                                <div className="text-xs text-blue-600 mt-1">Lessons this week</div>
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
         )}
 

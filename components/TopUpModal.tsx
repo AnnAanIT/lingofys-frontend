@@ -90,6 +90,12 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
       return;
     }
 
+    // Validate transaction code length (backend requires at least 6 characters)
+    if (transactionCode.trim().length < 6) {
+      setError(t.transactionCodeTooShort);
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
 
@@ -302,11 +308,23 @@ export function TopUpModal({ isOpen, onClose, onSuccess }: TopUpModalProps) {
                   value={transactionCode}
                   onChange={(e) => setTransactionCode(e.target.value)}
                   placeholder={t.transactionCodePlaceholder}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  minLength={6}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                    transactionCode.trim().length > 0 && transactionCode.trim().length < 6
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-300'
+                  }`}
                   disabled={isProcessing}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {t.transactionCodeHint.replace('{method}', selectedPaymentMethod.displayName)}
+                <p className={`text-xs mt-1 ${
+                  transactionCode.trim().length > 0 && transactionCode.trim().length < 6
+                    ? 'text-red-600 font-medium'
+                    : 'text-gray-500'
+                }`}>
+                  {transactionCode.trim().length > 0 && transactionCode.trim().length < 6
+                    ? t.transactionCodeTooShort
+                    : t.transactionCodeHint.replace('{method}', selectedPaymentMethod.displayName) + ' (Minimum 6 characters)'
+                  }
                 </p>
               </div>
             </div>

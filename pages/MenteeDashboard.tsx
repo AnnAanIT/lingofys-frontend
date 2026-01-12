@@ -23,6 +23,7 @@ export default function MenteeDashboard({ tab }: Props) {
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
   const [chatConvId, setChatConvId] = useState<string>('');  // ✅ FIX: Move state to top level
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
 
   const t = translations[language].mentee;
   const commonT = translations[language].common;
@@ -30,12 +31,21 @@ export default function MenteeDashboard({ tab }: Props) {
   // ✅ FIX BUG #2: Memoize fetchData to prevent infinite loop
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const [b, h] = await Promise.all([
-        api.getBookings(),
-        api.getHomework()
-    ]);
-    setBookings(b);
-    setHomeworks(h);
+    try {
+      const [b, h, upcoming] = await Promise.all([
+          api.getBookings(),
+          api.getHomework(),
+          api.getUpcomingBookings(5, false).catch(() => []) // Get 5 upcoming bookings (all, not just today), fallback to empty array on error
+      ]);
+      setBookings(b || []);
+      setHomeworks(h || []);
+      setUpcomingBookings(upcoming || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setBookings([]);
+      setHomeworks([]);
+      setUpcomingBookings([]);
+    }
 
     if (tab === 'wallet') {
         const history = await api.getUserCreditHistory(user.id);
@@ -131,6 +141,73 @@ export default function MenteeDashboard({ tab }: Props) {
                               </Link>
                           </div>
                       )}
+
+                      {/* Upcoming Bookings List */}
+                      {(() => {
+                          // Filter out the nextBooking to avoid duplicate display
+                          const filteredUpcoming = nextBooking 
+                              ? upcomingBookings.filter(b => b.id !== nextBooking.id)
+                              : upcomingBookings;
+                          
+                          return filteredUpcoming.length > 0 && (
+                              <div className="space-y-4 mt-6">
+                                  <div className="flex items-center justify-between">
+                                      <h3 className="font-black text-lg md:text-xl text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                                          <Calendar className="text-brand-600" size={20} /> {t.upcomingBookings || 'Upcoming Bookings'}
+                                      </h3>
+                                      <Link 
+                                          to="/mentee/bookings?tab=UPCOMING" 
+                                          className="text-xs font-black uppercase text-brand-600 hover:underline"
+                                      >
+                                          {commonT.viewAll}
+                                      </Link>
+                                  </div>
+                                  <div className="space-y-3">
+                                      {filteredUpcoming.slice(0, 5).map(booking => {
+                                      const bookingDate = new Date(booking.startTime);
+                                      const isToday = bookingDate.toDateString() === new Date().toDateString();
+                                      const isTomorrow = bookingDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                                      
+                                      let dateLabel = '';
+                                      if (isToday) {
+                                          dateLabel = commonT.today || 'Today';
+                                      } else if (isTomorrow) {
+                                          dateLabel = commonT.tomorrow || 'Tomorrow';
+                                      } else {
+                                          dateLabel = bookingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                      }
+
+                                      return (
+                                          <div 
+                                              key={booking.id}
+                                              className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md transition-all cursor-pointer"
+                                              onClick={() => navigate(`/mentee/bookings/${booking.id}`)}
+                                          >
+                                              <div className="flex items-center justify-between">
+                                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center border border-brand-100">
+                                                          {booking.mentorAvatar ? (
+                                                              <img src={booking.mentorAvatar} alt={booking.mentorName} className="w-full h-full rounded-full object-cover" />
+                                                          ) : (
+                                                              <span className="text-brand-600 font-bold text-sm">{booking.mentorName.charAt(0)}</span>
+                                                          )}
+                                                      </div>
+                                                      <div className="flex-1 min-w-0">
+                                                          <div className="font-bold text-slate-900 truncate">{booking.mentorName}</div>
+                                                          <div className="text-xs text-slate-500">
+                                                              {dateLabel}, {bookingDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                                  <ChevronRight className="flex-shrink-0 text-slate-400" size={18} />
+                                              </div>
+                                          </div>
+                                      );
+                                  })}
+                                  </div>
+                              </div>
+                          );
+                      })()}
                   </div>
 
                   <div className="space-y-6">

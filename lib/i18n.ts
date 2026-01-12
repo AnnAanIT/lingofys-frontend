@@ -265,6 +265,7 @@ const en = {
       processing: 'Processing...',
       confirmPayment: 'Confirm Payment',
       fillAllFields: 'Please fill in all required fields',
+      transactionCodeTooShort: 'Transaction code must be at least 6 characters',
       failedLoadMethods: 'Failed to load payment methods',
       failedCreateTopup: 'Failed to create topup'
     },
@@ -632,6 +633,7 @@ const vi = {
       processing: 'Đang xử lý...',
       confirmPayment: 'Xác nhận thanh toán',
       fillAllFields: 'Vui lòng điền đầy đủ các trường bắt buộc',
+      transactionCodeTooShort: 'Mã giao dịch phải có ít nhất 6 ký tự',
       failedLoadMethods: 'Không thể tải phương thức thanh toán',
       failedCreateTopup: 'Không thể tạo giao dịch nạp tiền'
     },
@@ -957,6 +959,7 @@ const zh = {
       processing: '处理中...',
       confirmPayment: '确认支付',
       fillAllFields: '请填写所有必填字段',
+      transactionCodeTooShort: '交易代码必须至少6个字符',
       failedLoadMethods: '无法加载支付方式',
       failedCreateTopup: '无法创建充值交易'
     },
@@ -1226,6 +1229,7 @@ const ko = {
       processing: '처리 중...',
       confirmPayment: '결제 확인',
       fillAllFields: '모든 필수 필드를 입력하세요',
+      transactionCodeTooShort: '거래 코드는 최소 6자 이상이어야 합니다',
       failedLoadMethods: '결제 방법을 불러올 수 없습니다',
       failedCreateTopup: '충전 거래를 생성할 수 없습니다'
     },
@@ -1545,6 +1549,7 @@ const ja = {
       processing: '処理中...',
       confirmPayment: '支払いを確認',
       fillAllFields: 'すべての必須フィールドを入力してください',
+      transactionCodeTooShort: '取引コードは少なくとも6文字である必要があります',
       failedLoadMethods: '支払い方法を読み込めませんでした',
       failedCreateTopup: 'チャージ取引を作成できませんでした'
     },

@@ -117,6 +117,8 @@ export interface Booking {
   mentorId: string;
   mentorName: string;
   menteeName: string;
+  menteeAvatar?: string; // Avatar URL for mentee
+  mentorAvatar?: string; // Avatar URL for mentor
   startTime: string;
   endTime: string;
   status: BookingStatus;

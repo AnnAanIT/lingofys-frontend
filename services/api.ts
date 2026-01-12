@@ -722,6 +722,27 @@ export const api = {
     return await response.json();
   },
 
+  // Get upcoming bookings for current user
+  getUpcomingBookings: async (limit: number = 5, todayOnly: boolean = false): Promise<Booking[]> => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/bookings/upcoming?limit=${limit}&todayOnly=${todayOnly}`)
+    );
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    const bookings = await response.json();
+    // Transform backend format to frontend format (flatten mentee/mentor objects)
+    return bookings.map((booking: any) => ({
+      ...booking,
+      menteeName: booking.mentee?.name || booking.menteeName || '',
+      mentorName: booking.mentor?.name || booking.mentorName || '',
+      menteeAvatar: booking.mentee?.avatar || '',
+      mentorAvatar: booking.mentor?.avatar || '',
+    }));
+  },
+
   getAllBookings: async (): Promise<Booking[]> => {
     // Admin function: Get all bookings
     const response = await authenticatedFetch(buildUrl('/api/bookings/admin/all'));
