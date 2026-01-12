@@ -680,7 +680,35 @@ export const api = {
       await handleApiError(response);
     }
 
-    return await response.json();
+    const history = await response.json();
+    // Transform backend format to frontend format (convert type to lowercase, convert Decimal to number)
+    return history.map((entry: any) => {
+      // Map backend types to frontend types
+      const typeMap: Record<string, string> = {
+        'TOPUP': 'topup',
+        'BOOKING_PAYMENT': 'booking_use',
+        'BOOKING_REFUND': 'refund',
+        'SUBSCRIPTION_PAYMENT': 'subscription_purchase',
+        'SUBSCRIPTION_RENEWAL': 'subscription_renewal',
+        'SUBSCRIPTION_UPGRADE': 'subscription_upgrade',
+        'SUBSCRIPTION_DOWNGRADE': 'subscription_downgrade',
+        'SUBSCRIPTION_REFUND': 'subscription_refund',
+        'EARNING': 'earning',
+        'PAYOUT': 'payout',
+        'ADMIN_ADJUSTMENT': 'admin_adjustment',
+        'PROVIDER_COMMISSION': 'earning', // Provider commission is treated as earning
+      };
+      
+      const mappedType = typeMap[entry.type] || entry.type?.toLowerCase() || entry.type;
+      
+      return {
+        ...entry,
+        type: mappedType,
+        amount: Number(entry.amount || 0),
+        balanceAfter: Number(entry.balanceAfter || 0),
+        timestamp: entry.createdAt || entry.timestamp, // Backend uses createdAt, frontend expects timestamp
+      };
+    });
   },
 
   updateUserCredit: async (userId: string, amount: number, reason: string): Promise<User> => {
@@ -1763,8 +1791,15 @@ export const api = {
   },
 
   getUnreadCount: async (userId: string): Promise<number> => {
-    // Alias for getUnreadNotificationCount
-    return api.getUnreadNotificationCount(userId);
+    // Get unread MESSAGE count (not notification count)
+    const response = await authenticatedFetch(buildUrl('/api/messages/unread-count'));
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    const result = await response.json();
+    return result.count || 0;
   },
 
   // ===== MESSAGING (TODO: Backend implementation needed) =====

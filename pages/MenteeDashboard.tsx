@@ -281,7 +281,7 @@ export default function MenteeDashboard({ tab }: Props) {
                               </div>
                               <div className="text-right">
                                   <div className={`font-mono font-black text-lg ${h.amount > 0 ? 'text-green-600' : 'text-slate-900'}`}>
-                                      {h.amount > 0 ? '+' : ''}{h.amount.toFixed(0)}
+                                      {h.amount > 0 ? '+' : ''}{Number(h.amount).toFixed(0)}
                                   </div>
                                   <div className="text-[10px] font-bold text-slate-400 text-right">{h.note}</div>
                               </div>

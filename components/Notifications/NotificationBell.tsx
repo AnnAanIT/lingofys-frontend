@@ -3,13 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { api } from '../../services/api';
 import { useApp } from '../../App';
-import { Notification, UserRole } from '../../types';
+import { Notification } from '../../types';
 import { NotificationItem } from './NotificationItem';
-import { useNavigate } from 'react-router-dom';
 
 export const NotificationBell: React.FC = () => {
     const { user } = useApp();
-    const navigate = useNavigate();
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -58,34 +56,11 @@ export const NotificationBell: React.FC = () => {
     }, []);
 
     const handleItemClick = async (n: Notification) => {
+        // Only mark as read, no navigation
         if (!n.read) {
             await api.markNotificationRead(n.id);
             setUnreadCount(prev => Math.max(0, prev - 1));
             setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif));
-        }
-        setIsOpen(false);
-
-        // Navigation Logic
-        if (n.actionType === 'booking') {
-            if (user?.role === UserRole.MENTEE) {
-                navigate(`/mentee/bookings/${n.actionId}`);
-            } else if (user?.role === UserRole.MENTOR) {
-                // Ideally detail page, but calendar/schedule works for now
-                navigate('/mentor/schedule'); 
-            } else if (user?.role === UserRole.ADMIN) {
-                navigate('/admin/bookings');
-            }
-        } else if (n.actionType === 'payment' || n.actionType === 'payout' || n.actionType === 'commissions') {
-            if (user?.role === UserRole.MENTOR) navigate('/mentor/payout');
-            if (user?.role === UserRole.PROVIDER) navigate('/provider/payouts');
-            if (user?.role === UserRole.ADMIN) navigate('/admin/financials/payouts');
-        } else if (n.actionType === 'homework') {
-            if (user?.role === UserRole.MENTEE) navigate('/mentee/homework');
-            if (user?.role === UserRole.MENTOR) navigate('/mentor/homework');
-        } else if (n.actionType === 'subscription') {
-            if (user?.role === UserRole.MENTEE) navigate('/mentee/subscriptions/active');
-        } else if (n.actionType === 'wallet') {
-            if (user?.role === UserRole.MENTEE) navigate('/mentee/wallet');
         }
     };
 
@@ -166,17 +141,6 @@ export const NotificationBell: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Footer - Sticky */}
-                    {notifications.length > 0 && (
-                        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/50 text-center flex-shrink-0">
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
-                            >
-                                View all notifications
-                            </button>
-                        </div>
-                    )}
                     </div>
                 </>
             )}
