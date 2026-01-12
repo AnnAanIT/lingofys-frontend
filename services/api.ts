@@ -719,7 +719,15 @@ export const api = {
       await handleApiError(response);
     }
 
-    return await response.json();
+    const bookings = await response.json();
+    // Transform backend format to frontend format (flatten mentee/mentor objects)
+    return bookings.map((booking: any) => ({
+      ...booking,
+      menteeName: booking.mentee?.name || booking.menteeName || '',
+      mentorName: booking.mentor?.name || booking.mentorName || '',
+      menteeAvatar: booking.mentee?.avatar || booking.menteeAvatar || '',
+      mentorAvatar: booking.mentor?.avatar || booking.mentorAvatar || '',
+    }));
   },
 
   // Get upcoming bookings for current user

@@ -169,7 +169,11 @@ export const WeeklyCalendar: React.FC<CalendarProps> = ({ events, onSlotClick, o
                   
                   return (
                     <div key={day.toISOString()} className={`relative border-r border-slate-100 transition-all group ${isPast ? 'bg-slate-50/40' : 'hover:bg-slate-50/50'}`}
-                      onClick={() => {
+                      onClick={(e) => {
+                          // Don't handle click if clicking on an event (event has its own handler)
+                          if ((e.target as HTMLElement).closest('.calendar-event')) {
+                              return;
+                          }
                           if (eventsInSlot.length > 0) {
                               const firstEvent = eventsInSlot[0];
                               if (viewMode === 'mentee') {
@@ -221,7 +225,7 @@ export const WeeklyCalendar: React.FC<CalendarProps> = ({ events, onSlotClick, o
                         return (
                           <div 
                             key={event.id}
-                            className={`absolute rounded-lg ${padding} ${textSize} font-semibold shadow-sm transition-all flex flex-col group/event
+                            className={`calendar-event absolute rounded-lg ${padding} ${textSize} font-semibold shadow-sm transition-all flex flex-col group/event
                               ${isPast ? 'opacity-50 grayscale' : 'cursor-pointer hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]'} 
                               ${event.type === 'available' ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 border-blue-500 hover:from-blue-100 hover:to-blue-200' : 
                                 event.type === 'booked' ? 'bg-gradient-to-r from-green-50 to-green-100 text-green-800 border-green-500 hover:from-green-100 hover:to-green-200' :
@@ -239,11 +243,12 @@ export const WeeklyCalendar: React.FC<CalendarProps> = ({ events, onSlotClick, o
                               borderLeftStyle: 'solid'
                             }}
                             onClick={(e) => {
+                              e.stopPropagation(); // Prevent parent click handler
                               // Prevent event click when clicking delete button
                               if ((e.target as HTMLElement).closest('.delete-btn')) {
-                                e.stopPropagation();
                                 return;
                               }
+                              console.log('📅 [CALENDAR] Event clicked:', event.id, event.type);
                               if (viewMode === 'mentor') {
                                 onEventClick?.(event.id);
                               }

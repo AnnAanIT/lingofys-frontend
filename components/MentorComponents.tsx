@@ -81,6 +81,17 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
 
     if (!isOpen) return null;
 
+    // Safety check: ensure booking has required fields
+    if (!booking || !booking.menteeName || !booking.startTime) {
+        console.error('Invalid booking data:', booking);
+        return (
+            <div className="p-6 text-center">
+                <p className="text-red-600 font-bold">Error: Invalid booking data</p>
+                <button onClick={onClose} className="mt-4 px-4 py-2 bg-slate-200 rounded-lg">Close</button>
+            </div>
+        );
+    }
+
     const renderDetails = () => {
         const bookingStart = new Date(booking.startTime);
         const bookingEnd = new Date(booking.endTime);
@@ -91,15 +102,18 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
             [BookingStatus.NO_SHOW]: 'bg-red-100 text-red-700 border-red-200',
         };
 
+        const menteeName = booking.menteeName || 'Unknown';
+        const menteeInitial = menteeName.charAt(0).toUpperCase();
+
         return (
         <div className="space-y-6">
             {/* Header with mentee info */}
             <div className="flex items-center space-x-4 p-5 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
                 <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-black text-xl shadow-md">
-                    {booking.menteeName.charAt(0).toUpperCase()}
+                    {menteeInitial}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h4 className="font-black text-slate-900 text-lg tracking-tight">{booking.menteeName}</h4>
+                    <h4 className="font-black text-slate-900 text-lg tracking-tight">{menteeName}</h4>
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-sm text-slate-600 font-semibold">{booking.totalCost} Credits</span>
                         <span className="text-slate-400">•</span>
@@ -362,7 +376,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <span className="text-xs text-slate-500 font-medium block mb-1">Student</span>
-                            <span className="font-bold text-slate-900">{booking.menteeName}</span>
+                            <span className="font-bold text-slate-900">{booking.menteeName || 'Unknown'}</span>
                         </div>
                         <div>
                             <span className="text-xs text-slate-500 font-medium block mb-1">Date</span>

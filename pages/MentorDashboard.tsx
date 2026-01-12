@@ -511,8 +511,20 @@ export default function MentorDashboard({ tab }: Props) {
   const allEvents = [...bookingEvents, ...availabilityEvents];
 
   const handleEventClick = (eventId: string) => {
+      console.log('📅 [CALENDAR] Event clicked:', eventId);
       if (eventId.startsWith('booking-')) {
-          setSelectedBookingId(eventId.replace('booking-', ''));
+          const bookingId = eventId.replace('booking-', '');
+          console.log('📅 [CALENDAR] Booking ID extracted:', bookingId);
+          console.log('📅 [CALENDAR] Available bookings:', bookings.map(b => b.id));
+          const booking = bookings.find(b => b.id === bookingId);
+          if (booking) {
+              console.log('📅 [CALENDAR] Booking found:', booking);
+              setSelectedBookingId(bookingId);
+          } else {
+              console.error('📅 [CALENDAR] Booking not found in array:', bookingId);
+              // Try to fetch booking or show error
+              showError('Booking Not Found', 'The selected booking could not be found. Please refresh the page.');
+          }
       } else if (eventId.startsWith('avail-')) {
           const parts = eventId.split('-');
           const slotId = parts[1];
@@ -826,47 +838,56 @@ export default function MentorDashboard({ tab }: Props) {
         {/* --- MODALS --- */}
 
         {/* Modal to manage booked lessons */}
-        {selectedBookingId && (
-            <LessonModal
-                isOpen={!!selectedBookingId}
-                onClose={() => setSelectedBookingId(null)}
-                booking={bookings.find(b => b.id === selectedBookingId)!}
-                onAction={async (action, data) => {
-                    if(!selectedBookingId) return;
-                    
-                    try {
-                        if (action === 'COMPLETE') {
-                            await api.updateBookingStatus(selectedBookingId, BookingStatus.COMPLETED);
-                            success('Lesson Completed', 'The lesson has been marked as completed.');
-                        } else if (action === 'RESCHEDULE' && data?.newStart) {
-                            // ❌ REMOVED: Mentor không thể reschedule
-                            // Mentor phải cancel và để mentee book lại
-                            warning('Reschedule Not Allowed', 'Mentors cannot reschedule bookings. Please cancel and let the mentee book a new time.');
-                            return; // Don't proceed
-                        } else if (action === 'NO_SHOW') {
-                            await api.updateBookingStatus(selectedBookingId, BookingStatus.NO_SHOW);
-                            success('No-Show Reported', 'The no-show has been reported. Admin will review.');
-                        } else if (action === 'CANCEL') {
-                            const reason = data?.reason; // Get reason from modal data
-                            const result = await api.cancelBookingAsMentor(selectedBookingId, reason);
-                            // Show success message with stats
-                            if (result.cancellationStats.wasLateCancellation) {
-                                success('Booking Canceled', `You have ${result.cancellationStats.remaining} late cancellations remaining this month.`);
-                            } else {
-                                success('Booking Canceled', 'Free cancellation - no limit count.');
-                            }
-                        }
+        {selectedBookingId && (() => {
+            const selectedBooking = bookings.find(b => b.id === selectedBookingId);
+            if (!selectedBooking) {
+                console.error('Booking not found:', selectedBookingId, 'Available bookings:', bookings.map(b => b.id));
+                // Clear selectedBookingId if booking not found
+                setTimeout(() => setSelectedBookingId(null), 0);
+                return null;
+            }
+            return (
+                <LessonModal
+                    isOpen={!!selectedBookingId}
+                    onClose={() => setSelectedBookingId(null)}
+                    booking={selectedBooking}
+                    onAction={async (action, data) => {
+                        if(!selectedBookingId) return;
                         
-                        await fetchData(true); // ✅ Phase 2.1: Force refresh after action
-                        setSelectedBookingId(null);
-                    } catch (error: any) {
-                        // Show error (could be limit reached, network error, etc.)
-                        showError('Action Failed', error.message || 'Failed to perform action. Please try again.');
-                        // Don't close modal or refresh on error - let user retry
-                    }
-                }}
+                        try {
+                            if (action === 'COMPLETE') {
+                                await api.updateBookingStatus(selectedBookingId, BookingStatus.COMPLETED);
+                                success('Lesson Completed', 'The lesson has been marked as completed.');
+                            } else if (action === 'RESCHEDULE' && data?.newStart) {
+                                // ❌ REMOVED: Mentor không thể reschedule
+                                // Mentor phải cancel và để mentee book lại
+                                warning('Reschedule Not Allowed', 'Mentors cannot reschedule bookings. Please cancel and let the mentee book a new time.');
+                                return; // Don't proceed
+                            } else if (action === 'NO_SHOW') {
+                                await api.updateBookingStatus(selectedBookingId, BookingStatus.NO_SHOW);
+                                success('No-Show Reported', 'The no-show has been reported. Admin will review.');
+                            } else if (action === 'CANCEL') {
+                                const reason = data?.reason; // Get reason from modal data
+                                const result = await api.cancelBookingAsMentor(selectedBookingId, reason);
+                                // Show success message with stats
+                                if (result.cancellationStats.wasLateCancellation) {
+                                    success('Booking Canceled', `You have ${result.cancellationStats.remaining} late cancellations remaining this month.`);
+                                } else {
+                                    success('Booking Canceled', 'Free cancellation - no limit count.');
+                                }
+                            }
+                            
+                            await fetchData(true); // ✅ Phase 2.1: Force refresh after action
+                            setSelectedBookingId(null);
+                        } catch (error: any) {
+                            // Show error (could be limit reached, network error, etc.)
+                            showError('Action Failed', error.message || 'Failed to perform action. Please try again.');
+                            // Don't close modal or refresh on error - let user retry
+                        }
+                    }}
             />
-        )}
+            );
+        })()}
 
         {/* Modal to add availability */}
         <AddAvailabilityModal
