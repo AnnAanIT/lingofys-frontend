@@ -18,6 +18,7 @@ import { ArrowLeft, Mail, Phone, MapPin, Calendar, Edit3, DollarSign, Clock, Sav
 import React, { useEffect, useState } from 'react';
 import { getTimezoneByCountry } from '../lib/timeUtils';
 import { useToast } from '../components/ui/Toast';
+import { formatBookingDate, formatBookingTime } from '../utils/dateFormatters';
 
 export default function AdminUserDetail() {
     const { userId } = useParams();

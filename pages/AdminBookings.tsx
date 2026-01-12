@@ -6,6 +6,7 @@ import { Booking, BookingStatus } from '../types';
 import { MoreHorizontal, FileText, Search, Filter, Calendar, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { DisputeResolutionModal } from '../components/Admin/DisputeResolutionModal';
 import { useApp } from '../App';
+import { formatBookingDate, formatBookingTime } from '../utils/dateFormatters';
 
 export default function AdminBookings() {
   const { user: currentUser } = useApp();

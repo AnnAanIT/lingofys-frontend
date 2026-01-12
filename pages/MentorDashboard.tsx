@@ -14,6 +14,7 @@ import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar
 import { ChatWindow } from '../components/Messages/ChatWindow';
 import { translations } from '../lib/i18n';
 import { useToast } from '../components/ui/Toast';
+import { formatTimeRange } from '../utils/dateFormatters';
 
 interface Props {
   tab: 'home' | 'calendar' | 'chat' | 'homework' | 'earnings';
