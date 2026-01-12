@@ -452,8 +452,8 @@ export default function AdminUserDetail() {
                                         {bookings.map(b => (
                                             <tr key={b.id} className="hover:bg-slate-50">
                                                 <td className="px-6 py-3 text-slate-600">
-                                                    {new Date(b.startTime).toLocaleDateString()}
-                                                    <div className="text-xs text-slate-400">{new Date(b.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                                                    {formatBookingDate(b.startTime)}
+                                                    <div className="text-xs text-slate-400">{formatBookingTime(b.startTime)}</div>
                                                     {/* Show cancellation reason if cancelled */}
                                                     {b.status === BookingStatus.CANCELLED && b.cancellationReason && (
                                                         <div className="text-xs text-orange-600 mt-1 italic" title={b.cancellationReason}>

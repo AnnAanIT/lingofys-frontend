@@ -24,14 +24,10 @@ interface FeedbackCardProps {
   userRole: 'MENTOR' | 'MENTEE' | 'ADMIN';
 }
 
+import { formatDate } from '../../utils/dateFormatters'; // ✅ FIX: Use centralized date formatter
+
 const FeedbackCard: React.FC<FeedbackCardProps> = ({ feedback, onClick, userRole }) => {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  // ✅ FIX: Removed local formatDate - now using centralized formatter
 
   const displayUser = userRole === 'MENTEE' ? feedback.mentor : feedback.mentee;
   const isUnread = userRole === 'MENTEE' && !feedback.viewedAt;

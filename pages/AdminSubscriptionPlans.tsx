@@ -87,7 +87,7 @@ export default function AdminSubscriptionPlans() {
                                     <p className="text-xs text-slate-500 font-mono mt-1">{plan.id}</p>
                                 </div>
                                 <div className="text-2xl font-extrabold text-slate-900">
-                                    {plan.price} <span className="text-xs font-medium text-slate-500">Credits</span>
+                                    {Number(plan.price).toFixed(2)} <span className="text-xs font-medium text-slate-500">Credits</span>
                                 </div>
                             </div>
                             

@@ -251,6 +251,10 @@ export const WeeklyCalendar: React.FC<CalendarProps> = ({ events, onSlotClick, o
                               console.log('📅 [CALENDAR] Event clicked:', event.id, event.type);
                               if (viewMode === 'mentor') {
                                 onEventClick?.(event.id);
+                              } else if (viewMode === 'mentee' && event.type === 'available' && !isPast) {
+                                // ✅ FIX: Call onSlotClick when mentee clicks available slot
+                                console.log('📅 [CALENDAR] Mentee clicked available slot, calling onSlotClick');
+                                onSlotClick?.(event.start);
                               }
                             }}
                           >

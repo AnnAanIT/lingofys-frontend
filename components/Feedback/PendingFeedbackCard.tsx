@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatShortDate, formatBookingTime } from '../../utils/dateFormatters'; // ✅ FIX: Use centralized date formatters
 import { Clock, AlertCircle, Calendar } from 'lucide-react';
 
 interface PendingFeedbackCardProps {
@@ -23,13 +24,9 @@ const PendingFeedbackCard: React.FC<PendingFeedbackCardProps> = ({
   isOverdue,
   onSubmit
 }) => {
+  // ✅ FIX: Use centralized date formatters
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return `${formatShortDate(dateString)}, ${formatBookingTime(dateString)}`;
   };
 
   return (

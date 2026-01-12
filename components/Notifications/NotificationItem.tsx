@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { formatDate } from '../../utils/dateFormatters'; // ✅ FIX: Use centralized date formatter
 import { Notification } from '../../types';
 import { CheckCircle, XCircle, Info, Bell, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../App';

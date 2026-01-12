@@ -21,14 +21,14 @@ export const SubscriptionPlanCard: React.FC<PlanCardProps> = ({ plan, isActive }
             </div>
             
             <div className="mb-6">
-                <span className="text-4xl font-extrabold text-slate-900">${plan.price}</span>
-                <span className="text-slate-500"> / month</span>
+                <span className="text-4xl font-extrabold text-slate-900">{Number(plan.price).toFixed(2)}</span>
+                <span className="text-slate-500"> Credits / month</span>
             </div>
 
             <div className="flex-1 space-y-3 mb-8">
                 <div className="flex items-center text-sm text-slate-700">
                     <Check size={16} className="text-green-500 mr-2 flex-shrink-0" />
-                    <span><strong>{plan.sessions}</strong> Lessons ({Math.round(plan.price / plan.sessions)} credits/lesson)</span>
+                    <span><strong>{plan.sessions}</strong> Lessons ({Number(plan.price / plan.sessions).toFixed(2)} credits/lesson)</span>
                 </div>
                 <div className="flex items-center text-sm text-slate-700">
                     <Check size={16} className="text-green-500 mr-2 flex-shrink-0" />

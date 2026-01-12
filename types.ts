@@ -322,10 +322,26 @@ export interface Commission {
 }
 
 export interface SystemLog {
-  ts: number;        
-  lvl: 'info' | 'warn' | 'error';
-  src: 'booking' | 'payment' | 'user' | 'system';
-  msg: string;
+  id: string;
+  action: string;
+  userId: string;
+  details: string | null;
+  targetId: string | null;
+  targetType: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  // Legacy fields for backward compatibility
+  ts?: number;
+  lvl?: 'info' | 'warn' | 'error';
+  src?: 'booking' | 'payment' | 'user' | 'system';
+  msg?: string;
 }
 
 export interface Notification {

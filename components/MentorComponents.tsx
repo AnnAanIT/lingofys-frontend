@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mentor, Booking, BookingStatus, Homework, Payout } from '../types';
 import { Star, MapPin, ArrowRight, Clock, Video, CheckCircle, XCircle, Calendar, Upload, FileText, AlertCircle, AlertTriangle, DollarSign, Download } from 'lucide-react';
+import { StatusBadge } from './AdminComponents'; // ✅ FIX: Use centralized StatusBadge
+import { formatBookingDate, formatBookingTime, formatTimeRange, formatDate, formatShortDate } from '../utils/dateFormatters'; // ✅ FIX: Use centralized date formatters
 
 // --- MENTOR CARD ---
 export const MentorCard: React.FC<{ mentor: Mentor; onSelect: () => void }> = ({ mentor, onSelect }) => {
@@ -95,12 +97,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
     const renderDetails = () => {
         const bookingStart = new Date(booking.startTime);
         const bookingEnd = new Date(booking.endTime);
-        const statusColors = {
-            [BookingStatus.SCHEDULED]: 'bg-blue-100 text-blue-700 border-blue-200',
-            [BookingStatus.COMPLETED]: 'bg-green-100 text-green-700 border-green-200',
-            [BookingStatus.CANCELLED]: 'bg-slate-100 text-slate-700 border-slate-200',
-            [BookingStatus.NO_SHOW]: 'bg-red-100 text-red-700 border-red-200',
-        };
+        // ✅ FIX: Removed statusColors - now using StatusBadge component for consistency
 
         const menteeName = booking.menteeName || 'Unknown';
         const menteeInitial = menteeName.charAt(0).toUpperCase();
@@ -117,9 +114,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-sm text-slate-600 font-semibold">{booking.totalCost} Credits</span>
                         <span className="text-slate-400">•</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${statusColors[booking.status] || statusColors[BookingStatus.SCHEDULED]}`}>
-                            {booking.status}
-                        </span>
+                        <StatusBadge status={booking.status} />
                     </div>
                 </div>
             </div>
@@ -131,7 +126,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                         <Calendar size={14} className="text-slate-400" />
                         <span className="text-xs text-slate-500 uppercase font-bold tracking-wide">Date</span>
                     </div>
-                    <div className="font-bold text-slate-900 text-base">{bookingStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                    <div className="font-bold text-slate-900 text-base">{formatBookingDate(booking.startTime)}</div>
                 </div>
                 <div className="p-4 border-2 border-slate-200 rounded-xl bg-white hover:border-brand-300 transition-colors">
                     <div className="flex items-center gap-2 mb-1">
@@ -139,7 +134,7 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                         <span className="text-xs text-slate-500 uppercase font-bold tracking-wide">Time</span>
                     </div>
                     <div className="font-bold text-slate-900 text-base">
-                        {bookingStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - {bookingEnd.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                        {formatTimeRange(booking.startTime, booking.endTime)}
                     </div>
                 </div>
             </div>
@@ -380,11 +375,11 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                         </div>
                         <div>
                             <span className="text-xs text-slate-500 font-medium block mb-1">Date</span>
-                            <span className="font-bold text-slate-900">{bookingStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            <span className="font-bold text-slate-900">{formatShortDate(booking.startTime)}</span>
                         </div>
                         <div>
                             <span className="text-xs text-slate-500 font-medium block mb-1">Time</span>
-                            <span className="font-bold text-slate-900">{bookingStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <span className="font-bold text-slate-900">{formatBookingTime(booking.startTime)}</span>
                         </div>
                         <div>
                             <span className="text-xs text-slate-500 font-medium block mb-1">Credits</span>
@@ -516,7 +511,7 @@ export const EarningsCard: React.FC<{ balance: number, pending: number }> = ({ b
                 <DollarSign size={20} />
                 <span className="font-medium">Available</span>
             </div>
-            <div className="text-4xl font-extrabold">${balance}</div>
+            <div className="text-4xl font-extrabold">{Number(balance).toFixed(2)} Cr</div>
             <p className="text-sm opacity-70 mt-2">Ready for payout</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
@@ -524,7 +519,7 @@ export const EarningsCard: React.FC<{ balance: number, pending: number }> = ({ b
                 <Clock size={20} />
                 <span className="font-medium">Pending</span>
             </div>
-            <div className="text-4xl font-extrabold text-slate-900">${pending}</div>
+            <div className="text-4xl font-extrabold text-slate-900">{Number(pending).toFixed(2)} Cr</div>
             <p className="text-sm text-slate-400 mt-2">From scheduled lessons</p>
         </div>
     </div>
@@ -578,7 +573,7 @@ export const SlotModal: React.FC<SlotModalProps> = ({ isOpen, onClose, onConfirm
                 {!canAfford && (
                      <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4 flex items-center">
                         <AlertCircle size={16} className="mr-2" />
-                        Insufficient credits (Balance: {userCredits})
+                        Insufficient credits (Balance: {Number(userCredits).toFixed(2)})
                      </div>
                 )}
 

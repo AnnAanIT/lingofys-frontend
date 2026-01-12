@@ -17,7 +17,7 @@ export const UserCreditCard: React.FC<UserCreditCardProps> = ({ userId, credit, 
             <div>
                 <h3 className="text-slate-500 font-medium text-sm mb-2 uppercase tracking-wide">Credit Balance</h3>
                 <div className="flex items-center space-x-2">
-                    <div className="text-4xl font-extrabold text-slate-900">{credit}</div>
+                    <div className="text-4xl font-extrabold text-slate-900">{Number(credit).toFixed(2)}</div>
                     <span className="text-slate-400 font-medium">Credits</span>
                 </div>
             </div>

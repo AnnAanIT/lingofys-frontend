@@ -404,16 +404,35 @@ export const StatCard: React.FC<{ title: string; value: string | number; icon: a
 // --- STATUS BADGE ---
 export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const styles: Record<string, string> = {
+    // User Status
     ACTIVE: 'bg-green-100 text-green-700',
-    COMPLETED: 'bg-green-100 text-green-700',
-    PAID: 'bg-green-100 text-green-700',
-    APPROVED: 'bg-green-100 text-green-700',
-    PENDING: 'bg-yellow-100 text-yellow-700',
-    SCHEDULED: 'bg-blue-100 text-blue-700',
+    PENDING_APPROVAL: 'bg-yellow-100 text-yellow-700',
     BANNED: 'bg-red-100 text-red-700',
     REJECTED: 'bg-red-100 text-red-700',
-    CANCELLED: 'bg-slate-100 text-slate-600',
-    NO_SHOW: 'bg-orange-100 text-orange-700',
+    
+    // Booking Status
+    SCHEDULED: 'bg-blue-100 text-blue-700 border-blue-200',
+    COMPLETED: 'bg-green-100 text-green-700 border-green-200',
+    CANCELLED: 'bg-red-100 text-red-700 border-red-200', // ✅ FIX: Changed from gray to red for consistency
+    RESCHEDULED: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    DISPUTED: 'bg-orange-100 text-orange-800 border-orange-200',
+    REFUNDED: 'bg-purple-100 text-purple-700 border-purple-200',
+    NO_SHOW: 'bg-orange-100 text-orange-800 border-orange-200',
+    MENTOR_NO_SHOW: 'bg-orange-100 text-orange-800 border-orange-200',
+    
+    // Payout Status
+    PAID: 'bg-green-100 text-green-700',
+    APPROVED_PENDING_PAYMENT: 'bg-blue-100 text-blue-700',
+    
+    // Subscription Status
+    EXPIRED: 'bg-slate-100 text-slate-600',
+    
+    // Homework Status
+    PENDING: 'bg-yellow-100 text-yellow-700',
+    SUBMITTED: 'bg-blue-100 text-blue-700',
+    REVIEWED: 'bg-green-100 text-green-700',
+    
+    // Credit/Ledger Status
     success: 'bg-green-100 text-green-700',
     failed: 'bg-red-100 text-red-700',
     pending: 'bg-yellow-100 text-yellow-700',
@@ -423,7 +442,7 @@ export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   };
 
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${styles[status] || 'bg-slate-100 text-slate-600'}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
       {status}
     </span>
   );

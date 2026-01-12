@@ -1569,9 +1569,28 @@ export const api = {
     return await response.json();
   },
 
-  getSystemLogs: async (): Promise<SystemLog[]> => {
-    // Backend route: GET /api/analytics/logs
-    const response = await authenticatedFetch(buildUrl('/api/analytics/logs'));
+  getSystemLogs: async (filters?: {
+    action?: string;
+    userId?: string;
+    targetId?: string;
+    targetType?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<SystemLog[]> => {
+    const params = new URLSearchParams();
+    if (filters?.action) params.append('action', filters.action);
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.targetId) params.append('targetId', filters.targetId);
+    if (filters?.targetType) params.append('targetType', filters.targetType);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+
+    const url = buildUrl('/api/analytics/logs' + (params.toString() ? `?${params.toString()}` : ''));
+    const response = await authenticatedFetch(url);
 
     if (!response.ok) {
       await handleApiError(response);

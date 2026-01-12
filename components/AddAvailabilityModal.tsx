@@ -19,7 +19,7 @@ export const AddAvailabilityModal: React.FC<AddAvailabilityModalProps> = ({
     const [endTime, setEndTime] = useState('17:00');
     const [useEndTime, setUseEndTime] = useState(true); // Default to use endTime (range-based)
     const [interval] = useState(30); // Always 30 minutes (system only supports 30p slots)
-    const [recurring, setRecurring] = useState(false);
+    const [recurring, setRecurring] = useState(true); // ✅ FIX: Default to true for recurring weekly
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {

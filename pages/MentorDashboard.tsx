@@ -338,19 +338,19 @@ export default function MentorDashboard({ tab }: Props) {
               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><DollarSign size={80} /></div>
                   <div className="text-[10px] font-black text-slate-400 uppercase mb-2">{t.pending}</div>
-                  <div className="text-4xl font-black text-slate-900">{balance.pending} Cr</div>
+                  <div className="text-4xl font-black text-slate-900">{Number(balance.pending || 0).toFixed(2)} Cr</div>
                   <div className="text-xs text-slate-400 mt-4">{t.fromUpcomingClasses}</div>
               </div>
               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Wallet size={80} /></div>
                   <div className="text-[10px] font-black text-brand-600 uppercase mb-2">{t.payable}</div>
-                  <div className="text-4xl font-black text-brand-600">{balance.payable} Cr</div>
+                  <div className="text-4xl font-black text-brand-600">{Number(balance.payable || 0).toFixed(2)} Cr</div>
                   <div className="text-xs text-slate-400 mt-4">{t.canRequestPayout}</div>
               </div>
               <div className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden group">
                   <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><CheckCircle size={80} /></div>
                   <div className="text-[10px] font-black text-slate-400 uppercase mb-2">{t.paid}</div>
-                  <div className="text-4xl font-black">{balance.paid} Cr</div>
+                  <div className="text-4xl font-black">{Number(balance.paid || 0).toFixed(2)} Cr</div>
                   <div className="text-xs text-slate-500 mt-4">{t.lifetimeEarnings}</div>
               </div>
           </div>
@@ -444,13 +444,30 @@ export default function MentorDashboard({ tab }: Props) {
       const events: any[] = [];
       const today = new Date();
 
-      // ✅ Phase 2.2: Reduce generation scope from 30 days to 7 days (current week)
-      for(let i=0; i<7; i++) {
+      // ✅ PERFORMANCE: Calculate days to generate based on recurring flag
+      // - Recurring: Generate for current month only (from today to end of month)
+      // - Non-recurring: Generate for 7 days only (one-time slots)
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const daysToGenerate = Math.ceil((endOfMonth.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      // Cap at 31 days max (safety check)
+      const maxDays = Math.min(daysToGenerate, 31);
+
+      // ✅ Phase 2.2: Generate events for current month (recurring) or 7 days (non-recurring)
+      for(let i=0; i<maxDays; i++) {
           const d = new Date(today);
           d.setDate(today.getDate() + i);
           const dayName = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: mentorTz });
 
-          const slots = availability.filter(slot => slot.day === dayName);
+          const slots = availability.filter(slot => {
+              // Match day
+              if (slot.day !== dayName) return false;
+              
+              // ✅ FIX: For non-recurring slots, only show for first 7 days
+              const isRecurring = slot.recurring !== undefined ? slot.recurring : true;
+              if (!isRecurring && i >= 7) return false;
+              
+              return true;
+          });
 
           slots.forEach(slot => {
               // Handle 24:00 end time
@@ -549,7 +566,7 @@ export default function MentorDashboard({ tab }: Props) {
                     </div>
                     <div className="flex gap-4">
                         <div className="bg-brand-50 p-6 rounded-3xl text-center border border-brand-100 min-w-[150px]">
-                             <div className="text-3xl font-black text-brand-700">{user?.credits}</div>
+                             <div className="text-3xl font-black text-brand-700">{Number(user?.credits || 0).toFixed(2)}</div>
                              <div className="text-[10px] font-black text-brand-600 uppercase mt-1">{t.availableCredits}</div>
                         </div>
                     </div>
@@ -605,7 +622,7 @@ export default function MentorDashboard({ tab }: Props) {
                                                     <div className="flex-1 min-w-0">
                                                         <div className="font-bold text-slate-900 truncate">{booking.menteeName}</div>
                                                         <div className="text-xs text-slate-500">
-                                                            {bookingTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - {new Date(booking.endTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                            {formatTimeRange(booking.startTime, booking.endTime)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -671,7 +688,7 @@ export default function MentorDashboard({ tab }: Props) {
                                     <div className="text-xs font-black text-yellow-600 uppercase tracking-wider">Pending Earnings</div>
                                     <Wallet className="text-yellow-600" size={20} />
                                 </div>
-                                <div className="text-3xl font-black text-yellow-700">{pendingValue.toFixed(0)} Cr</div>
+                                <div className="text-3xl font-black text-yellow-700">{pendingValue.toFixed(2)} Cr</div>
                                 <div className="text-xs text-yellow-600 mt-1">Awaiting release</div>
                             </div>
 
@@ -681,7 +698,7 @@ export default function MentorDashboard({ tab }: Props) {
                                     <div className="text-xs font-black text-green-600 uppercase tracking-wider">Payable</div>
                                     <CheckCircle className="text-green-600" size={20} />
                                 </div>
-                                <div className="text-3xl font-black text-green-700">{payableValue.toFixed(0)} Cr</div>
+                                <div className="text-3xl font-black text-green-700">{payableValue.toFixed(2)} Cr</div>
                                 <div className="text-xs text-green-600 mt-1">Ready to withdraw</div>
                             </div>
 

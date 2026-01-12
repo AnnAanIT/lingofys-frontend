@@ -133,8 +133,8 @@ export default function AdminBookings() {
                   <td className="px-6 py-4 font-medium">{b.mentorName}</td>
                   <td className="px-6 py-4">{b.menteeName}</td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-900">{new Date(b.startTime).toLocaleDateString()}</div>
-                    <div className="text-xs text-slate-500">{new Date(b.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    <div className="text-slate-900">{formatBookingDate(b.startTime)}</div>
+                    <div className="text-xs text-slate-500">{formatBookingTime(b.startTime)}</div>
                   </td>
                   <td className="px-6 py-4 text-center font-bold text-slate-900">
                       {b.totalCost}

@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { AdminLayout, StatusBadge } from '../components/AdminComponents';
 import { Homework, Mentor } from '../types';
 import { FileText, Download, Filter } from 'lucide-react';
+import { formatDate } from '../utils/dateFormatters'; // ✅ FIX: Use centralized date formatter
 
 export default function AdminHomework() {
   const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
@@ -79,7 +80,7 @@ export default function AdminHomework() {
                       <div className="text-xs text-slate-500 font-mono">{h.booking?.mentorId || '-'}</div>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-slate-600">{h.booking?.menteeId || '-'}</td>
-                  <td className="px-6 py-4 text-slate-500">{h.dueDate ? new Date(h.dueDate).toLocaleDateString() : '-'}</td>
+                  <td className="px-6 py-4 text-slate-500">{h.dueDate ? formatDate(h.dueDate) : '-'}</td>
                   <td className="px-6 py-4"><StatusBadge status={h.submittedAt ? (h.gradedAt ? 'REVIEWED' : 'SUBMITTED') : 'PENDING'} /></td>
                   <td className="px-6 py-4">
                       {h.submissionUrl ? (

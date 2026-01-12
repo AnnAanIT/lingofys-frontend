@@ -118,7 +118,7 @@ export default function MentorPayout() {
                         <div className="flex items-center gap-2 text-green-100 mb-2 font-medium">
                             <DollarSign size={20} /> Available for Payout
                         </div>
-                        <div className="text-4xl font-extrabold tracking-tight">{balanceDetails.payable} Cr</div>
+                        <div className="text-4xl font-extrabold tracking-tight">{Number(balanceDetails.payable || 0).toFixed(2)} Cr</div>
                         <p className="text-sm mt-2 text-green-100">= ${balanceDetails.payable.toFixed(2)} USD (1:1 rate, no fees)</p>
                     </div>
                 </div>
@@ -128,8 +128,8 @@ export default function MentorPayout() {
                         <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
                             <Clock size={20} className="text-yellow-500" /> Pending Processing
                         </div>
-                        <div className="text-3xl font-bold text-slate-900">{balanceDetails.pending} Cr</div>
-                        <p className="text-xs text-slate-400 mt-1">= ${balanceDetails.pending.toFixed(2)} USD</p>
+                        <div className="text-3xl font-bold text-slate-900">{Number(balanceDetails.pending || 0).toFixed(2)} Cr</div>
+                        <p className="text-xs text-slate-400 mt-1">= ${Number(balanceDetails.pending || 0).toFixed(2)} USD</p>
                     </div>
                     <div className="text-xs text-slate-400 mt-4">Includes requested & held funds</div>
                 </div>
@@ -139,8 +139,8 @@ export default function MentorPayout() {
                         <div className="flex items-center gap-2 text-slate-500 mb-2 font-medium">
                             <TrendingUp size={20} className="text-blue-500" /> Total Paid
                         </div>
-                        <div className="text-3xl font-bold text-slate-900">{balanceDetails.paid} Cr</div>
-                        <p className="text-xs text-slate-400 mt-1">= ${balanceDetails.paid.toFixed(2)} USD</p>
+                        <div className="text-3xl font-bold text-slate-900">{Number(balanceDetails.paid || 0).toFixed(2)} Cr</div>
+                        <p className="text-xs text-slate-400 mt-1">= ${Number(balanceDetails.paid || 0).toFixed(2)} USD</p>
                     </div>
                     <div className="text-xs text-slate-400 mt-4">Lifetime earnings withdrawn</div>
                 </div>

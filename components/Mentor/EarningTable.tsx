@@ -40,7 +40,7 @@ export const EarningTable: React.FC<EarningTableProps> = ({ earnings }) => {
                                 <EarningStatusBadge status={e.status} />
                             </td>
                             <td className="px-6 py-4 text-right font-bold text-slate-900">
-                                ${e.amount.toFixed(2)}
+                                {Number(e.amount).toFixed(2)} Cr
                             </td>
                         </tr>
                     ))}

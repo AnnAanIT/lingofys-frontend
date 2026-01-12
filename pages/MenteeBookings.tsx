@@ -10,6 +10,8 @@ import { ReviewModal } from '../components/ReviewModal';
 import { DisputeModal } from '../components/Mentee/DisputeModal'; // Import Dispute Modal
 import { translations } from '../lib/i18n';
 import { useToast } from '../components/ui/Toast';
+import { StatusBadge } from '../components/AdminComponents'; // ✅ FIX: Use centralized StatusBadge
+import { formatBookingDate, formatTimeRange, formatMonthDay } from '../utils/dateFormatters'; // ✅ FIX: Use centralized date formatters
 
 type Tab = 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
 
@@ -78,18 +80,7 @@ export default function MenteeBookings() {
       return activeTab === 'UPCOMING' ? timeA - timeB : timeB - timeA;
   });
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-        case 'SCHEDULED': return 'bg-blue-100 text-blue-700 border-blue-200';
-        case 'COMPLETED': return 'bg-green-100 text-green-700 border-green-200';
-        case 'CANCELLED': return 'bg-red-100 text-red-700 border-red-200';
-        case 'RESCHEDULED': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-        case 'DISPUTED': return 'bg-orange-100 text-orange-800 border-orange-200';
-        case 'REFUNDED': return 'bg-purple-100 text-purple-700 border-purple-200';
-        case 'MENTOR_NO_SHOW': return 'bg-orange-100 text-orange-800 border-orange-200';
-        default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
+  // ✅ FIX: Removed getStatusColor - now using StatusBadge component for consistency
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
@@ -143,8 +134,15 @@ export default function MenteeBookings() {
                     >
                        <div className="flex items-center gap-4">
                            <div className="flex flex-col items-center justify-center w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl text-slate-900">
-                               <span className="text-xs font-bold uppercase text-slate-400">{new Date(booking.startTime).toLocaleDateString(undefined, {month:'short'})}</span>
-                               <span className="text-2xl font-extrabold">{new Date(booking.startTime).getDate()}</span>
+                               {(() => {
+                                   const { month, day } = formatMonthDay(booking.startTime);
+                                   return (
+                                       <>
+                                           <span className="text-xs font-bold uppercase text-slate-400">{month}</span>
+                                           <span className="text-2xl font-extrabold">{day}</span>
+                                       </>
+                                   );
+                               })()}
                            </div>
                            
                            <div>
@@ -153,7 +151,7 @@ export default function MenteeBookings() {
                                    {booking.type === 'SUBSCRIPTION' && <SubscriptionBadge />}
                                </div>
                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                                    <span className="flex items-center"><Clock size={14} className="mr-1.5"/> {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(booking.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <span className="flex items-center"><Clock size={14} className="mr-1.5"/> {formatTimeRange(booking.startTime, booking.endTime)}</span>
                                     <span className="flex items-center px-2 py-0.5 bg-slate-50 rounded text-xs font-mono">ID: #{booking.id.slice(-6)}</span>
                                </div>
                            </div>
@@ -161,9 +159,7 @@ export default function MenteeBookings() {
                        
                        <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-t-0 border-slate-100 pt-4 md:pt-0">
                             <div className="flex-1 md:flex-none">
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold border inline-block ${getStatusColor(booking.status)}`}>
-                                    {booking.status}
-                                </span>
+                                <StatusBadge status={booking.status} />
                             </div>
 
                             {activeTab === 'UPCOMING' && (

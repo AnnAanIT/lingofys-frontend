@@ -253,10 +253,10 @@ export default function MenteeSubscriptionDetail() {
                             <div className="bg-slate-950 rounded-3xl p-8 text-white flex flex-col sm:flex-row justify-between items-center gap-6">
                                 <div>
                                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.totalPrice}</div>
-                                    <div className="text-4xl font-black">{plan.price} <span className="text-lg font-bold text-slate-600">Credits</span></div>
+                                    <div className="text-4xl font-black">{Number(plan.price).toFixed(2)} <span className="text-lg font-bold text-slate-600">Credits</span></div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t.walletBalance}: {user?.credits} Cr</div>
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t.walletBalance}: {Number(user?.credits || 0).toFixed(2)} Cr</div>
                                     <button onClick={handleConfirm} disabled={(user?.credits || 0) < plan.price || isProcessing}
                                         className="px-10 py-4 bg-brand-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-brand-500 shadow-xl disabled:opacity-30 disabled:grayscale"
                                     >
@@ -270,7 +270,7 @@ export default function MenteeSubscriptionDetail() {
                                     <AlertCircle className="shrink-0" size={24} />
                                     <div className="text-sm">
                                         <p className="font-black uppercase text-[10px] tracking-widest mb-1">{t.insufficientTitle}</p>
-                                        <p className="font-medium">{t.insufficientDesc.replace('{needed}', (plan.price - (user?.credits || 0)).toString())}</p>
+                                        <p className="font-medium">{t.insufficientDesc.replace('{needed}', Number(plan.price - (user?.credits || 0)).toFixed(2))}</p>
                                         <button onClick={() => navigate('/mentee/wallet')} className="mt-3 text-xs font-black underline uppercase tracking-widest">{t.topUpNow}</button>
                                     </div>
                                 </div>

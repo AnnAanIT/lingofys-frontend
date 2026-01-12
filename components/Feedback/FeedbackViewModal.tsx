@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Star, Calendar, User } from 'lucide-react';
+import { formatDateTime } from '../../utils/dateFormatters'; // ✅ FIX: Use centralized date formatter
 
 interface Feedback {
   id: string;
@@ -34,16 +35,6 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
   feedback
 }) => {
   if (!isOpen || !feedback) return null;
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -86,7 +77,7 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
             <div className="text-right">
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <Calendar className="w-4 h-4" />
-                {formatDate(feedback.submittedAt)}
+                {formatDateTime(feedback.submittedAt)}
               </div>
             </div>
           </div>
@@ -153,11 +144,11 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600">Start Time</p>
-                <p className="font-medium text-gray-900">{formatDate(feedback.booking.startTime)}</p>
+                <p className="font-medium text-gray-900">{formatDateTime(feedback.booking.startTime)}</p>
               </div>
               <div>
                 <p className="text-gray-600">End Time</p>
-                <p className="font-medium text-gray-900">{formatDate(feedback.booking.endTime)}</p>
+                <p className="font-medium text-gray-900">{formatDateTime(feedback.booking.endTime)}</p>
               </div>
             </div>
           </div>

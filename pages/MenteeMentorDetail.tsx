@@ -99,25 +99,38 @@ export default function MenteeMentorDetail() {
 
   // Memoize generateEvents to avoid recalculating on every render
   const generateEvents = useMemo(() => {
-      const events: any[] = [];
+      // ✅ PERFORMANCE: Use Set to track unique events by timestamp to avoid duplicates
+      const eventMap = new Map<string, any>();
       const today = new Date();
 
       if (!mentor) return [];
 
       // ✅ FIX: Check if availability exists and is an array
       if (!mentor.availability || !Array.isArray(mentor.availability) || mentor.availability.length === 0) {
-          // Silently return empty array (no need to log warning every render)
           return [];
       }
 
-      console.log('🔍 [Availability Debug] Generating events for mentor:', mentor.name);
-      console.log('📍 Mentor timezone:', mentorTz);
-      console.log('📅 Mentor availability slots:', mentor.availability);
-      console.log('📚 Mentor bookings:', mentorBookings);
-
       // ✅ Generate slots from availability ranges using interval
-      mentor.availability.forEach(slot => {
-          for(let i=0; i<21; i++) {
+      mentor.availability.forEach((slot, slotIndex) => {
+          // ✅ PERFORMANCE: Calculate days to generate based on recurring flag
+          // - Recurring: Generate for current month only (from today to end of month)
+          // - Non-recurring: Generate for 7 days only (one-time slots)
+          const slotIsRecurring = slot.recurring !== undefined ? slot.recurring : true;
+          
+          // Calculate days to generate for this specific slot
+          let slotDaysToGenerate: number;
+          if (slotIsRecurring) {
+              // Recurring: Generate until end of current month
+              const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              slotDaysToGenerate = Math.ceil((endOfMonth.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              // Cap at 31 days max (safety check)
+              slotDaysToGenerate = Math.min(slotDaysToGenerate, 31);
+          } else {
+              // Non-recurring: Only generate for 7 days (one-time slots)
+              slotDaysToGenerate = 7;
+          }
+          
+          for(let i=0; i<slotDaysToGenerate; i++) {
               const d = new Date(today);
               d.setDate(today.getDate() + i);
 
@@ -174,6 +187,14 @@ export default function MenteeMentorDetail() {
                   const start = createAbsoluteDate(d, slotStartTimeStr, mentorTz);
                   const end = new Date(start.getTime() + slotInterval * 60000);
 
+                  // ✅ FIX DUPLICATE KEY: Use timestamp + slot.id + offset to ensure unique key
+                  const eventKey = `${start.getTime()}-${slot.id || slotIndex}-${offset}`;
+
+                  // ✅ PERFORMANCE: Skip if already added (avoid duplicates)
+                  if (eventMap.has(eventKey)) {
+                      continue;
+                  }
+
                   // Check if this slot is already booked
                   const isBooked = mentorBookings.some(b => {
                       if (!['SCHEDULED', 'COMPLETED'].includes(b.status)) return false;
@@ -183,8 +204,8 @@ export default function MenteeMentorDetail() {
                   });
 
                   if (!isBooked) {
-                      events.push({
-                          id: `avail-${start.toISOString()}`,
+                      eventMap.set(eventKey, {
+                          id: `avail-${eventKey}`, // ✅ FIX: Use unique key
                           title: 'Available',
                           start: start,
                           end: end,
@@ -195,9 +216,7 @@ export default function MenteeMentorDetail() {
           }
       });
 
-      console.log(`✅ Total events generated: ${events.length}`);
-      console.log('Events:', events);
-
+      const events = Array.from(eventMap.values());
       return events;
   }, [mentor?.availability, mentorBookings, mentorTz]);
 
