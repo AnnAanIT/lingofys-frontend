@@ -1330,6 +1330,7 @@ export const api = {
     mentorId: string;
     planId: string;
     paymentMethod: string;
+    weeklySlots?: { day: string, time: string }[]; // ✅ FIX: Add weekly slots for automatic booking creation
   }): Promise<{ subscription: Subscription; transaction: Transaction }> => {
     const response = await authenticatedFetch(buildUrl('/api/subscriptions'), {
       method: 'POST',

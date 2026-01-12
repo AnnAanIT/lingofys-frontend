@@ -24,6 +24,7 @@ export default function MenteeSubscriptionDetail() {
     const [selectedMentorId, setSelectedMentorId] = useState<string | null>(null);
     const [selectedSlots, setSelectedSlots] = useState<{ day: string, time: string }[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [mentorAvailability, setMentorAvailability] = useState<any[]>([]); // ✅ FIX: Store fresh availability
 
     useEffect(() => {
         if (planId) {
@@ -31,6 +32,15 @@ export default function MenteeSubscriptionDetail() {
         }
         api.getMentors().then(setMentors);
     }, [planId]);
+
+    // ✅ FIX: Fetch fresh availability when mentor is selected
+    useEffect(() => {
+        if (selectedMentorId) {
+            api.getAvailability(selectedMentorId).then(setMentorAvailability).catch(() => setMentorAvailability([]));
+        } else {
+            setMentorAvailability([]);
+        }
+    }, [selectedMentorId]);
 
     const calculateProjectedDates = (dayName: string) => {
         const dayMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
@@ -56,11 +66,13 @@ export default function MenteeSubscriptionDetail() {
         if (!user || !selectedMentorId) return;
         setIsProcessing(true);
         try {
+            // ✅ FIX: Send selectedSlots to backend for automatic booking creation
             await api.createSubscription({
                 menteeId: user.id,
                 mentorId: selectedMentorId,
                 planId: plan.id,
-                paymentMethod: 'stripe'
+                paymentMethod: 'stripe',
+                weeklySlots: selectedSlots // ✅ FIX: Include selected weekly slots
             });
             await refreshUser();
             navigate('/mentee/subscriptions/active');
@@ -146,7 +158,7 @@ export default function MenteeSubscriptionDetail() {
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.scheduleTitle}</h2>
                             <p className="text-slate-500 text-sm mt-1">{t.scheduleSubtitle}</p>
                         </div>
-                        <CalendarSlotPicker availability={selectedMentor.availability} requiredSlots={weeklySlotsRequired} onSlotsChange={setSelectedSlots} />
+                        <CalendarSlotPicker availability={mentorAvailability} requiredSlots={weeklySlotsRequired} onSlotsChange={setSelectedSlots} />
                     </div>
 
                     <div className="space-y-6">

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AvailabilitySlot } from '../types';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useApp } from '../App';
@@ -17,7 +17,12 @@ export const CalendarSlotPicker: React.FC<CalendarSlotPickerProps> = ({ availabi
     const [selected, setSelected] = useState<{ day: string, time: string }[]>([]);
 
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const hours = Array.from({ length: 15 }, (_, i) => i + 8); // 8 AM to 10 PM
+    // ✅ FIX: Generate 30-minute slots (08:00, 08:30, 09:00, 09:30, ...)
+    const timeSlots: string[] = [];
+    for (let h = 8; h < 23; h++) {
+        timeSlots.push(`${h.toString().padStart(2, '0')}:00`);
+        timeSlots.push(`${h.toString().padStart(2, '0')}:30`);
+    }
 
     const getNextDate = (dayName: string) => {
         const dayMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
@@ -41,8 +46,66 @@ export const CalendarSlotPicker: React.FC<CalendarSlotPickerProps> = ({ availabi
         onSlotsChange(newSelection);
     };
 
+    // ✅ FIX: Generate available slots from availability ranges (like WeeklyCalendar)
+    // This matches the logic in MenteeMentorDetail.tsx and MentorDashboard.tsx
+    const availableSlots = useMemo(() => {
+        const slots = new Set<string>(); // Use Set to avoid duplicates
+        const today = new Date();
+        
+        // Generate slots for current week (7 days)
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+            
+            // Find matching availability slots for this day
+            availability.forEach(slot => {
+                if (slot.day !== dayName) return;
+                
+                // Calculate end time
+                let slotEndTime: string;
+                if (slot.endTime) {
+                    slotEndTime = slot.endTime === '24:00' ? '23:59' : slot.endTime;
+                } else if (slot.duration) {
+                    const [startHour, startMin] = slot.startTime.split(':').map(Number);
+                    const totalMinutes = startHour * 60 + startMin + slot.duration;
+                    const endHour = Math.floor(totalMinutes / 60) % 24;
+                    const endMin = totalMinutes % 60;
+                    slotEndTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+                } else {
+                    return; // Skip if no endTime or duration
+                }
+                
+                // Parse times
+                const [startHour, startMin] = slot.startTime.split(':').map(Number);
+                const [endHour, endMin] = slotEndTime.split(':').map(Number);
+                
+                // Calculate total minutes
+                let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+                if (totalMinutes < 0) {
+                    totalMinutes = (24 * 60) - (startHour * 60 + startMin) + (endHour * 60 + endMin);
+                }
+                
+                // Generate 30-minute slots from range
+                const slotInterval = slot.interval || 30;
+                for (let offset = 0; offset <= totalMinutes - slotInterval; offset += slotInterval) {
+                    const slotStartMinutes = startHour * 60 + startMin + offset;
+                    const slotStartHour = Math.floor(slotStartMinutes / 60) % 24;
+                    const slotStartMin = slotStartMinutes % 60;
+                    const slotStartTimeStr = `${String(slotStartHour).padStart(2, '0')}:${String(slotStartMin).padStart(2, '0')}`;
+                    
+                    // Store as "day-time" key
+                    slots.add(`${dayName}-${slotStartTimeStr}`);
+                }
+            });
+        }
+        
+        return slots;
+    }, [availability]);
+
+    // ✅ FIX: Check if slot is available (from generated slots)
     const isAvailable = (day: string, time: string) => {
-        return availability.some(s => s.day === day && s.startTime.startsWith(time.split(':')[0]));
+        return availableSlots.has(`${day}-${time}`);
     };
 
     return (
@@ -71,25 +134,31 @@ export const CalendarSlotPicker: React.FC<CalendarSlotPickerProps> = ({ availabi
                 </div>
                 
                 <div className="min-w-[700px] max-h-[450px] overflow-y-auto custom-scrollbar">
-                    {hours.map(h => {
-                        const timeLabel = `${h.toString().padStart(2, '0')}:00`;
+                    {timeSlots.map((timeLabel, idx) => {
+                        // ✅ FIX: Group by hour for better visual organization
+                        const hour = parseInt(timeLabel.split(':')[0]);
+                        const minutes = timeLabel.split(':')[1];
+                        const isHourStart = minutes === '00';
+                        
                         return (
-                            <div key={h} className="grid grid-cols-8 divide-x divide-slate-100 border-b border-slate-100 group">
-                                <div className="p-3 text-[10px] font-black text-slate-400 text-right pr-4 bg-slate-50/30 group-hover:bg-slate-50 transition-colors">{timeLabel}</div>
+                            <div key={timeLabel} className={`grid grid-cols-8 divide-x divide-slate-100 border-b border-slate-100 group ${isHourStart ? 'border-t-2 border-slate-200' : ''}`}>
+                                <div className={`p-2 text-[10px] font-black text-slate-400 text-right pr-4 bg-slate-50/30 group-hover:bg-slate-50 transition-colors ${isHourStart ? 'font-bold' : 'text-slate-300'}`}>
+                                    {isHourStart ? `${hour}:00` : timeLabel}
+                                </div>
                                 {days.map(d => {
                                     const available = isAvailable(d, timeLabel);
                                     const isSelected = selected.some(s => s.day === d && s.time === timeLabel);
                                     
                                     return (
-                                        <div key={d + h} className="h-12 p-1.5 relative transition-colors group-hover:bg-slate-50/20">
+                                        <div key={d + timeLabel} className={`h-8 p-1 relative transition-colors group-hover:bg-slate-50/20 ${isHourStart ? 'border-t border-slate-200' : ''}`}>
                                             {available && (
                                                 <button
                                                     onClick={() => toggleSlot(d, timeLabel)}
                                                     disabled={!isSelected && selected.length >= requiredSlots}
-                                                    className={`w-full h-full rounded-xl transition-all duration-200 flex items-center justify-center ${
+                                                    className={`w-full h-full rounded-lg transition-all duration-200 flex items-center justify-center ${
                                                         isSelected 
                                                             ? 'bg-brand-600 shadow-lg shadow-brand-200 scale-105' 
-                                                            : 'bg-green-100/60 hover:bg-green-200 cursor-pointer border border-green-200/50'
+                                                            : 'bg-blue-100/60 hover:bg-blue-200 cursor-pointer border border-blue-200/50' // ✅ FIX: Match WeeklyCalendar color (light blue)
                                                     } ${(!isSelected && selected.length >= requiredSlots) ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
                                                 >
                                                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />}
