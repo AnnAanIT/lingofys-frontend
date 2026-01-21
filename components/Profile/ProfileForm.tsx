@@ -40,6 +40,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMe
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('🚀 [ProfileForm] handleSubmit called!', { formData });
         setSaving(true);
         try {
             // ✅ LESSON 8: Use timezone from state (already calculated in onChange)

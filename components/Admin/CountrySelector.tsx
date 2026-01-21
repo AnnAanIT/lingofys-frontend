@@ -29,7 +29,19 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({ value, onChang
     // We should ideally store code, but for demo continuity we might need to map back and forth or just update user to use code.
     // Let's assume we want to store the Code (ID) going forward for better pricing logic.
     
-    const selectedCountry = countries.find(c => c.name === value || c.id === value);
+    // Match by id (code) or name, case-insensitive for id
+    const selectedCountry = countries.find(c =>
+        c.name === value ||
+        c.id === value ||
+        c.id?.toLowerCase() === value?.toLowerCase()
+    );
+
+    console.log('🌍 [CountrySelector] Debug:', {
+        inputValue: value,
+        countriesCount: countries.length,
+        selectedCountry: selectedCountry?.id || 'NOT FOUND',
+        allCountryIds: countries.map(c => c.id)
+    });
 
     if (loading) return <div className="flex items-center text-sm text-slate-400"><Loader2 className="animate-spin mr-2" size={14}/> Loading countries...</div>;
 

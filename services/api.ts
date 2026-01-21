@@ -379,7 +379,9 @@ export const api = {
         reviewCount: mentorProfile.reviewCount || 0,
         certificates: mentorProfile.certificates || [],
         cancellationCount: mentorProfile.cancellationCount,
-        lastCancelAt: mentorProfile.lastCancelAt
+        lastCancelAt: mentorProfile.lastCancelAt,
+        meetingLink: mentorProfile.meetingLink || '',
+        meetingPlatform: mentorProfile.meetingPlatform || 'zoom'
       };
     }
 
@@ -388,6 +390,7 @@ export const api = {
 
   updateUserProfile: async (data: Partial<User>): Promise<User> => {
     // Updates current user profile (always /api/users/me)
+    console.log('📤 [api.updateUserProfile] Sending data:', data);
     const response = await authenticatedFetch(buildUrl('/api/users/me'), {
       method: 'PATCH',
       body: JSON.stringify(data)
@@ -398,6 +401,7 @@ export const api = {
     }
 
     const updatedUser = await response.json();
+    console.log('📥 [api.updateUserProfile] Response:', updatedUser);
 
     // Update cached user
     localStorage.setItem('user', JSON.stringify(updatedUser));
