@@ -12,7 +12,7 @@ export default function AdminPaymentMethods() {
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     displayName: '',
-    type: 'BANK_TRANSFER' as 'BANK_TRANSFER' | 'MOMO' | 'ZALOPAY',
+    type: 'BANK_TRANSFER' as 'BANK_TRANSFER' | 'MOMO' | 'PAYPAY',
     qrCodeUrl: '',
     bankName: '',
     accountNumber: '',
@@ -41,7 +41,7 @@ export default function AdminPaymentMethods() {
     setEditingMethod(method);
     setFormData({
       displayName: method.displayName,
-      type: method.type as 'MOMO' | 'BANK_TRANSFER' | 'ZALOPAY',
+      type: method.type as 'MOMO' | 'BANK_TRANSFER' | 'PAYPAY',
       qrCodeUrl: method.qrCodeUrl || '',
       bankName: method.bankName || '',
       accountNumber: method.accountNumber || '',
@@ -259,7 +259,7 @@ export default function AdminPaymentMethods() {
                         >
                           <option value="BANK_TRANSFER">Bank Transfer</option>
                           <option value="MOMO">Momo</option>
-                          <option value="ZALOPAY">ZaloPay</option>
+                          <option value="PAYPAY">Paypay</option>
                         </select>
                       </div>
                       <div>
@@ -299,19 +299,6 @@ export default function AdminPaymentMethods() {
                               Remove
                             </button>
                           )}
-                        </div>
-
-                        {/* Manual URL Input (fallback) */}
-                        <div className="mt-3">
-                          <label className="block text-xs text-gray-500 mb-1">Or enter URL manually:</label>
-                          <input
-                            type="url"
-                            value={formData.qrCodeUrl}
-                            onChange={(e) => setFormData({ ...formData, qrCodeUrl: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="https://..."
-                            disabled={isUploading}
-                          />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">

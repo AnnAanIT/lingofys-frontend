@@ -33,6 +33,25 @@ export default function MenteeSubscriptionDetail() {
         api.getMentors().then(setMentors);
     }, [planId]);
 
+    // Filter mentors by plan's allowedMentorTiers
+    const isMentorAllowed = (mentor: Mentor): boolean => {
+        if (!plan) return true;
+        const allowedTiers = plan.allowedMentorTiers || [];
+        if (allowedTiers.length === 0) return true; // Empty = all tiers allowed
+        const mentorTier = mentor.mentorGroupId || 'basic';
+        return allowedTiers.includes(mentorTier);
+    };
+
+    // Reset selectedMentorId if mentor becomes disallowed after plan loads
+    useEffect(() => {
+        if (selectedMentorId && plan && mentors.length > 0) {
+            const selectedMentor = mentors.find(m => m.id === selectedMentorId);
+            if (selectedMentor && !isMentorAllowed(selectedMentor)) {
+                setSelectedMentorId(null);
+            }
+        }
+    }, [plan, mentors]);
+
     // ✅ FIX: Fetch fresh availability when mentor is selected
     useEffect(() => {
         if (selectedMentorId) {
@@ -117,27 +136,40 @@ export default function MenteeSubscriptionDetail() {
                         <p className="text-slate-500 mt-2">{t.mentorSubtitle}</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {mentors.map(m => (
-                            <div 
-                                key={m.id} onClick={() => setSelectedMentorId(m.id)}
-                                className={`p-6 rounded-3xl border-2 cursor-pointer transition-all flex flex-col items-center text-center gap-4 ${
-                                    selectedMentorId === m.id ? 'border-brand-600 bg-brand-50 shadow-xl scale-[1.02]' : 'border-slate-100 hover:border-slate-200 bg-white'
-                                }`}
-                            >
-                                <div className="relative">
-                                    <img src={m.avatar} className="w-20 h-20 rounded-2xl bg-slate-200 object-cover shadow-sm" />
-                                    {selectedMentorId === m.id && (
-                                        <div className="absolute -top-2 -right-2 bg-brand-600 text-white p-1 rounded-full border-4 border-brand-50">
-                                            <Check size={14} />
-                                        </div>
-                                    )}
+                        {mentors.map(m => {
+                            const allowed = isMentorAllowed(m);
+                            return (
+                                <div
+                                    key={m.id}
+                                    onClick={() => allowed && setSelectedMentorId(m.id)}
+                                    className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center text-center gap-4 ${
+                                        !allowed
+                                            ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
+                                            : selectedMentorId === m.id
+                                                ? 'border-brand-600 bg-brand-50 shadow-xl scale-[1.02] cursor-pointer'
+                                                : 'border-slate-100 hover:border-slate-200 bg-white cursor-pointer'
+                                    }`}
+                                >
+                                    <div className="relative">
+                                        <img src={m.avatar} className={`w-20 h-20 rounded-2xl bg-slate-200 object-cover shadow-sm ${!allowed ? 'grayscale' : ''}`} />
+                                        {selectedMentorId === m.id && allowed && (
+                                            <div className="absolute -top-2 -right-2 bg-brand-600 text-white p-1 rounded-full border-4 border-brand-50">
+                                                <Check size={14} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div className={`font-black text-lg ${allowed ? 'text-slate-900' : 'text-slate-400'}`}>{m.name}</div>
+                                        <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-1">{m.specialties.join(' • ')}</p>
+                                        {!allowed && (
+                                            <p className="text-xs text-orange-600 font-bold mt-2 capitalize">
+                                                {m.mentorGroupId || 'basic'} tier - Not available for this plan
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    <div className="font-black text-slate-900 text-lg">{m.name}</div>
-                                    <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-1">{m.specialties.join(' • ')}</p>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="flex justify-center pt-6">
                         <button 

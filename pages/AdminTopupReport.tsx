@@ -92,18 +92,16 @@ export default function AdminTopupReport() {
     }
   };
 
-  const formatPrice = (priceVND: number) => {
-    // Convert VND to USD using system settings rate
-    // Note: priceVND in database is already calculated using topupConversionRatio
-    // We just need to convert the VND amount back to USD for display
-    const priceUSD = priceVND * vndToUsdRate;
+  const formatPrice = (priceVND: number, priceUSD?: number | null) => {
+    // Use priceUSD from database if available, otherwise fallback to VND conversion
+    const usdAmount = priceUSD != null ? Number(priceUSD) : (priceVND * vndToUsdRate);
 
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(priceUSD);
+    }).format(usdAmount);
   };
 
   const formatDate = (dateString: string) => {
@@ -158,27 +156,39 @@ export default function AdminTopupReport() {
                 <h1 className="text-3xl font-bold mb-2">Topup Report & Management</h1>
                 <p className="text-gray-600">View daily summary and manage topup transactions</p>
               </div>
-              {/* Daily Report */}
-              {report && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="text-sm text-gray-600 mb-1">Today's Topups</div>
-                    <div className="text-3xl font-bold text-blue-600">{report.totalTransactions}</div>
+              {/* Daily Report - Exclude Fraud transactions from totals */}
+              {report && (() => {
+                // Calculate totals excluding fraud transactions
+                const validTransactions = transactions.filter(t => !t.flaggedAsFraud);
+                const validTotalAmount = validTransactions.reduce((sum, t) => sum + Number(t.priceUSD || 0), 0);
+                const validTotalAmountVND = validTransactions.reduce((sum, t) => sum + Number(t.priceVND || 0), 0);
+                const validTotalCredits = validTransactions.reduce((sum, t) => sum + Number(t.creditAmount || 0), 0);
+                // Use priceUSD if available, otherwise fallback to VND conversion
+                const displayTotalAmount = validTotalAmount > 0 ? validTotalAmount : (validTotalAmountVND * vndToUsdRate);
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <div className="text-sm text-gray-600 mb-1">Today's Topups</div>
+                      <div className="text-3xl font-bold text-blue-600">{report.totalTransactions}</div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <div className="text-sm text-gray-600 mb-1">Total Amount (excl. Fraud)</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(displayTotalAmount)}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <div className="text-sm text-gray-600 mb-1">Credits Added (excl. Fraud)</div>
+                      <div className="text-3xl font-bold text-purple-600">{validTotalCredits}</div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-6">
+                      <div className="text-sm text-gray-600 mb-1">Fraud Detected</div>
+                      <div className="text-3xl font-bold text-red-600">{report.flaggedCount}</div>
+                    </div>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="text-sm text-gray-600 mb-1">Total Amount</div>
-                    <div className="text-2xl font-bold text-green-600">{formatPrice(report.totalAmount)}</div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="text-sm text-gray-600 mb-1">Credits Added</div>
-                    <div className="text-3xl font-bold text-purple-600">{report.totalCredits}</div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="text-sm text-gray-600 mb-1">Fraud Detected</div>
-                    <div className="text-3xl font-bold text-red-600">{report.flaggedCount}</div>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
               {/* Filters */}
               <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <h2 className="text-lg font-bold mb-4">Filters</h2>
@@ -269,7 +279,7 @@ export default function AdminTopupReport() {
                             {transaction.transactionCode}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                            {formatPrice(transaction.priceVND)}
+                            {formatPrice(transaction.priceVND, transaction.priceUSD)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                             <span className={`font-bold ${transaction.flaggedAsFraud ? 'text-red-600 line-through' : 'text-green-600'}`}>

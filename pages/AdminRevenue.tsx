@@ -93,10 +93,10 @@ export default function AdminRevenue() {
                             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Net Cash Position</h3>
                             <div className="p-2 bg-green-50 text-green-600 rounded-lg"><Wallet size={20} /></div>
                         </div>
-                        <div className="text-3xl font-extrabold text-slate-900 mb-2">${health.realCash.toLocaleString()}</div>
+                        <div className="text-3xl font-extrabold text-slate-900 mb-2">${Number(health.realCash).toFixed(2)}</div>
                         <div className="text-xs text-slate-500 flex justify-between">
-                            <span className="text-green-600">In: ${health.cashIn.toLocaleString()}</span>
-                            <span className="text-red-600">Out: ${health.cashOut.toLocaleString()}</span>
+                            <span className="text-green-600">In: ${Number(health.cashIn).toFixed(2)}</span>
+                            <span className="text-red-600">Out: ${Number(health.cashOut).toFixed(2)}</span>
                         </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400">
@@ -111,19 +111,19 @@ export default function AdminRevenue() {
                             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Liability</h3>
                             <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><Users size={20} /></div>
                         </div>
-                        <div className="text-3xl font-extrabold text-slate-900 mb-2">${health.totalLiability.toLocaleString()}</div>
+                        <div className="text-3xl font-extrabold text-slate-900 mb-2">${Number(health.totalLiability).toFixed(2)}</div>
                         <div className="space-y-1">
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">User Credits</span>
-                                <span className="font-bold">${health.breakdown.creditLiability.toLocaleString()}</span>
+                                <span className="font-bold">${Number(health.breakdown.creditLiability).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">Subscription Obligation</span>
-                                <span className="font-bold">${health.breakdown.subscriptionLiability.toLocaleString()}</span>
+                                <span className="font-bold">${Number(health.breakdown.subscriptionLiability).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">Pending Payouts</span>
-                                <span className="font-bold">${health.breakdown.pendingPayouts.toLocaleString()}</span>
+                                <span className="font-bold">${Number(health.breakdown.pendingPayouts).toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -139,7 +139,7 @@ export default function AdminRevenue() {
                             </div>
                         </div>
                         <div className="text-3xl font-extrabold mb-2">
-                            {health.cashSurplus >= 0 ? '+' : ''}${health.cashSurplus.toLocaleString()}
+                            {health.cashSurplus >= 0 ? '+' : ''}${Number(health.cashSurplus).toFixed(2)}
                         </div>
                         <div className="flex items-center gap-2">
                             {health.cashSurplus >= 0 ? (
@@ -165,8 +165,9 @@ export default function AdminRevenue() {
                     ))}
                 </select>
                 <select value={year} onChange={e => setYear(Number(e.target.value))} className="p-2 border border-slate-200 rounded-lg outline-none bg-white">
-                    <option value={2024}>2024</option>
-                    <option value={2025}>2025</option>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                        <option key={y} value={y}>{y}</option>
+                    ))}
                 </select>
             </div>
         )}

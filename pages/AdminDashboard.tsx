@@ -64,9 +64,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-          <StatCard title="Total Users" value={stats.users} icon={Users} trend="+12% vs last month" />
+          <StatCard title="Total Users" value={stats.users} icon={Users} />
           <StatCard title="Active Mentors" value={stats.mentors} icon={BookOpen} />
-          <StatCard title="Total Volume (USD)" value={`$${stats.revenue.toLocaleString()}`} icon={DollarSign} trend="+8% vs last week" />
+          <StatCard title="Total Volume (USD)" value={`$${Number(stats.revenue).toFixed(2)}`} icon={DollarSign} />
           <StatCard title="Completed Lessons" value={stats.bookings} icon={Activity} />
         </div>
 
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
                   
                   <div className="mb-4 md:mb-6">
                       <div className="text-3xl md:text-4xl font-black mb-1">
-                          {financialHealth ? `+${Math.round(financialHealth.cashSurplus).toLocaleString()}` : '...'}
+                          {financialHealth ? `+$${Number(financialHealth.cashSurplus).toFixed(2)}` : '...'}
                       </div>
                       <p className="text-slate-500 text-[10px] md:text-xs font-medium">Available Cash Surplus (USD)</p>
                   </div>
@@ -90,11 +90,11 @@ export default function AdminDashboard() {
                   <div className="space-y-2 md:space-y-3">
                       <div className="flex justify-between items-center text-[10px] md:text-xs gap-2">
                           <span className="text-slate-400">Net Assets (Cash)</span>
-                          <span className="font-mono text-green-400 font-bold truncate">${financialHealth?.realCash.toLocaleString() || '0'}</span>
+                          <span className="font-mono text-green-400 font-bold truncate">${Number(financialHealth?.realCash || 0).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] md:text-xs gap-2">
                           <span className="text-slate-400">Total Liabilities</span>
-                          <span className="font-mono text-red-400 font-bold truncate">${financialHealth?.totalLiability.toLocaleString() || '0'}</span>
+                          <span className="font-mono text-red-400 font-bold truncate">${Number(financialHealth?.totalLiability || 0).toFixed(2)}</span>
                       </div>
                       <div className="h-px bg-slate-800 my-2"></div>
                       <button 
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
                             {p.mentorId.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-bold text-slate-900 text-sm">${p.amount}</div>
+                          <div className="font-bold text-slate-900 text-sm">${Number(p.amount).toFixed(2)}</div>
                           <div className="text-[10px] text-slate-500 uppercase font-black">{p.method} • {new Date(p.requestedAt).toLocaleDateString()}</div>
                         </div>
                     </div>

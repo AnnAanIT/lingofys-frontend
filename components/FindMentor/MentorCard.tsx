@@ -104,7 +104,7 @@ export const MentorCard: React.FC<MentorCardProps> = ({ mentor, onSelect, displa
                 <div>
                     <div className="text-xs text-slate-400 uppercase font-bold">Teacher's Rate</div>
                     <div className="font-bold text-slate-900">
-                        {displayRate !== null ? Number(displayRate).toFixed(2) : '...'} <span className="text-xs font-normal text-slate-500">Credits/hr</span>
+                        {displayRate !== null ? Number(displayRate).toFixed(2) : '...'} <span className="text-xs font-normal text-slate-500">Credits per session</span>
                     </div>
                 </div>
                 <button 

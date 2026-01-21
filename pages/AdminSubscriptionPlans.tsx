@@ -15,10 +15,25 @@ export default function AdminSubscriptionPlans() {
     const [deletingPlan, setDeletingPlan] = useState<SubscriptionPlan | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Tier priority: All Tiers (empty) first, then basic → expert → native → vip
+    const TIER_PRIORITY: Record<string, number> = { 'basic': 1, 'expert': 2, 'native': 3, 'vip': 4 };
+
+    const getTierSortValue = (allowedTiers: string[] | undefined): number => {
+        if (!allowedTiers || allowedTiers.length === 0) return 0; // All Tiers = highest priority
+        // Return the highest tier priority in the list
+        return Math.max(...allowedTiers.map(t => TIER_PRIORITY[t] || 99));
+    };
+
     const loadData = async () => {
         setLoading(true);
         const data = await api.getSubscriptionPlans();
-        setPlans(data);
+        // Sort by tier priority, then by price within same tier
+        const sorted = [...data].sort((a, b) => {
+            const tierDiff = getTierSortValue(a.allowedMentorTiers) - getTierSortValue(b.allowedMentorTiers);
+            if (tierDiff !== 0) return tierDiff;
+            return Number(a.price) - Number(b.price);
+        });
+        setPlans(sorted);
         setLoading(false);
     };
 
