@@ -1325,6 +1325,16 @@ export const api = {
     return await response.json();
   },
 
+  getSubscriptionPlansByMentor: async (mentorId: string): Promise<SubscriptionPlan[]> => {
+    const response = await fetch(buildUrl(`/api/subscriptions/plans/by-mentor/${mentorId}`));
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return await response.json();
+  },
+
   createSubscription: async (data: {
     menteeId: string;
     mentorId: string;

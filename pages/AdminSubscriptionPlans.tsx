@@ -112,6 +112,21 @@ export default function AdminSubscriptionPlans() {
                                         <div className="font-bold text-yellow-700">{plan.allowedReschedule}</div>
                                     </div>
                                 </div>
+
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                    <div className="text-xs text-slate-400 uppercase font-bold mb-2">Mentor Tiers</div>
+                                    <div className="flex flex-wrap gap-1">
+                                        {(!plan.allowedMentorTiers || plan.allowedMentorTiers.length === 0) ? (
+                                            <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full">All Tiers</span>
+                                        ) : (
+                                            plan.allowedMentorTiers.map(tier => (
+                                                <span key={tier} className="px-2 py-1 bg-brand-50 text-brand-700 text-xs rounded-full capitalize">
+                                                    {tier}
+                                                </span>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">

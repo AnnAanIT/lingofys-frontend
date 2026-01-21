@@ -19,12 +19,23 @@ export const SubscriptionPlanModal: React.FC<SubscriptionPlanModalProps> = ({ is
         description: '',
         allowedCancel: 1,
         allowedReschedule: 1,
-        durationWeeks: 4
+        durationWeeks: 4,
+        allowedMentorTiers: []
     });
+
+    const MENTOR_TIERS = [
+        { id: 'basic', label: 'Basic' },
+        { id: 'expert', label: 'Expert' },
+        { id: 'native', label: 'Native' },
+        { id: 'vip', label: 'VIP' }
+    ];
 
     useEffect(() => {
         if (plan) {
-            setForm(plan);
+            setForm({
+                ...plan,
+                allowedMentorTiers: plan.allowedMentorTiers || []
+            });
         } else {
             setForm({
                 id: '',
@@ -34,10 +45,26 @@ export const SubscriptionPlanModal: React.FC<SubscriptionPlanModalProps> = ({ is
                 description: '',
                 allowedCancel: 1,
                 allowedReschedule: 1,
-                durationWeeks: 4
+                durationWeeks: 4,
+                allowedMentorTiers: []
             });
         }
     }, [plan, isOpen]);
+
+    const handleTierToggle = (tierId: string) => {
+        const currentTiers = form.allowedMentorTiers || [];
+        if (currentTiers.includes(tierId)) {
+            setForm(prev => ({
+                ...prev,
+                allowedMentorTiers: currentTiers.filter(t => t !== tierId)
+            }));
+        } else {
+            setForm(prev => ({
+                ...prev,
+                allowedMentorTiers: [...currentTiers, tierId]
+            }));
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -144,7 +171,31 @@ export const SubscriptionPlanModal: React.FC<SubscriptionPlanModalProps> = ({ is
                         </div>
                     </div>
 
-                    <button 
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Allowed Mentor Tiers</label>
+                        <p className="text-xs text-slate-400 mb-2">Leave empty to allow all tiers</p>
+                        <div className="flex flex-wrap gap-2">
+                            {MENTOR_TIERS.map(tier => {
+                                const isSelected = (form.allowedMentorTiers || []).includes(tier.id);
+                                return (
+                                    <button
+                                        key={tier.id}
+                                        type="button"
+                                        onClick={() => handleTierToggle(tier.id)}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                            isSelected
+                                                ? 'bg-brand-600 text-white'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        {tier.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <button
                         type="submit"
                         className="w-full py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 shadow-lg mt-4"
                     >

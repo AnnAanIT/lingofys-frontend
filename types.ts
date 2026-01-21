@@ -83,7 +83,7 @@ export interface ProviderCommission {
 export interface AvailabilitySlot {
   id: string;
   mentorId: string;
-  day: string; 
+  day: string;
   startTime: string;
   endTime?: string; // Optional: for range-based availability (e.g., "17:00" or "24:00")
   interval?: number; // Interval in minutes (30 or 60) for slot generation (default: 30)
@@ -124,7 +124,7 @@ export interface Booking {
   status: BookingStatus;
   creditStatus: CreditStatus;
   type: 'CREDIT' | 'SUBSCRIPTION';  // Fixed: Backend returns uppercase
-  subscriptionId?: string; 
+  subscriptionId?: string;
   notes?: string;
   evidenceImage?: string;
   homeworkId?: string;
@@ -161,8 +161,8 @@ export interface MentorEarning {
 export interface SystemCreditLedgerEntry {
   id: string;
   bookingId: string;
-  fromUserId: string; 
-  toUserId: string;   
+  fromUserId: string;
+  toUserId: string;
   amount: number; // Credits
   status: LedgerStatus;
   createdAt: string;
@@ -178,6 +178,7 @@ export interface SubscriptionPlan {
   allowedCancel: number;
   allowedReschedule: number;
   durationWeeks: number;
+  allowedMentorTiers?: string[]; // Empty = all tiers allowed
 }
 
 export interface Subscription {
@@ -232,11 +233,11 @@ export interface Homework {
 
 export interface Message {
   id: string;
-  conversationId: string; 
+  conversationId: string;
   fromRole: UserRole;
   fromId: string;
   toRole: UserRole;
-  toId: string | null; 
+  toId: string | null;
   content: string;
   createdAt: string;
   read: boolean;
@@ -245,15 +246,15 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  participantRole: UserRole; 
+  participantRole: UserRole;
   participantId: string;
   participantName: string;
   participantAvatar: string;
-  assignedAdminId: string | null; 
+  assignedAdminId: string | null;
   status: 'OPEN' | 'CLOSED';
   lastMessageAt: string;
   lastMessagePreview: string;
-  unreadCount: number; 
+  unreadCount: number;
 }
 
 export interface Payout {
@@ -381,7 +382,7 @@ export interface MonthlyRevenueResponse {
 }
 
 export interface PricingCountry {
-  id: string; 
+  id: string;
   code: string;  // ✅ Added
   name: string;
   multiplier: number;
@@ -390,9 +391,9 @@ export interface PricingCountry {
 }
 
 export interface PricingGroup {
-  id: string; 
+  id: string;
   name: string;
-  multiplier: number; 
+  multiplier: number;
 }
 
 // --- CURRENCY & TOP-UP TYPES ---
@@ -458,7 +459,7 @@ export interface CACDashboardData {
 export enum PaymentMethodType {
   MOMO = 'MOMO',
   BANK = 'BANK',
-  PAYPAL = 'PAYPAL'
+  PAYPAY = 'PAYPAY'
 }
 
 export enum TopupStatus {
@@ -501,6 +502,7 @@ export interface TopupTransaction {
   paymentMethodId: string;
   creditAmount: number;          // Actual credits received (with bonus)
   priceVND: number;
+  priceUSD?: number;             // Original USD price (for accurate financial reports)
   transactionCode: string;       // User's transaction code
   status: TopupStatus;
   flaggedAsFraud: boolean;       // Match DB field name
