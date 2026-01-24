@@ -10,7 +10,13 @@ interface Feedback {
   nextSteps: string;
   notes?: string;
   submittedAt: string;
-  mentor: {
+  mentor?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  mentee?: {
     id: string;
     name: string;
     email: string;
@@ -36,6 +42,12 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
 }) => {
   if (!isOpen || !feedback) return null;
 
+  // Determine if viewing as mentor (showing mentee info) or as mentee (showing mentor info)
+  const displayUser = feedback.mentor || feedback.mentee;
+  const isMentorView = !feedback.mentor && feedback.mentee;
+  const displayLabel = isMentorView ? 'For' : 'From';
+  const displayRole = isMentorView ? 'Mentee' : 'Your Mentor';
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -44,7 +56,7 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Session Feedback</h2>
             <p className="text-sm text-gray-600 mt-1">
-              From {feedback.mentor.name}
+              {displayLabel} {displayUser?.name || 'Unknown'}
             </p>
           </div>
           <button
@@ -57,13 +69,13 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Mentor Info */}
+          {/* User Info */}
           <div className="flex items-center gap-4 pb-4 border-b">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              {feedback.mentor.avatar ? (
+              {displayUser?.avatar ? (
                 <img
-                  src={feedback.mentor.avatar}
-                  alt={feedback.mentor.name}
+                  src={displayUser.avatar}
+                  alt={displayUser.name}
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
@@ -71,8 +83,8 @@ const FeedbackViewModal: React.FC<FeedbackViewModalProps> = ({
               )}
             </div>
             <div className="flex-1">
-              <p className="font-medium text-gray-900">{feedback.mentor.name}</p>
-              <p className="text-sm text-gray-600">{feedback.mentor.email}</p>
+              <p className="font-medium text-gray-900">{displayUser?.name || 'Unknown'}</p>
+              <p className="text-sm text-gray-600">{displayRole}</p>
             </div>
             <div className="text-right">
               <div className="flex items-center gap-1 text-sm text-gray-600">

@@ -6,7 +6,7 @@ import {
   FileText, Activity, LogOut, Check, X, AlertCircle, Clock, PieChart,
   User as UserIcon, Tag, MessageSquare, ShieldCheck, Scale, Shield, Award,
   ChevronDown, ChevronRight, Layers, Settings, Briefcase, Menu, Bell, Trash2,
-  TrendingUp, Package
+  TrendingUp, Package, Star
 } from 'lucide-react';
 import { useApp } from '../App';
 import { api } from '../services/api';
@@ -89,6 +89,12 @@ export const AdminSidebar: React.FC = () => {
         { label: 'Pricing', path: '/admin/settings/pricing', icon: Tag },
         { label: 'Payment Methods', path: '/admin/settings/payment-methods', icon: CreditCard },
       ]
+    },
+    {
+      id: 'feedback',
+      label: 'Feedback',
+      icon: Star,
+      path: '/admin/feedback'
     },
     {
       id: 'support',

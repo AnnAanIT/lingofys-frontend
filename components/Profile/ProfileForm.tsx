@@ -18,6 +18,10 @@ interface ProfileFormProps {
 
 export const ProfileForm: React.FC<ProfileFormProps> = ({ user, onSave, updateMethod }) => {
     const { success, error } = useToast();
+
+    // Debug: Log user.country on mount
+    console.log('📋 [ProfileForm] Received user:', { id: user.id, name: user.name, country: user.country, timezone: user.timezone });
+
     const [formData, setFormData] = useState({
         name: user.name,
         email: user.email,

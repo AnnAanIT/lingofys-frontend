@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Eye, Calendar, Filter } from 'lucide-react';
-import { getReceivedFeedbacks } from '../services/api';
+import { getReceivedFeedbacks, api } from '../services/api';
 import FeedbackCard from '../components/Feedback/FeedbackCard';
 import FeedbackViewModal from '../components/Feedback/FeedbackViewModal';
 
@@ -37,7 +37,16 @@ const MenteeFeedback: React.FC = () => {
   };
 
   const handleViewFeedback = async (feedback: any) => {
-    setSelectedFeedback(feedback);
+    try {
+      // Call API to get feedback details - this also marks it as read on backend
+      const result = await api.getFeedbackById(feedback.id);
+      const detailedFeedback = result.data || result;
+      setSelectedFeedback(detailedFeedback);
+    } catch (error) {
+      console.error('Error fetching feedback details:', error);
+      // Fallback to existing data if API fails
+      setSelectedFeedback(feedback);
+    }
     setIsViewModalOpen(true);
   };
 

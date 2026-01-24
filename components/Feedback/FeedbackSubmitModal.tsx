@@ -22,7 +22,7 @@ const FeedbackSubmitModal: React.FC<FeedbackSubmitModalProps> = ({
   booking,
   onSuccess
 }) => {
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0); // No default - mentor must select
   const [strengths, setStrengths] = useState('');
   const [improvements, setImprovements] = useState('');
   const [nextSteps, setNextSteps] = useState('');
@@ -33,6 +33,11 @@ const FeedbackSubmitModal: React.FC<FeedbackSubmitModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (rating === 0) {
+      setError('Please select a rating');
+      return;
+    }
 
     if (!strengths.trim() || !improvements.trim() || !nextSteps.trim()) {
       setError('Please fill in all required fields');
@@ -55,7 +60,7 @@ const FeedbackSubmitModal: React.FC<FeedbackSubmitModalProps> = ({
       onClose();
 
       // Reset form
-      setRating(5);
+      setRating(0);
       setStrengths('');
       setImprovements('');
       setNextSteps('');
@@ -121,7 +126,7 @@ const FeedbackSubmitModal: React.FC<FeedbackSubmitModalProps> = ({
                 </button>
               ))}
               <span className="ml-2 text-lg font-semibold text-gray-700">
-                {rating}/5
+                {rating > 0 ? `${rating}/5` : 'Select rating'}
               </span>
             </div>
           </div>
