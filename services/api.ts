@@ -1768,10 +1768,15 @@ export const api = {
     };
   },
 
-  getMonthlyRevenue: async (): Promise<MonthlyRevenueResponse> => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30);
+  getMonthlyRevenue: async (month?: number, year?: number): Promise<MonthlyRevenueResponse> => {
+    // Use provided month/year or default to current
+    const now = new Date();
+    const targetMonth = month ?? (now.getMonth() + 1);
+    const targetYear = year ?? now.getFullYear();
+
+    // Calculate start and end of the target month
+    const startDate = new Date(targetYear, targetMonth - 1, 1);
+    const endDate = new Date(targetYear, targetMonth, 0); // Last day of month
 
     const queryParams = new URLSearchParams({
       startDate: startDate.toISOString().split('T')[0],
@@ -1784,10 +1789,9 @@ export const api = {
     // Transform backend response to match frontend interface
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                         'July', 'August', 'September', 'October', 'November', 'December'];
-    const currentMonth = monthNames[new Date().getMonth()];
 
     return {
-      month: currentMonth,
+      month: monthNames[targetMonth - 1],
       days: [],
       totalTopup: data.revenue?.topup || 0,
       totalPayout: data.payoutAmount || 0,
