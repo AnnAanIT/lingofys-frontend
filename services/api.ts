@@ -359,10 +359,12 @@ export const api = {
     }
 
     const userData = await response.json();
-    
+    console.log('👤 [api.getUserById] Raw userData:', { id: userData.id, country: userData.country, role: userData.role });
+
     // Flatten mentorProfile fields to top level for MENTOR role
     if (userData.role === 'MENTOR' && userData.mentorProfile) {
       const { mentorProfile, ...user } = userData;
+      console.log('👤 [api.getUserById] After flatten - user.country:', user.country);
       return {
         ...user,
         // Flatten mentor-specific fields from nested mentorProfile
@@ -2037,7 +2039,11 @@ export const api = {
     }
 
     const result = await response.json();
-    return result;
+    // Transform API response: { data, pagination } → { feedbacks, pagination }
+    return {
+      feedbacks: result.data || [],
+      pagination: result.pagination
+    };
   },
 
   getPendingFeedbacks: async () => {
@@ -2065,7 +2071,11 @@ export const api = {
     }
 
     const result = await response.json();
-    return result;
+    // Transform API response: { data, pagination } → { feedbacks, pagination }
+    return {
+      feedbacks: result.data || [],
+      pagination: result.pagination
+    };
   },
 
   getAllFeedbacks: async (params?: { page?: number; limit?: number; mentorId?: string; menteeId?: string }) => {
@@ -2083,7 +2093,11 @@ export const api = {
     }
 
     const result = await response.json();
-    return result;
+    // Transform API response: { data, pagination } → { feedbacks, pagination }
+    return {
+      feedbacks: result.data || [],
+      pagination: result.pagination
+    };
   },
 
   getFeedbackStats: async () => {
