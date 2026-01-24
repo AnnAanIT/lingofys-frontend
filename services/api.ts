@@ -1746,8 +1746,6 @@ export const api = {
   // ===== REVENUE & CAC ANALYTICS =====
 
   getWeeklyRevenue: async (): Promise<WeeklyRevenueResponse> => {
-    // TODO: Implement using /api/analytics/revenue with date range
-    // Backend endpoint: GET /api/analytics/revenue?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
@@ -1758,12 +1756,19 @@ export const api = {
     });
 
     const response = await authenticatedFetch(buildUrl(`/api/analytics/revenue?${queryParams.toString()}`));
-    return await response.json();
+    const data = await response.json();
+
+    // Transform backend response to match frontend interface
+    return {
+      week: `${data.period?.startDate || startDate.toISOString().split('T')[0]} - ${data.period?.endDate || endDate.toISOString().split('T')[0]}`,
+      days: [],
+      totalTopup: data.revenue?.topup || 0,
+      totalPayout: data.payoutAmount || 0,
+      net: data.revenue?.net || 0
+    };
   },
 
   getMonthlyRevenue: async (): Promise<MonthlyRevenueResponse> => {
-    // TODO: Implement using /api/analytics/revenue with date range
-    // Backend endpoint: GET /api/analytics/revenue?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -1774,7 +1779,20 @@ export const api = {
     });
 
     const response = await authenticatedFetch(buildUrl(`/api/analytics/revenue?${queryParams.toString()}`));
-    return await response.json();
+    const data = await response.json();
+
+    // Transform backend response to match frontend interface
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const currentMonth = monthNames[new Date().getMonth()];
+
+    return {
+      month: currentMonth,
+      days: [],
+      totalTopup: data.revenue?.topup || 0,
+      totalPayout: data.payoutAmount || 0,
+      net: data.revenue?.net || 0
+    };
   },
 
   getCACDashboard: async (): Promise<CACDashboardData> => {
