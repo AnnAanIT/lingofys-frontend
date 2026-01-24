@@ -359,12 +359,10 @@ export const api = {
     }
 
     const userData = await response.json();
-    console.log('👤 [api.getUserById] Raw userData:', { id: userData.id, country: userData.country, role: userData.role });
 
     // Flatten mentorProfile fields to top level for MENTOR role
     if (userData.role === 'MENTOR' && userData.mentorProfile) {
       const { mentorProfile, ...user } = userData;
-      console.log('👤 [api.getUserById] After flatten - user.country:', user.country);
       return {
         ...user,
         // Flatten mentor-specific fields from nested mentorProfile
