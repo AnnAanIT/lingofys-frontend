@@ -2359,6 +2359,17 @@ export const api = {
     return response.json();
   },
 
+  // Get user's subscriptions (admin endpoint)
+  getAdminUserSubscriptions: async (userId: string) => {
+    const response = await authenticatedFetch(
+      buildUrl(`/api/admin/users/${userId}/subscriptions`)
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
   // ===== LOCAL TOPUP SYSTEM =====
 
   // Get all active credit packages

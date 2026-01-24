@@ -89,16 +89,24 @@ export default function AdminUserDetail() {
         // getUserById now returns flattened mentor data for MENTOR role
         setUser(u);
         
+        // Load subscriptions for all roles via admin endpoint
+        try {
+            const subs = await api.getAdminUserSubscriptions(userId);
+            setSubscriptions(subs);
+        } catch (subErr) {
+            console.error('Failed to load user subscriptions:', subErr);
+            setSubscriptions([]);
+        }
+
         if (u.role === UserRole.MENTOR) {
             setDraftGroup((u as any).mentorGroupId || '');
             const pending = b.filter(bk => bk.status === BookingStatus.SCHEDULED).reduce((acc, bk) => acc + bk.totalCost, 0);
             setPendingBalance(pending);
-            setSubscriptions([]); // Temporarily empty until proper admin endpoint exists
         } else if (u.role === UserRole.PROVIDER) {
             const prov = await api.getProviderProfile(userId);
             // Merge provider-specific fields if found
             if (prov) {
-                const mergedProvider = { 
+                const mergedProvider = {
                     ...u,
                     providerProfile: prov.providerProfile,
                     levelId: prov.providerProfile?.levelId,
@@ -110,11 +118,8 @@ export default function AdminUserDetail() {
             setProviderCommissions(commissions);
             const pending = commissions.filter(c => c.status === 'PENDING').reduce((acc, c) => acc + c.commissionCredits, 0);
             setPendingBalance(pending);
-            setSubscriptions([]); // Temporarily empty until proper admin endpoint exists
-        } else {
-            // MENTEE role
-            setSubscriptions([]); // Temporarily empty until proper admin endpoint exists
         }
+        // MENTEE role has no additional loading needed
         
         setDraftCountry(u.country || '');
         setIsConfigChanged(false);
