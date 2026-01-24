@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, BarChart3, AlertTriangle, Star } from 'lucide-react';
 import { getAllFeedbacks, getFeedbackStats, getOverdueFeedbacks } from '../services/api';
+import { AdminLayout } from '../components/AdminComponents';
 import FeedbackCard from '../components/Feedback/FeedbackCard';
 import FeedbackViewModal from '../components/Feedback/FeedbackViewModal';
 
@@ -68,6 +69,7 @@ const AdminFeedback: React.FC = () => {
   };
 
   return (
+    <AdminLayout>
     <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
       <div className="mb-8">
@@ -270,6 +272,7 @@ const AdminFeedback: React.FC = () => {
         feedback={selectedFeedback}
       />
     </div>
+    </AdminLayout>
   );
 };
 
