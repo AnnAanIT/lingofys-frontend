@@ -158,10 +158,15 @@ export default function MenteeBookingDetail() {
             
             <div className="p-8 space-y-8">
                 <div className="flex items-center space-x-6">
-                    <img src={`https://i.pravatar.cc/150?u=${booking.mentorId}`} alt="" className="w-20 h-20 rounded-3xl object-cover border border-slate-200 shadow-sm" />
+                    {booking.mentorAvatar ? (
+                        <img src={booking.mentorAvatar} alt={booking.mentorName} className="w-20 h-20 rounded-3xl object-cover border border-slate-200 shadow-sm" />
+                    ) : (
+                        <div className="w-20 h-20 rounded-3xl bg-slate-200 border border-slate-200 shadow-sm flex items-center justify-center text-2xl font-bold text-slate-600">
+                            {booking.mentorName?.charAt(0)?.toUpperCase() || 'M'}
+                        </div>
+                    )}
                     <div>
                         <h3 className="text-xl font-black text-slate-900 tracking-tight">{booking.mentorName}</h3>
-                        <p className="text-slate-500 text-sm font-medium">English Professional Mentor</p>
                         <button onClick={() => navigate(`/mentee/find-mentor/${booking.mentorId}`)} className="text-brand-600 text-xs font-black mt-2 hover:underline uppercase tracking-widest">{t.viewProfile}</button>
                     </div>
                 </div>
