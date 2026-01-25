@@ -60,21 +60,30 @@ export const getTimezoneByCountry = (country: string): string => {
 };
 
 // ✅ FIX BUG #11: Valid timezones list for validation
+// ✅ Synced with backend COUNTRY_PRICING (15 countries)
 export const VALID_TIMEZONES = [
-    'Asia/Ho_Chi_Minh',
-    'Asia/Tokyo',
-    'Asia/Seoul',
-    'Asia/Shanghai',
-    'Asia/Singapore',
-    'America/New_York',
-    'America/Los_Angeles',
-    'America/Chicago',
-    'America/Toronto',
-    'Europe/London',
-    'Europe/Paris',
-    'Europe/Berlin',
-    'Australia/Sydney',
-    'Pacific/Auckland'
+    // Asia
+    'Asia/Ho_Chi_Minh',  // VN
+    'Asia/Manila',       // PH
+    'Asia/Jakarta',      // ID
+    'Asia/Bangkok',      // TH
+    'Asia/Shanghai',     // CN
+    'Asia/Tokyo',        // JP
+    'Asia/Seoul',        // KR
+    'Asia/Singapore',    // SG
+    'Asia/Kolkata',      // IN
+    // Americas
+    'America/New_York',  // US (East)
+    'America/Los_Angeles', // US (West)
+    'America/Chicago',   // US (Central)
+    'America/Toronto',   // CA
+    // Europe
+    'Europe/London',     // GB
+    'Europe/Paris',      // FR
+    'Europe/Berlin',     // DE
+    // Oceania
+    'Australia/Sydney',  // AU
+    'Pacific/Auckland'   // NZ
 ];
 
 /**
