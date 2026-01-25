@@ -88,12 +88,19 @@ export default function MenteeSubscriptions() {
                 </div>
             )}
 
-            {/* Plans Grid */}
+            {/* Plans Grid - Sorted by tier (basic first, premium last) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                {plans.map(plan => (
-                    <SubscriptionPlanCard 
-                        key={plan.id} 
-                        plan={plan} 
+                {[...plans].sort((a, b) => {
+                    const tierOrder = ['basic', 'expert', 'native', 'vip'];
+                    const getTierRank = (tiers: string[] | undefined) => {
+                        if (!tiers || tiers.length === 0) return tierOrder.length; // Empty = all tiers = premium
+                        return Math.min(...tiers.map(t => tierOrder.indexOf(t)).filter(i => i >= 0));
+                    };
+                    return getTierRank(a.allowedMentorTiers) - getTierRank(b.allowedMentorTiers);
+                }).map(plan => (
+                    <SubscriptionPlanCard
+                        key={plan.id}
+                        plan={plan}
                         isActive={activeSub?.planId === plan.id}
                     />
                 ))}

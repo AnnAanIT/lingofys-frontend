@@ -21,22 +21,29 @@ export const SubscriptionPlanCard: React.FC<PlanCardProps> = ({ plan, isActive }
             </div>
             
             <div className="mb-6">
-                <span className="text-4xl font-extrabold text-slate-900">{Number(plan.price).toFixed(2)}</span>
-                <span className="text-slate-500"> Credits / month</span>
+                <span className="text-4xl font-extrabold text-slate-900">{Number(plan.price).toFixed(0)}</span>
+                <span className="text-slate-500"> credits</span>
             </div>
 
             <div className="flex-1 space-y-3 mb-8">
                 <div className="flex items-center text-sm text-slate-700">
                     <Check size={16} className="text-green-500 mr-2 flex-shrink-0" />
-                    <span><strong>{plan.sessions}</strong> Lessons ({Number(plan.price / plan.sessions).toFixed(2)} credits/lesson)</span>
+                    <span><strong>{plan.sessions}</strong> lessons included</span>
                 </div>
                 <div className="flex items-center text-sm text-slate-700">
                     <Check size={16} className="text-green-500 mr-2 flex-shrink-0" />
-                    <span>Weekly fixed schedule</span>
+                    <span><strong>{plan.durationWeeks}-week</strong> plan</span>
+                </div>
+                <div className="flex items-center text-sm text-slate-700">
+                    <Check size={16} className="text-green-500 mr-2 flex-shrink-0" />
+                    <span>{plan.allowedMentorTiers && plan.allowedMentorTiers.length > 0
+                        ? <><strong>{plan.allowedMentorTiers.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' & ')}</strong> mentors</>
+                        : <><strong>All</strong> mentor tiers</>
+                    }</span>
                 </div>
                 <div className="flex items-center text-sm text-slate-500">
                     <Info size={16} className="text-slate-400 mr-2 flex-shrink-0" />
-                    <span>{plan.allowedCancel} Cancel / {plan.allowedReschedule} Reschedule</span>
+                    <span>{plan.allowedCancel} cancellation{plan.allowedCancel !== 1 ? 's' : ''} • {plan.allowedReschedule} reschedule{plan.allowedReschedule !== 1 ? 's' : ''}</span>
                 </div>
             </div>
 
