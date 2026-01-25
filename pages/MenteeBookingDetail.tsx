@@ -183,14 +183,26 @@ export default function MenteeBookingDetail() {
                 </div>
 
                 {subscription && booking.status === BookingStatus.SCHEDULED && (
-                    <div className="bg-brand-50 border border-brand-100 p-5 rounded-2xl flex items-center justify-between">
-                        <div>
-                            <div className="text-[10px] text-brand-600 font-black uppercase tracking-widest">Active Plan</div>
-                            <div className="font-bold text-brand-900">{subscription.planName}</div>
+                    <div className="bg-brand-50 border border-brand-100 p-5 rounded-2xl">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <div className="text-[10px] text-brand-600 font-black uppercase tracking-widest">Active Plan</div>
+                                <div className="font-bold text-brand-900">{subscription.planName}</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[10px] text-brand-600 font-black uppercase tracking-widest">{t.sessionsLeft}</div>
+                                <div className="font-black text-xl text-brand-700">{subscription.remainingSessions} / {subscription.totalSessions}</div>
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <div className="text-[10px] text-brand-600 font-black uppercase tracking-widest">{t.sessionsLeft}</div>
-                            <div className="font-black text-xl text-brand-700">{subscription.remainingSessions} / {subscription.totalSessions}</div>
+                        <div className="flex items-center gap-4 pt-3 border-t border-brand-200">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-brand-600 font-bold uppercase">Cancels:</span>
+                                <span className="text-sm font-black text-brand-800">{subscription.cancelQuota}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-brand-600 font-bold uppercase">Reschedules:</span>
+                                <span className="text-sm font-black text-brand-800">{subscription.rescheduleQuota}</span>
+                            </div>
                         </div>
                     </div>
                 )}
