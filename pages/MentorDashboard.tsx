@@ -194,20 +194,19 @@ export default function MentorDashboard({ tab }: Props) {
     }
   }, [selectedBookingId, bookings]);
 
-  const handleSaveNewSlot = async (slotData: Omit<AvailabilitySlot, 'id' | 'mentorId'>) => {
+  const handleSaveNewSlot = async (slots: Omit<AvailabilitySlot, 'id' | 'mentorId'>[]) => {
       if (!user) return;
       try {
-          // Get current availability and add new slot
           const currentSlots = await api.getAvailability(user.id);
-          const newSlot: AvailabilitySlot = {
-            id: `temp-${Date.now()}`,
+          const newSlots = slots.map((slotData, i) => ({
+            id: `temp-${Date.now()}-${i}`,
             mentorId: user.id,
             ...slotData
-          };
-          await api.addAvailability(user.id, [...currentSlots, newSlot]);
-          await fetchData(true); // ✅ Phase 2.1: Force refresh after adding slot
+          }));
+          await api.addAvailability(user.id, [...currentSlots, ...newSlots]);
+          await fetchData(true);
           setIsAddSlotOpen(false);
-          success(t.slotRegistered, 'New availability slot has been added to your schedule');
+          success(t.slotRegistered, `${slots.length} availability slot${slots.length !== 1 ? 's' : ''} added to your schedule`);
       } catch (err: any) {
           showError(t.errorSavingSlot, err.message || String(err));
       }
