@@ -74,7 +74,11 @@
       "subtitle": "Consistency for faster results.",
       "price": "$8",
       "unit": "credits",
+      "packageUnit": "lessons",
       "badge": "POPULAR",
+      "lessonsIncluded": "{{count}} lessons included",
+      "validWeeks": "Valid for {{weeks}} weeks",
+      "freeCancellations": "{{count}} free cancellations",
       "features": {
         "save20": "Save 20% vs credits",
         "fixedSlots": "Fixed weekly slots",

@@ -74,7 +74,11 @@
       "subtitle": "より速い結果のための一貫性。",
       "price": "$8",
       "unit": "クレジット",
+      "packageUnit": "レッスン",
       "badge": "人気",
+      "lessonsIncluded": "{{count}}レッスン含む",
+      "validWeeks": "有効期間{{weeks}}週間",
+      "freeCancellations": "{{count}}回無料キャンセル",
       "features": {
         "save20": "クレジットより20%お得",
         "fixedSlots": "固定の週間スロット",

@@ -74,7 +74,11 @@
       "subtitle": "持续学习以获得更快的结果。",
       "price": "$8",
       "unit": "学分",
+      "packageUnit": "课",
       "badge": "热门",
+      "lessonsIncluded": "包含{{count}}节课",
+      "validWeeks": "有效期{{weeks}}周",
+      "freeCancellations": "{{count}}次免费取消",
       "features": {
         "save20": "比学分节省20%",
         "fixedSlots": "固定的每周时间段",

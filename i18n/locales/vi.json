@@ -74,7 +74,11 @@
       "subtitle": "Nhất quán cho kết quả nhanh hơn.",
       "price": "$8",
       "unit": "credits",
+      "packageUnit": "buổi",
       "badge": "PHỔ BIẾN",
+      "lessonsIncluded": "{{count}} buổi học",
+      "validWeeks": "Thời hạn {{weeks}} tuần",
+      "freeCancellations": "{{count}} lần hủy miễn phí",
       "features": {
         "save20": "Tiết kiệm 20% so với tín chỉ",
         "fixedSlots": "Khung giờ cố định hàng tuần",

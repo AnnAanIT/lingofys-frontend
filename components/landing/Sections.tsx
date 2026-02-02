@@ -378,14 +378,14 @@ export const PricingPreview = () => {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-4xl font-extrabold text-slate-900">
-                  {formatLocalPrice(Number(mainPlan.price)) || `${Number(mainPlan.price).toFixed(2)}`} <span className="text-lg font-normal text-slate-500">{currencyConfig ? `/ ${mainPlan.sessions} buổi` : 'credits'}</span>
+                  {formatLocalPrice(Number(mainPlan.price)) || `${Number(mainPlan.price).toFixed(2)}`} <span className="text-lg font-normal text-slate-500">{currencyConfig ? `/ ${mainPlan.sessions} ${t('pricing.subscription.packageUnit')}` : 'credits'}</span>
                 </div>
                 {currencyConfig && <p className="text-sm text-slate-400 mt-1">~ {Number(mainPlan.price).toFixed(0)} credits</p>}
               </div>
               <ul className="space-y-3 text-slate-600">
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.sessions} lessons included</li>
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> Valid for {mainPlan.durationWeeks} weeks</li>
-                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.allowedCancel} free cancellations</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.subscription.lessonsIncluded', { count: mainPlan.sessions })}</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.subscription.validWeeks', { weeks: mainPlan.durationWeeks })}</li>
+                <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.subscription.freeCancellations', { count: mainPlan.allowedCancel })}</li>
               </ul>
             </CardContent>
             <CardFooter>
