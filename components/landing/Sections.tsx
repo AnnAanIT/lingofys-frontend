@@ -378,7 +378,7 @@ export const PricingPreview = () => {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-4xl font-extrabold text-slate-900">
-                  {formatLocalPrice(Number(mainPlan.price)) || `${Number(mainPlan.price).toFixed(2)}`} <span className="text-lg font-normal text-slate-500">{currencyConfig ? t('pricing.payAsYouGo.unit') : 'credits'}</span>
+                  {formatLocalPrice(Number(mainPlan.price)) || `${Number(mainPlan.price).toFixed(2)}`} <span className="text-lg font-normal text-slate-500">{currencyConfig ? `/ ${mainPlan.sessions} buổi` : 'credits'}</span>
                 </div>
                 {currencyConfig && <p className="text-sm text-slate-400 mt-1">~ {Number(mainPlan.price).toFixed(0)} credits</p>}
               </div>
