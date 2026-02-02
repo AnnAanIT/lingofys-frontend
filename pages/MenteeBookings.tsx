@@ -69,9 +69,19 @@ export default function MenteeBookings() {
       success('Report Submitted', t.reportSubmitted);
   };
 
+  const now = new Date();
   const filteredBookings = bookings.filter(b => {
-      if (activeTab === 'UPCOMING') return ['SCHEDULED', 'RESCHEDULED', 'MENTOR_NO_SHOW'].includes(b.status);
-      if (activeTab === 'COMPLETED') return ['COMPLETED', 'DISPUTED', 'REFUNDED'].includes(b.status); // Show Disputed here
+      if (activeTab === 'UPCOMING') {
+          const isUpcomingStatus = ['SCHEDULED', 'RESCHEDULED', 'MENTOR_NO_SHOW'].includes(b.status);
+          const isFuture = new Date(b.endTime) > now;
+          return isUpcomingStatus && isFuture;
+      }
+      if (activeTab === 'COMPLETED') {
+          const isCompletedStatus = ['COMPLETED', 'DISPUTED', 'REFUNDED'].includes(b.status);
+          // Also show past SCHEDULED bookings here (pending auto-complete)
+          const isPastScheduled = ['SCHEDULED', 'RESCHEDULED'].includes(b.status) && new Date(b.endTime) <= now;
+          return isCompletedStatus || isPastScheduled;
+      }
       if (activeTab === 'CANCELLED') return ['CANCELLED', 'NO_SHOW'].includes(b.status);
       return true;
   }).sort((a,b) => {
