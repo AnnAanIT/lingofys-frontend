@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Mentor, Booking, BookingStatus, Homework, Payout } from '../types';
-import { Star, MapPin, ArrowRight, Clock, Video, CheckCircle, XCircle, Calendar, Upload, FileText, AlertCircle, AlertTriangle, DollarSign, Download } from 'lucide-react';
+import { Star, MapPin, ArrowRight, Clock, Video, CheckCircle, XCircle, Calendar, Upload, FileText, AlertCircle, AlertTriangle, DollarSign, Download, GraduationCap, Plus } from 'lucide-react';
 import { StatusBadge } from './AdminComponents'; // ✅ FIX: Use centralized StatusBadge
 import { formatBookingDate, formatBookingTime, formatTimeRange, formatDate, formatShortDate } from '../utils/dateFormatters'; // ✅ FIX: Use centralized date formatters
 
@@ -59,9 +59,12 @@ interface LessonModalProps {
     onClose: () => void;
     booking: Booking;
     onAction: (action: 'COMPLETE' | 'RESCHEDULE' | 'NO_SHOW' | 'CANCEL', data?: any) => Promise<void> | void;
+    homework?: Homework | null;
+    onCreateHomework?: () => void;
+    onViewHomework?: (homework: Homework) => void;
 }
 
-export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booking, onAction }) => {
+export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booking, onAction, homework, onCreateHomework, onViewHomework }) => {
     const [view, setView] = useState<'DETAILS' | 'NO_SHOW' | 'CANCEL'>('DETAILS');
     const [rescheduleTime, setRescheduleTime] = useState('');
     const [rescheduleDate, setRescheduleDate] = useState('');
@@ -149,6 +152,47 @@ export const LessonModal: React.FC<LessonModalProps> = ({ isOpen, onClose, booki
                 >
                     <Video className="mr-2" size={20} /> Join Meeting
                 </a>
+            )}
+
+            {/* Homework Section - Only for COMPLETED bookings */}
+            {booking.status === BookingStatus.COMPLETED && (
+                <div className="pt-4 border-t-2 border-slate-100">
+                    <div className="flex items-center gap-2 mb-3">
+                        <GraduationCap size={16} className="text-purple-500" />
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Homework</span>
+                    </div>
+
+                    {homework ? (
+                        <div
+                            onClick={() => onViewHomework?.(homework)}
+                            className="p-4 bg-purple-50 border-2 border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100 transition-all"
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                    <h5 className="font-bold text-slate-900 truncate">{homework.title}</h5>
+                                    <p className="text-xs text-slate-500 mt-1">Due: {new Date(homework.dueDate).toLocaleDateString()}</p>
+                                </div>
+                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold ml-2 flex-shrink-0 ${
+                                    homework.gradedAt
+                                        ? 'bg-green-100 text-green-700'
+                                        : homework.submittedAt
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                    {homework.gradedAt ? 'GRADED' : homework.submittedAt ? 'SUBMITTED' : 'PENDING'}
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => onCreateHomework?.()}
+                            className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 font-bold hover:bg-purple-50 hover:border-purple-400 transition-all"
+                        >
+                            <Plus size={18} />
+                            Assign Homework
+                        </button>
+                    )}
+                </div>
             )}
 
             {/* Action Buttons */}

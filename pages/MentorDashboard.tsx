@@ -9,6 +9,7 @@ import { LessonModal, HomeworkCard } from '../components/MentorComponents';
 import { AddAvailabilityModal } from '../components/AddAvailabilityModal';
 import { EditAvailabilityModal } from '../components/EditAvailabilityModal';
 import { MentorHomeworkModal } from '../components/Mentor/MentorHomeworkModal';
+import { CreateHomeworkModal } from '../components/Mentor/CreateHomeworkModal';
 import { createAbsoluteDate, getTimezoneByCountry, formatInTimezone, convertTimezone } from '../lib/timeUtils';
 import { DollarSign, Clock, CheckCircle, TrendingUp, Wallet, RefreshCw, Calendar as CalendarIcon, MessageSquare, FileText, GraduationCap, ChevronRight } from 'lucide-react';
 import { ChatWindow } from '../components/Messages/ChatWindow';
@@ -53,6 +54,8 @@ export default function MentorDashboard({ tab }: Props) {
 
   // Modal for Homework
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
+  const [selectedBookingHomework, setSelectedBookingHomework] = useState<Homework | null | undefined>(undefined); // undefined = loading, null = none
+  const [isCreateHomeworkOpen, setIsCreateHomeworkOpen] = useState(false);
 
   const fetchData = async (forceRefresh: boolean = false) => {
     if(!user) return;
@@ -173,6 +176,23 @@ export default function MentorDashboard({ tab }: Props) {
         });
     }
   }, [user?.id, tab]);
+
+  // Fetch homework for selected booking
+  useEffect(() => {
+    if (selectedBookingId) {
+      const booking = bookings.find(b => b.id === selectedBookingId);
+      if (booking && booking.status === BookingStatus.COMPLETED) {
+        setSelectedBookingHomework(undefined); // loading
+        api.getHomeworkByBookingId(selectedBookingId)
+          .then(hw => setSelectedBookingHomework(hw))
+          .catch(() => setSelectedBookingHomework(null));
+      } else {
+        setSelectedBookingHomework(null);
+      }
+    } else {
+      setSelectedBookingHomework(undefined);
+    }
+  }, [selectedBookingId, bookings]);
 
   const handleSaveNewSlot = async (slotData: Omit<AvailabilitySlot, 'id' | 'mentorId'>) => {
       if (!user) return;
@@ -869,6 +889,9 @@ export default function MentorDashboard({ tab }: Props) {
                     isOpen={!!selectedBookingId}
                     onClose={() => setSelectedBookingId(null)}
                     booking={selectedBooking}
+                    homework={selectedBookingHomework === undefined ? null : selectedBookingHomework}
+                    onCreateHomework={() => setIsCreateHomeworkOpen(true)}
+                    onViewHomework={(hw) => { setSelectedBookingId(null); setSelectedHomework(hw); }}
                     onAction={async (action, data) => {
                         if(!selectedBookingId) return;
                         
@@ -933,9 +956,27 @@ export default function MentorDashboard({ tab }: Props) {
                 isOpen={!!selectedHomework}
                 onClose={() => setSelectedHomework(null)}
                 homework={selectedHomework}
-                onRefresh={() => fetchData(true)} // ✅ Phase 2.1: Force refresh
+                onRefresh={() => fetchData(true)}
             />
         )}
+
+        {/* Modal to create homework */}
+        {isCreateHomeworkOpen && selectedBookingId && (() => {
+            const booking = bookings.find(b => b.id === selectedBookingId);
+            if (!booking) return null;
+            return (
+                <CreateHomeworkModal
+                    isOpen={isCreateHomeworkOpen}
+                    onClose={() => setIsCreateHomeworkOpen(false)}
+                    booking={booking}
+                    onCreated={(hw) => {
+                        setIsCreateHomeworkOpen(false);
+                        setSelectedBookingHomework(hw);
+                        success('Homework Assigned', `"${hw.title}" has been assigned. Student will be notified.`);
+                    }}
+                />
+            );
+        })()}
     </div>
   );
 }

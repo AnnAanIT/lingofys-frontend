@@ -1121,6 +1121,26 @@ export const api = {
     return await response.json();
   },
 
+  getHomeworkByBookingId: async (bookingId: string): Promise<Homework | null> => {
+    const response = await authenticatedFetch(buildUrl(`/api/homework/booking/${bookingId}`));
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return await response.json();
+  },
+
+  canCreateHomework: async (bookingId: string): Promise<{ canCreate: boolean; reason?: string }> => {
+    const response = await authenticatedFetch(buildUrl(`/api/homework/booking/${bookingId}/can-create`));
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return await response.json();
+  },
+
   updateHomework: async (id: string, data: Partial<Homework>): Promise<Homework> => {
     const response = await authenticatedFetch(buildUrl(`/api/homework/${id}`), {
       method: 'PATCH',
