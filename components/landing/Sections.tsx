@@ -276,7 +276,7 @@ export const MentorShowcase = () => {
 // --- PRICING PREVIEW ---
 export const PricingPreview = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -302,12 +302,8 @@ export const PricingPreview = () => {
   // Get first subscription plan for display (or use hardcoded fallback)
   const mainPlan = subscriptionPlans[0];
 
-  // Currency display: show local price for non-USD locales
-  const localeCurrencyMap: Record<string, string> = { vi: 'VND', ja: 'JPY' };
-  const targetCode = localeCurrencyMap[i18n.language];
-  const currencyConfig = targetCode && settings?.currencies
-    ? settings.currencies.find(c => c.code === targetCode && c.enabled)
-    : null;
+  // Currency display: always show VND on landing page (target market = Vietnam)
+  const currencyConfig = settings?.currencies?.find(c => c.code === 'VND' && c.enabled) || null;
   const conversionRatio = settings?.topupConversionRatio || 0.8;
 
   const formatLocalPrice = (credits: number): string | null => {
