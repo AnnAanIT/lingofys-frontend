@@ -9,7 +9,8 @@ import { Button, Card, CardHeader, CardTitle, CardContent, CardFooter, Accordion
 import { BRAND } from '../../constants/brand';
 import LanguageSelector from '../LanguageSelector';
 import { api } from '../../services/api';
-import type { Mentor, SubscriptionPlan } from '../../types';
+import type { Mentor, SubscriptionPlan, SystemSettings } from '../../types';
+import { calculateLocalPrice, formatCurrency } from '../../utils/currencyUtils';
 
 // --- NAVBAR ---
 export const Navbar = () => {
@@ -275,26 +276,45 @@ export const MentorShowcase = () => {
 // --- PRICING PREVIEW ---
 export const PricingPreview = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPlans = async () => {
+    const fetchData = async () => {
       try {
-        const plans = await api.getSubscriptionPlans();
+        const [plans, sysSettings] = await Promise.all([
+          api.getSubscriptionPlans(),
+          api.getSystemSettings()
+        ]);
         setSubscriptionPlans(plans);
+        setSettings(sysSettings);
       } catch (error) {
-        console.error('Failed to fetch subscription plans:', error);
+        console.error('Failed to fetch pricing data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchPlans();
+    fetchData();
   }, []);
 
   // Get first subscription plan for display (or use hardcoded fallback)
   const mainPlan = subscriptionPlans[0];
+
+  // Currency display: show local price for non-USD locales
+  const localeCurrencyMap: Record<string, string> = { vi: 'VND', ja: 'JPY' };
+  const targetCode = localeCurrencyMap[i18n.language];
+  const currencyConfig = targetCode && settings?.currencies
+    ? settings.currencies.find(c => c.code === targetCode && c.enabled)
+    : null;
+  const conversionRatio = settings?.topupConversionRatio || 0.8;
+
+  const formatLocalPrice = (credits: number): string | null => {
+    if (!currencyConfig) return null;
+    const localPrice = calculateLocalPrice(credits, conversionRatio, currencyConfig.exchangeRate);
+    return formatCurrency(localPrice, currencyConfig);
+  };
 
   return (
   <section id="pricing" className="py-24 bg-white">
@@ -315,7 +335,12 @@ export const PricingPreview = () => {
             <p className="text-slate-500">{t('pricing.payAsYouGo.subtitle')}</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-4xl font-extrabold text-slate-900">{t('pricing.payAsYouGo.price')} <span className="text-lg font-normal text-slate-500">{t('pricing.payAsYouGo.unit')}</span></div>
+            <div>
+              <div className="text-4xl font-extrabold text-slate-900">
+                {formatLocalPrice(settings?.baseLessonCreditPrice || 4) || t('pricing.payAsYouGo.price')} <span className="text-lg font-normal text-slate-500">{t('pricing.payAsYouGo.unit')}</span>
+              </div>
+              {currencyConfig && <p className="text-sm text-slate-400 mt-1">~ {settings?.baseLessonCreditPrice || 4} credits</p>}
+            </div>
             <ul className="space-y-3 text-slate-600">
               <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.payAsYouGo.features.noExpiration')}</li>
               <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {t('pricing.payAsYouGo.features.anyMentor')}</li>
@@ -355,7 +380,12 @@ export const PricingPreview = () => {
               <p className="text-slate-500">{mainPlan.description}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-4xl font-extrabold text-slate-900">{Number(mainPlan.price).toFixed(2)} <span className="text-lg font-normal text-slate-500">credits</span></div>
+              <div>
+                <div className="text-4xl font-extrabold text-slate-900">
+                  {formatLocalPrice(Number(mainPlan.price)) || `${Number(mainPlan.price).toFixed(2)}`} <span className="text-lg font-normal text-slate-500">{currencyConfig ? t('pricing.payAsYouGo.unit') : 'credits'}</span>
+                </div>
+                {currencyConfig && <p className="text-sm text-slate-400 mt-1">~ {Number(mainPlan.price).toFixed(0)} credits</p>}
+              </div>
               <ul className="space-y-3 text-slate-600">
                 <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> {mainPlan.sessions} lessons included</li>
                 <li className="flex items-center"><CheckCircle2 className="h-5 w-5 text-green-500 mr-2" /> Valid for {mainPlan.durationWeeks} weeks</li>
