@@ -12,7 +12,7 @@ export default function MentorPayout() {
     const { success, error: showError } = useToast();
     const [balanceDetails, setBalanceDetails] = useState({ payable: 0, paid: 0, pending: 0 });
     const [payouts, setPayouts] = useState<Payout[]>([]);
-    const [recentEarnings, setRecentEarnings] = useState<Booking[]>([]);
+    const [recentEarnings, setRecentEarnings] = useState<(Booking & { earnedAmount: number })[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Request State
@@ -32,19 +32,31 @@ export default function MentorPayout() {
     const loadData = async () => {
         if(!user) return;
         setLoading(true);
-        const [details, payoutHistory, allBookings] = await Promise.all([
+        const [details, payoutHistory, allBookings, earningsResponse] = await Promise.all([
             api.getMentorBalanceDetails(user.id),
             api.getPayouts(user.id),
-            api.getBookings()
+            api.getBookings(),
+            api.getMentorEarnings(user.id)
         ]);
         setBalanceDetails(details);
         setPayouts(payoutHistory.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()));
+
+        // Build bookingId → earned amount map from CreditHistory (via transaction.relatedEntityId)
+        const earningsArray = (earningsResponse as any).earnings || earningsResponse || [];
+        const earningsMap = new Map<string, number>();
+        for (const e of earningsArray) {
+            const bookingId = e.transaction?.relatedEntityId;
+            if (bookingId) {
+                earningsMap.set(bookingId, (earningsMap.get(bookingId) || 0) + Number(e.amount));
+            }
+        }
 
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         setRecentEarnings(
             allBookings
                 .filter((b: Booking) => b.status === 'COMPLETED' && new Date(b.startTime) >= thirtyDaysAgo)
-                .sort((a: Booking, b: Booking) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+                .map((b: Booking) => ({ ...b, earnedAmount: earningsMap.get(b.id) ?? Number(b.totalCost || 0) }))
+                .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
         );
         setLoading(false);
     };
@@ -301,7 +313,7 @@ export default function MentorPayout() {
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                     <h2 className="text-lg font-bold text-slate-900">Recent Earnings (Last 30 Days)</h2>
                     <span className="text-sm text-slate-500">
-                        {recentEarnings.length} booking{recentEarnings.length !== 1 ? 's' : ''} — Total: {recentEarnings.reduce((sum, b) => sum + Number(b.totalCost || 0), 0).toFixed(2)} Cr
+                        {recentEarnings.length} booking{recentEarnings.length !== 1 ? 's' : ''} — Total: {recentEarnings.reduce((sum, b) => sum + b.earnedAmount, 0).toFixed(2)} Cr
                     </span>
                 </div>
 
@@ -325,7 +337,7 @@ export default function MentorPayout() {
                                     </td>
                                     <td className="px-6 py-4 font-medium text-slate-900">{b.menteeName}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="font-bold text-green-700">+{Number(b.totalCost || 0).toFixed(2)} Cr</span>
+                                        <span className="font-bold text-green-700">+{b.earnedAmount.toFixed(2)} Cr</span>
                                     </td>
                                 </tr>
                             ))}
