@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useApp } from '../App';
-import { Payout, Booking } from '../types';
+import { Payout } from '../types';
 import { DollarSign, Clock, CheckCircle, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { EarningStatusBadge } from '../components/Mentor/EarningStatusBadge';
 import { useToast } from '../components/ui/Toast';
@@ -12,7 +12,7 @@ export default function MentorPayout() {
     const { success, error: showError } = useToast();
     const [balanceDetails, setBalanceDetails] = useState({ payable: 0, paid: 0, pending: 0 });
     const [payouts, setPayouts] = useState<Payout[]>([]);
-    const [recentEarnings, setRecentEarnings] = useState<(Booking & { earnedAmount: number })[]>([]);
+    const [dailyEarnings, setDailyEarnings] = useState<{ date: string; bookings: number; totalEarned: number }[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Request State
@@ -51,12 +51,22 @@ export default function MentorPayout() {
             }
         }
 
+        // Group completed bookings by date (last 30 days)
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        setRecentEarnings(
-            allBookings
-                .filter((b: Booking) => b.status === 'COMPLETED' && new Date(b.startTime) >= thirtyDaysAgo)
-                .map((b: Booking) => ({ ...b, earnedAmount: earningsMap.get(b.id) ?? Number(b.totalCost || 0) }))
-                .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+        const dayMap = new Map<string, { bookings: number; totalEarned: number }>();
+        for (const b of allBookings) {
+            if (b.status !== 'COMPLETED' || new Date(b.startTime) < thirtyDaysAgo) continue;
+            const dateKey = new Date(b.startTime).toLocaleDateString();
+            const earned = earningsMap.get(b.id) ?? Number(b.totalCost || 0);
+            const entry = dayMap.get(dateKey) || { bookings: 0, totalEarned: 0 };
+            entry.bookings++;
+            entry.totalEarned += earned;
+            dayMap.set(dateKey, entry);
+        }
+        setDailyEarnings(
+            Array.from(dayMap.entries())
+                .map(([date, data]) => ({ date, ...data }))
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         );
         setLoading(false);
     };
@@ -313,31 +323,28 @@ export default function MentorPayout() {
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                     <h2 className="text-lg font-bold text-slate-900">Recent Earnings (Last 30 Days)</h2>
                     <span className="text-sm text-slate-500">
-                        {recentEarnings.length} booking{recentEarnings.length !== 1 ? 's' : ''} — Total: {recentEarnings.reduce((sum, b) => sum + b.earnedAmount, 0).toFixed(2)} Cr
+                        {dailyEarnings.reduce((sum, d) => sum + d.bookings, 0)} bookings — Total: {dailyEarnings.reduce((sum, d) => sum + d.totalEarned, 0).toFixed(2)} Cr
                     </span>
                 </div>
 
-                {recentEarnings.length === 0 ? (
+                {dailyEarnings.length === 0 ? (
                     <div className="p-8 text-center text-slate-400">No completed bookings in the last 30 days.</div>
                 ) : (
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-medium">
                             <tr>
                                 <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Student</th>
+                                <th className="px-6 py-4 text-center">Bookings</th>
                                 <th className="px-6 py-4 text-right">Earned</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {recentEarnings.map(b => (
-                                <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4 text-slate-600">
-                                        {new Date(b.startTime).toLocaleDateString()}
-                                        <div className="text-xs text-slate-400">{new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-slate-900">{b.menteeName}</td>
+                            {dailyEarnings.map(d => (
+                                <tr key={d.date} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-slate-900">{d.date}</td>
+                                    <td className="px-6 py-4 text-center text-slate-600">{d.bookings}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="font-bold text-green-700">+{b.earnedAmount.toFixed(2)} Cr</span>
+                                        <span className="font-bold text-green-700">+{d.totalEarned.toFixed(2)} Cr</span>
                                     </td>
                                 </tr>
                             ))}
