@@ -11,7 +11,9 @@ interface MeetingSettingsCardProps {
 
 export const MeetingSettingsCard: React.FC<MeetingSettingsCardProps> = ({ user, onSave }) => {
     const { success, error: showError } = useToast();
-    const [meetingLink, setMeetingLink] = useState(user.meetingLink || '');
+    const [meetingLink, setMeetingLink] = useState(
+        (user.meetingLink || '').replace(/&#x2F;/g, '/').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    );
     const [meetingPlatform, setMeetingPlatform] = useState(user.meetingPlatform || 'zoom');
     const [saving, setSaving] = useState(false);
     const [validating, setValidating] = useState(false);
