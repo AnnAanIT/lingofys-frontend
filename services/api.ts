@@ -2178,6 +2178,28 @@ export const api = {
     return result.data || result;
   },
 
+  adminSubmitFeedback: async (data: {
+    bookingId: string;
+    mentorId: string;
+    rating: number;
+    strengths: string;
+    improvements: string;
+    nextSteps: string;
+    notes?: string;
+  }) => {
+    const response = await authenticatedFetch(buildUrl('/api/feedbacks/admin/submit'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return await response.json();
+  },
+
   getFeedbackById: async (id: string): Promise<any> => {
     const response = await authenticatedFetch(buildUrl(`/api/feedbacks/${id}`));
 

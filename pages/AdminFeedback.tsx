@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, BarChart3, AlertTriangle, Star } from 'lucide-react';
+import { MessageSquare, BarChart3, AlertTriangle, Star, Send, X, Loader2 } from 'lucide-react';
 import { getAllFeedbacks, getFeedbackStats, getOverdueFeedbacks } from '../services/api';
+import { api } from '../services/api';
 import { AdminLayout } from '../components/AdminComponents';
 import FeedbackCard from '../components/Feedback/FeedbackCard';
 import FeedbackViewModal from '../components/Feedback/FeedbackViewModal';
@@ -15,6 +16,12 @@ const AdminFeedback: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
+
+  // Admin submit feedback state
+  const [submitTarget, setSubmitTarget] = useState<any>(null);
+  const [submitForm, setSubmitForm] = useState({ rating: 3, strengths: '', improvements: '', nextSteps: '', notes: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (activeTab === 'all') {
@@ -66,6 +73,41 @@ const AdminFeedback: React.FC = () => {
   const handleViewFeedback = (feedback: any) => {
     setSelectedFeedback(feedback);
     setIsViewModalOpen(true);
+  };
+
+  const openSubmitModal = (item: any) => {
+    setSubmitTarget(item);
+    setSubmitForm({ rating: 3, strengths: '', improvements: '', nextSteps: '', notes: '' });
+    setSubmitError('');
+  };
+
+  const handleAdminSubmit = async () => {
+    if (!submitTarget) return;
+    if (!submitForm.strengths || !submitForm.improvements || !submitForm.nextSteps) {
+      setSubmitError('Please fill in all required fields.');
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await api.adminSubmitFeedback({
+        bookingId: submitTarget.booking.id,
+        mentorId: submitTarget.booking.mentor.id,
+        rating: submitForm.rating,
+        strengths: submitForm.strengths,
+        improvements: submitForm.improvements,
+        nextSteps: submitForm.nextSteps,
+        notes: submitForm.notes || undefined
+      });
+      setSubmitTarget(null);
+      fetchOverdueFeedbacks();
+      fetchStats();
+    } catch (error: any) {
+      setSubmitError(error.message || 'Failed to submit feedback');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -251,9 +293,18 @@ const AdminFeedback: React.FC = () => {
                       Session: {new Date(item.booking.startTime).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-red-700">Overdue by</div>
-                    <div className="text-2xl font-bold text-red-600">{item.hoursOverdue}h</div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => openSubmitModal(item)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Submit Feedback
+                    </button>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-red-700">Overdue by</div>
+                      <div className="text-2xl font-bold text-red-600">{item.hoursOverdue}h</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -271,6 +322,116 @@ const AdminFeedback: React.FC = () => {
         }}
         feedback={selectedFeedback}
       />
+
+      {/* Admin Submit Feedback Modal */}
+      {submitTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setSubmitTarget(null)} disabled={submitting} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Submit Feedback (Admin)</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              On behalf of <span className="font-medium">{submitTarget.booking.mentor.name}</span> for mentee <span className="font-medium">{submitTarget.booking.mentee.name}</span>
+            </p>
+
+            <div className="space-y-4">
+              {/* Rating */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => setSubmitForm(f => ({ ...f, rating: n }))}
+                      className="p-1"
+                    >
+                      <Star className={`w-7 h-7 ${n <= submitForm.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Strengths */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Strengths *</label>
+                <textarea
+                  value={submitForm.strengths}
+                  onChange={e => setSubmitForm(f => ({ ...f, strengths: e.target.value }))}
+                  disabled={submitting}
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50"
+                  placeholder="What did the mentee do well?"
+                />
+              </div>
+
+              {/* Improvements */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Areas for Improvement *</label>
+                <textarea
+                  value={submitForm.improvements}
+                  onChange={e => setSubmitForm(f => ({ ...f, improvements: e.target.value }))}
+                  disabled={submitting}
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50"
+                  placeholder="What should the mentee focus on improving?"
+                />
+              </div>
+
+              {/* Next Steps */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Next Steps *</label>
+                <textarea
+                  value={submitForm.nextSteps}
+                  onChange={e => setSubmitForm(f => ({ ...f, nextSteps: e.target.value }))}
+                  disabled={submitting}
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50"
+                  placeholder="Recommended next steps for the mentee"
+                />
+              </div>
+
+              {/* Notes (optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                <textarea
+                  value={submitForm.notes}
+                  onChange={e => setSubmitForm(f => ({ ...f, notes: e.target.value }))}
+                  disabled={submitting}
+                  rows={1}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50"
+                  placeholder="Internal notes"
+                />
+              </div>
+
+              {submitError && (
+                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{submitError}</div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setSubmitTarget(null)}
+                disabled={submitting}
+                className="flex-1 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdminSubmit}
+                disabled={submitting}
+                className="flex-1 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {submitting ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </AdminLayout>
   );
