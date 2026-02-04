@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useApp } from '../App';
-import { Payout } from '../types';
+import { Payout, Booking } from '../types';
 import { DollarSign, Clock, CheckCircle, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { EarningStatusBadge } from '../components/Mentor/EarningStatusBadge';
 import { useToast } from '../components/ui/Toast';
@@ -12,6 +12,7 @@ export default function MentorPayout() {
     const { success, error: showError } = useToast();
     const [balanceDetails, setBalanceDetails] = useState({ payable: 0, paid: 0, pending: 0 });
     const [payouts, setPayouts] = useState<Payout[]>([]);
+    const [recentEarnings, setRecentEarnings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Request State
@@ -31,12 +32,20 @@ export default function MentorPayout() {
     const loadData = async () => {
         if(!user) return;
         setLoading(true);
-        const [details, payoutHistory] = await Promise.all([
+        const [details, payoutHistory, allBookings] = await Promise.all([
             api.getMentorBalanceDetails(user.id),
-            api.getPayouts(user.id)
+            api.getPayouts(user.id),
+            api.getBookings()
         ]);
         setBalanceDetails(details);
         setPayouts(payoutHistory.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()));
+
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        setRecentEarnings(
+            allBookings
+                .filter((b: Booking) => b.status === 'COMPLETED' && new Date(b.startTime) >= thirtyDaysAgo)
+                .sort((a: Booking, b: Booking) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+        );
         setLoading(false);
     };
 
@@ -285,6 +294,44 @@ export default function MentorPayout() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* Recent Earnings - Last 30 Days */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-slate-900">Recent Earnings (Last 30 Days)</h2>
+                    <span className="text-sm text-slate-500">
+                        {recentEarnings.length} booking{recentEarnings.length !== 1 ? 's' : ''} — Total: {recentEarnings.reduce((sum, b) => sum + Number(b.totalCost || 0), 0).toFixed(2)} Cr
+                    </span>
+                </div>
+
+                {recentEarnings.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400">No completed bookings in the last 30 days.</div>
+                ) : (
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-500 font-medium">
+                            <tr>
+                                <th className="px-6 py-4">Date</th>
+                                <th className="px-6 py-4">Student</th>
+                                <th className="px-6 py-4 text-right">Earned</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {recentEarnings.map(b => (
+                                <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 text-slate-600">
+                                        {new Date(b.startTime).toLocaleDateString()}
+                                        <div className="text-xs text-slate-400">{new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-slate-900">{b.menteeName}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <span className="font-bold text-green-700">+{Number(b.totalCost || 0).toFixed(2)} Cr</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );
